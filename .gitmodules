@@ -1,0 +1,6 @@
+[submodule "subprojects/cxxopts"]
+	path = subprojects/cxxopts
+	url = git@github.com:jarro2783/cxxopts.git
+[submodule "subprojects/SQLiteCpp"]
+	path = subprojects/SQLiteCpp
+	url = git@github.com:SRombauts/SQLiteCpp.git
