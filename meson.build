@@ -1,11 +1,7 @@
 project('filemod', 'cpp')
 
-
-sqlitecpp_dep = dependency('SQLiteCpp', fallback: ['SQLiteCpp', 'sqlitecpp_dep'])
-
-cmake = import('cmake')
-CLI11_proj = cmake.subproject('CLI11')
-CLI11_dep = CLI11_proj.dependency('CLI11')
+sqlitecpp_dep = subproject('SQLiteCpp').get_variable('sqlitecpp_dep')
+CLI11_dep = subproject('CLI11').get_variable('CLI11_dep')
 
 libfilemod_src = ['src/filemod.cpp']
 libfilemod_inc = include_directories('include')
