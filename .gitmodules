@@ -1,6 +1,6 @@
-[submodule "subprojects/cxxopts"]
-	path = subprojects/cxxopts
-	url = git@github.com:jarro2783/cxxopts.git
 [submodule "subprojects/SQLiteCpp"]
 	path = subprojects/SQLiteCpp
 	url = git@github.com:SRombauts/SQLiteCpp.git
+[submodule "subprojects/CLI11"]
+	path = subprojects/CLI11
+	url = git@github.com:CLIUtils/CLI11.git
