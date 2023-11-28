@@ -1,11 +1,14 @@
 //
-// Created by joexie on 11/26/23.
+// Created by Joe Tse on 11/26/23.
 //
 #include <iostream>
+#include <string>
 #include <CLI/CLI.hpp>
 
+#include "filemod.h"
+
 int main(int argc, char **argv) {
-    CLI::App app{"filemod is a command line file replacement manager."};
+    CLI::App app{"filemod is file replacement manager."};
     app.set_help_all_flag("--help-all");
 
     class MyFormatter : public CLI::Formatter {
@@ -32,37 +35,69 @@ int main(int argc, char **argv) {
 
     app.require_subcommand(1);
 
+    std::string target_name;
+    std::string mod_name;
+    std::string dir;
+
     auto add = app.add_subcommand("add", "add target or mod to management");
-    std::string add_t;
-    add->add_option("-t,--target", add_t, "target name")->required()->check(name_validator);
-    std::string add_m;
-    add->add_option("-m,--mod", add_m, "mod name")->needs("-t")->check(name_validator);
-    std::string add_d;
-    add->add_option("dir", add_d, "target or mod directory")->needs("-t")->required()->check(CLI::ExistingDirectory);
+    add->add_option("-t,--target", target_name, "target name")->required()->check(name_validator);
+    add->add_option("-m,--mod", mod_name, "mod name")->needs("-t")->check(name_validator);
+    add->add_option("dir", dir, "target or mod directory")->needs("-t")->required()->check(CLI::ExistingDirectory);
 
     auto rmv = app.add_subcommand("remove", "remove profile or mod from management");
-    std::string rmv_t;
-    rmv->add_option("-t,--target", rmv_t, "target name")->required()->check(name_validator);
-    std::string rmv_m;
-    rmv->add_option("-m,--mod", rmv_m, "mod name")->needs("-t")->check(name_validator);
+    rmv->add_option("-t,--target", target_name, "target name")->required()->check(name_validator);
+    rmv->add_option("-m,--mod", mod_name, "mod name")->needs("-t")->check(name_validator);
 
     auto ins = app.add_subcommand("install", "install mod to target directory");
-    std::string ins_t;
-    ins->add_option("-t,--target", ins_t, "target name")->required()->check(name_validator);
-    std::string int_m;
-    ins->add_option("-m,--mod", int_m, "mod name")->required()->check(name_validator);
+    ins->add_option("-t,--target", target_name, "target name")->required()->check(name_validator);
+    ins->add_option("-m,--mod", mod_name, "mod name")->required()->check(name_validator);
 
     auto uns = app.add_subcommand("uninstall", "uninstall mod from target directory");
-    std::string uns_t;
-    uns->add_option("-t,--target", uns_t, "target name")->required()->check(name_validator);
-    std::string uns_m;
-    uns->add_option("-m,--mod", uns_m, "mod name")->required()->check(name_validator);
+    uns->add_option("-t,--target", target_name, "target name")->required()->check(name_validator);
+    uns->add_option("-m,--mod", mod_name, "mod name")->required()->check(name_validator);
 
     auto lst = app.add_subcommand("list", "list managed targets and mods");
-    std::string lst_t;
-    lst->add_option("-t,--target", lst_t, "target name")->check(name_validator);
+    lst->add_option("-t,--target", target_name, "target name")->check(name_validator);
+
+    filemod::result ret;
+
+    add->callback([&]() {
+        std::cout << "add callback: target: " << target_name << " mod: " << mod_name << " dir: " << dir << "\n";
+
+        if (mod_name.empty()) {
+            ret = filemod::add_target(target_name, dir);
+        } else {
+            ret = filemod::add_mod(target_name, mod_name, dir);
+        }
+    });
+
+    rmv->callback([&]() {
+       if (mod_name.empty()) {
+           ret = filemod::remove_target(target_name);
+       } else {
+           ret = filemod::remove_mod(target_name, mod_name);
+       }
+    });
+
+    ins->callback([&]() {
+        ret = filemod::install_mod(target_name, mod_name);
+    });
+
+    uns->callback([&](){
+       ret = filemod::uninstall_mod(target_name, mod_name);
+    });
+
+    lst->callback([&]() {
+        ret = filemod::list_all(target_name);
+    });
 
     CLI11_PARSE(app, argc, argv)
 
-    return 0;
+    if (ret.success) {
+        std::cout << "success" << std::endl;
+        return 0;
+    } else {
+        std::cout << ret.msg << "\nfailed" << std::endl;
+        return 1;
+    }
 }
