@@ -7,7 +7,9 @@ libfilemod_src = ['src/filemod.cpp',
                   'src/fs.h',
                   'src/fs.cpp',
                   'src/sql.h',
-                  'src/sql.cpp',]
+                  'src/sql.cpp',
+                  'src/utils.h',
+                  'src/utils.cpp']
 libfilemod_inc = include_directories('include')
 libfilemod_lib = library('libfilemod', sources: libfilemod_src, include_directories: libfilemod_inc, dependencies: [sqlitecpp_dep])
 libfilemod_dep = declare_dependency(link_with: libfilemod_lib, include_directories: libfilemod_inc)

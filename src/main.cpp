@@ -7,8 +7,14 @@
 #include <CLI/CLI.hpp>
 
 #include "filemod.h"
+#include "utils.h"
 
 int main(int argc, char **argv) {
+    if (!real_effective_user_match()) {
+        std::cerr << "Please don't use sudo to run this program!\n" << std::endl;
+        return 1;
+    }
+
     CLI::App app{"filemod is file replacement manager."};
     app.set_help_all_flag("--help-all");
 
@@ -98,7 +104,7 @@ int main(int argc, char **argv) {
         std::puts("succeed");
         return 0;
     } else {
-        std::cout << ret.msg << "\nfailed\n";
+        std::cerr << ret.msg << "\nfailed\n";
         return 1;
     }
 }
