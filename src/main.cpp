@@ -2,6 +2,7 @@
 // Created by Joe Tse on 11/26/23.
 //
 #include <iostream>
+#include <cstdio>
 #include <string>
 #include <CLI/CLI.hpp>
 
@@ -23,10 +24,10 @@ int main(int argc, char **argv) {
 
     auto name_validator = [](const std::string &str) -> std::string {
         if (str.empty() || str[0] == '-' || std::string_view(str).substr(0, 2) == "--") {
-            int prefix_size = 13;
+            const char prefix[]{"invalid str: "};
             std::string msg;
-            msg.reserve(str.size() + prefix_size);
-            msg += "invalid str: ";
+            msg.reserve(sizeof(prefix) - 1 + str.size());
+            msg += prefix;
             msg += str;
             return msg;
         }
@@ -72,19 +73,19 @@ int main(int argc, char **argv) {
     });
 
     rmv->callback([&]() {
-       if (mod_name.empty()) {
-           ret = filemod::remove_target(target_name);
-       } else {
-           ret = filemod::remove_mod(target_name, mod_name);
-       }
+        if (mod_name.empty()) {
+            ret = filemod::remove_target(target_name);
+        } else {
+            ret = filemod::remove_mod(target_name, mod_name);
+        }
     });
 
     ins->callback([&]() {
         ret = filemod::install_mod(target_name, mod_name);
     });
 
-    uns->callback([&](){
-       ret = filemod::uninstall_mod(target_name, mod_name);
+    uns->callback([&]() {
+        ret = filemod::uninstall_mod(target_name, mod_name);
     });
 
     lst->callback([&]() {
@@ -94,10 +95,10 @@ int main(int argc, char **argv) {
     CLI11_PARSE(app, argc, argv)
 
     if (ret.success) {
-        std::cout << "success" << std::endl;
+        std::puts("succeed");
         return 0;
     } else {
-        std::cout << ret.msg << "\nfailed" << std::endl;
+        std::cout << ret.msg << "\nfailed\n";
         return 1;
     }
 }
