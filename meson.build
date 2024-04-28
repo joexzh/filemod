@@ -8,6 +8,8 @@ libfilemod_src = ['src/filemod.cpp',
                   'src/fs.cpp',
                   'src/sql.h',
                   'src/sql.cpp',
+                  'src/fs.h',
+                  'src/fs.cpp',
                   'src/utils.h',
                   'src/utils.cpp']
 libfilemod_inc = include_directories('include')

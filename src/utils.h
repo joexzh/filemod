@@ -4,14 +4,30 @@
 
 #pragma once
 
-#include <filesystem>
+#include <string>
 
-const char *const PROGNAME = "filemod";
-const char *const DBFILE = "filemod.db";
+namespace filemod {
+    template<typename T = void>
+    struct result {
+        bool success;
+        T data;
+    };
 
-bool real_effective_user_match();
+    template<>
+    struct result<void> {
+        bool success;
+    };
 
-// create parent directory of /path/to/filemod.db and return the full path
-const std::filesystem::path get_config_path();
+    const char DBFILE[] = "filemod.db";
 
-constexpr size_t length_s(const char *str);
+    bool real_effective_user_match();
+
+    // create parent directory of /path/to/filemod.db and return the full path
+    std::string get_db_path(bool initdir = true);
+
+    inline std::string get_mem_db_path() {
+        return ":memory:";
+    }
+
+    constexpr size_t length_s(const char *str) noexcept;
+}

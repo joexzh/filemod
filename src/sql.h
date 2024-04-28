@@ -8,46 +8,91 @@
 #include <vector>
 #include <SQLiteCpp/SQLiteCpp.h>
 
+#include "utils.h"
+
 namespace filemod {
     enum class ModStatus {
         Uninstalled = 0,
         Installed = 1,
     };
 
-    struct [[nodiscard]] TargetDto {
-        std::string name;
-        std::string dir;
-    };
-
     struct [[nodiscard]] ModDto {
-        std::string name;
-        std::string target_name;
+        int64_t id;
+        int64_t target_id;
         std::string dir;
-        int status;
+        ModStatus status;
+        std::vector<std::string> files;
+        std::vector<std::string> backup_files;
     };
 
+
+    struct [[nodiscard]] TargetDto {
+        int64_t id;
+        std::string dir;
+        std::vector<ModDto> ModDtos;
+    };
+
+    template<typename DbPather>
     class Db {
     private:
-        SQLite::Database db_;
+        SQLite::Database _db{DbPather(), SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE};
 
     public:
-        explicit Db(std::string &dir);
+        explicit Db();
 
-        TargetDto query_target(const std::string &target_name) const;
+        Db(const Db &db) = delete;
 
-        void insert_target(const std::string &target_name, const std::string &dir) const;
+        Db(Db &&db) = delete;
 
-        void delete_target(const std::string &target_name) const;
+        Db &operator=(const Db &db) = delete;
 
-        ModDto query_mod(const std::string &mod_name) const;
+        Db &operator=(Db &&db) = delete;
 
-        void insert_mod(const std::string &mod_name, const std::string &target_name, const std::string &dir);
+        ~Db() = default;
 
-        void delete_mod(const std::string &mod_name) const;
+        SQLite::Transaction begin();
 
-        void install_mod(const std::string &mod_name, const std::vector<std::string> &dirs,
-                         const std::vector<std::string> &backup_dirs);
+        SQLite::Transaction begin(SQLite::TransactionBehavior behavior);
 
-        void uninstall_mod(const std::string &mod_name);
+        std::vector<TargetDto> query_targets_mods(const std::vector<int64_t> &ids);
+
+        std::vector<ModDto> query_mods_files(const std::vector<int64_t> &ids);
+
+        std::vector<ModDto> query_mods_by_target(int64_t target_id);
+
+        result<ModDto> query_mod_by_target_dir(int64_t target_id, const std::string &dir);
+
+        result<TargetDto> query_target(int64_t id);
+
+        result<TargetDto> query_target_by_dir(const std::string &dir);
+
+        int64_t insert_target(const std::string &dir);
+
+        int delete_target(int64_t id);
+
+        result<void> delete_target_all(int64_t id);
+
+        result<ModDto> query_mod(int64_t id);
+
+        int64_t insert_mod(int64_t target_id, const std::string &dir, int status);
+
+        void insert_mod_w_files(int64_t target_id, const std::string &dir, int status,
+                                const std::vector<std::string> &files);
+
+        int update_mod_status(int64_t id, int status);
+
+        int delete_mod(int64_t id);
+
+        int insert_mod_files(int64_t mod_id, const std::vector<std::string> &files);
+
+        int delete_mod_files(int64_t mod_id);
+
+        int insert_backup_files(int64_t mod_id, const std::vector<std::string> &backup_files);
+
+        int delete_backup_files(int64_t mod_id);
+
+        void install_mod(int64_t id, const std::vector<std::string> &backup_files);
+
+        void uninstall_mod(int64_t id);
     };
 }

@@ -8,5 +8,11 @@
 
 namespace filemod {
 
+    template<typename CfgPather>
+    class FS {
+    private:
+        std::filesystem::path _cfg_path = CfgPather();
+    public:
+    };
 
 }

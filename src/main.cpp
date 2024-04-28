@@ -10,7 +10,7 @@
 #include "utils.h"
 
 int main(int argc, char **argv) {
-    if (!real_effective_user_match()) {
+    if (!filemod::real_effective_user_match()) {
         std::cerr << "Please don't use sudo to run this program!\n" << std::endl;
         return 1;
     }
@@ -47,26 +47,26 @@ int main(int argc, char **argv) {
     std::string dir;
 
     auto add = app.add_subcommand("add", "add target or mod to management");
-    add->add_option("-t,--target", target_name, "target name")->required()->check(name_validator)->take_last();
-    add->add_option("-m,--mod", mod_name, "mod name")->needs("-t")->check(name_validator)->take_last();
+    add->add_option("-t,--target", target_name, "target mod_name")->required()->check(name_validator)->take_last();
+    add->add_option("-m,--mod", mod_name, "mod mod_name")->needs("-t")->check(name_validator)->take_last();
     add->add_option("dir", dir, "target or mod directory")->needs("-t")->required()->check(CLI::ExistingDirectory);
 
     auto rmv = app.add_subcommand("remove", "remove profile or mod from management");
-    rmv->add_option("-t,--target", target_name, "target name")->required()->check(name_validator)->take_last();
-    rmv->add_option("-m,--mod", mod_name, "mod name")->needs("-t")->check(name_validator)->take_last();
+    rmv->add_option("-t,--target", target_name, "target mod_name")->required()->check(name_validator)->take_last();
+    rmv->add_option("-m,--mod", mod_name, "mod mod_name")->needs("-t")->check(name_validator)->take_last();
 
     auto ins = app.add_subcommand("install", "install mod to target directory");
-    ins->add_option("-t,--target", target_name, "target name")->required()->check(name_validator)->take_last();
-    ins->add_option("-m,--mod", mod_name, "mod name")->required()->check(name_validator)->take_last();
+    ins->add_option("-t,--target", target_name, "target mod_name")->required()->check(name_validator)->take_last();
+    ins->add_option("-m,--mod", mod_name, "mod mod_name")->required()->check(name_validator)->take_last();
 
     auto uns = app.add_subcommand("uninstall", "uninstall mod from target directory");
-    uns->add_option("-t,--target", target_name, "target name")->required()->check(name_validator)->take_last();
-    uns->add_option("-m,--mod", mod_name, "mod name")->required()->check(name_validator)->take_last();
+    uns->add_option("-t,--target", target_name, "target mod_name")->required()->check(name_validator)->take_last();
+    uns->add_option("-m,--mod", mod_name, "mod mod_name")->required()->check(name_validator)->take_last();
 
     auto lst = app.add_subcommand("list", "list managed targets and mods");
-    lst->add_option("-t,--target", target_name, "target name")->check(name_validator)->take_last();
+    lst->add_option("-t,--target", target_name, "target mod_name")->check(name_validator)->take_last();
 
-    filemod::result ret;
+    filemod::result<std::string> ret;
 
     add->callback([&]() {
         std::cout << "add callback: target: " << target_name << " mod: " << mod_name << " dir: " << dir << "\n";
@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
         std::puts("succeed");
         return 0;
     } else {
-        std::cerr << ret.msg << "\nfailed\n";
+        std::cerr << ret.data << "\nfailed\n";
         return 1;
     }
 }
