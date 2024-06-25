@@ -41,7 +41,7 @@ namespace filemod {
         std::string str{QUERY_TARGET_MODS};
         if (size) {
             str += " where t.id in (";
-            for (int i = 0; i < size - 1; ++i) {
+            for (size_t i = 0; i < size - 1; ++i) {
                 str += "?,";
             }
             str += "?)";
@@ -54,7 +54,7 @@ namespace filemod {
         std::string str{QUERY_MODS_FILES_BACKUPS};
         if (size) {
             str += " where m.id in (";
-            for (int i = 0; i < size - 1; ++i) {
+            for (size_t i = 0; i < size - 1; ++i) {
                 str += "?,";
             }
             str += "?)";
@@ -65,7 +65,7 @@ namespace filemod {
 
     static std::string buildstr_insert_mod_files(size_t size) {
         std::string str{INSERT_MOD_FILES};
-        for (int i = 0; i < size - 1; ++i) {
+        for (size_t i = 0; i < size - 1; ++i) {
             str += ",(?,?)";
         }
         return str;
@@ -73,7 +73,7 @@ namespace filemod {
 
     static std::string buildstr_insert_backup_files(size_t size) {
         std::string str{INSERT_BACKUP_FILES};
-        for (int i = 0; i < size - 1; ++i) {
+        for (size_t i = 0; i < size - 1; ++i) {
             str += ",(?,?)";
         }
         return str;

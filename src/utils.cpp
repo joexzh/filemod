@@ -15,30 +15,29 @@ namespace filemod {
         return getuid() == geteuid();
     }
 
-    std::string get_db_path(bool initdir) {
+    std::string get_config_path() {
         char *home = getenv("HOME");
+        std::string dir_str;
+
         if (nullptr == home) {
-            return std::filesystem::canonical("/proc/self/exe") /= std::filesystem::path(DBFILE);
+            dir_str += (std::filesystem::canonical("/proc/self/exe").parent_path() /= "filemod_cfg/").string();
+        } else {
+            dir_str.reserve(std::strlen(home) + length_s("/.config/filemod_cfg/") + length_s(DBFILE));
+            dir_str += home;
+            dir_str += "/.config/filemod_cfg/";
         }
 
-        std::string dir_str;
-        dir_str.reserve(std::strlen(home) + length_s("/.config/filemod/") + length_s(DBFILE));
-        dir_str += home;
-        dir_str += "/.config/filemod/";
-
         auto dir = std::filesystem::path(dir_str);
-        if (initdir && !std::filesystem::exists(dir)) {
+        if (!std::filesystem::exists(dir)) {
             std::filesystem::create_directories(dir);
         }
 
-        dir_str += DBFILE;
-        dir = std::move(dir_str);
-
-        return dir.string();
+        return dir_str;
     }
 
-
-
+    std::string get_db_path() {
+        return get_config_path() += DBFILE;
+    }
 
     constexpr std::size_t length_s(const char *str) noexcept {
         if (nullptr == str || 0 == *str) {

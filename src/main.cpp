@@ -4,10 +4,13 @@
 #include <iostream>
 #include <cstdio>
 #include <string>
+#include <vector>
+#include <filesystem>
 #include <CLI/CLI.hpp>
 
+#include "CLI/Validators.hpp"
 #include "filemod.h"
-#include "utils.h"
+//#include "utils.h"
 
 int main(int argc, char **argv) {
     if (!filemod::real_effective_user_match()) {
@@ -42,60 +45,57 @@ int main(int argc, char **argv) {
 
     app.require_subcommand(1);
 
-    std::string target_name;
-    std::string mod_name;
+    std::string target_id;
+    std::vector<std::string> target_ids;
+    std::vector<std::string> mod_ids;
     std::string dir;
 
     auto add = app.add_subcommand("add", "add target or mod to management");
-    add->add_option("-t,--target", target_name, "target mod_name")->required()->check(name_validator)->take_last();
-    add->add_option("-m,--mod", mod_name, "mod mod_name")->needs("-t")->check(name_validator)->take_last();
-    add->add_option("dir", dir, "target or mod directory")->needs("-t")->required()->check(CLI::ExistingDirectory);
-
-    auto rmv = app.add_subcommand("remove", "remove profile or mod from management");
-    rmv->add_option("-t,--target", target_name, "target mod_name")->required()->check(name_validator)->take_last();
-    rmv->add_option("-m,--mod", mod_name, "mod mod_name")->needs("-t")->check(name_validator)->take_last();
+    add->add_option("--tdir", dir, "target directory")->take_last()->check(CLI::ExistingDirectory);
+    auto mdir_opt = add->add_option("--mdir", dir, "mod directory")->excludes("--tdir");
+    add->add_option("--t", target_id, "target id")->excludes("--tdir")->needs("--mdir")->take_last()->check(
+            name_validator);
+    mdir_opt->needs("--t")->take_last()->check(CLI::ExistingDirectory);
 
     auto ins = app.add_subcommand("install", "install mod to target directory");
-    ins->add_option("-t,--target", target_name, "target mod_name")->required()->check(name_validator)->take_last();
-    ins->add_option("-m,--mod", mod_name, "mod mod_name")->required()->check(name_validator)->take_last();
+    ins->add_option("--t", target_id, "target id")->take_last()->check(name_validator);
+    ins->add_option("--mdir", dir, "mod directory")->needs("--t")->take_last()->check(CLI::ExistingDirectory);
+    ins->add_option("--m", mod_ids, "mod ids")->excludes("--t", "--mdir")->take_all()->check(name_validator);
 
     auto uns = app.add_subcommand("uninstall", "uninstall mod from target directory");
-    uns->add_option("-t,--target", target_name, "target mod_name")->required()->check(name_validator)->take_last();
-    uns->add_option("-m,--mod", mod_name, "mod mod_name")->required()->check(name_validator)->take_last();
+    uns->add_option("--t", target_id, "target id")->take_last()->check(name_validator);
+    uns->add_option("--m", mod_ids, "mod ids")->excludes("--t")->take_all()->check(name_validator);
+
+    auto rmv = app.add_subcommand("remove", "remove target or mod from management");
+    rmv->add_option("--t", target_id, "target id")->take_last()->check(name_validator);
+    rmv->add_option("--m", mod_ids, "mod ids")->excludes("--t")->take_all()->check(name_validator)->take_last();
 
     auto lst = app.add_subcommand("list", "list managed targets and mods");
-    lst->add_option("-t,--target", target_name, "target mod_name")->check(name_validator)->take_last();
+    lst->add_option("--t", target_ids, "target ids")->take_all()->check(name_validator);
+    lst->add_option("--m", mod_ids, "mod ids")->excludes("--t")->take_all()->check(name_validator);
+    lst->add_flag("--v", "verbose")->excludes("--t")->needs("--m");
 
     filemod::result<std::string> ret;
 
     add->callback([&]() {
-        std::cout << "add callback: target: " << target_name << " mod: " << mod_name << " dir: " << dir << "\n";
+        std::cout << "add callback: target id: " << target_id << " dir: " << dir << "\n";
 
-        if (mod_name.empty()) {
-            ret = filemod::add_target(target_name, dir);
-        } else {
-            ret = filemod::add_mod(target_name, mod_name, dir);
-        }
     });
 
     rmv->callback([&]() {
-        if (mod_name.empty()) {
-            ret = filemod::remove_target(target_name);
-        } else {
-            ret = filemod::remove_mod(target_name, mod_name);
-        }
+
     });
 
     ins->callback([&]() {
-        ret = filemod::install_mod(target_name, mod_name);
+
     });
 
     uns->callback([&]() {
-        ret = filemod::uninstall_mod(target_name, mod_name);
+
     });
 
     lst->callback([&]() {
-        ret = filemod::list_all(target_name);
+
     });
 
     CLI11_PARSE(app, argc, argv)

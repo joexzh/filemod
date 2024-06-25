@@ -22,12 +22,11 @@ namespace filemod {
 
     bool real_effective_user_match();
 
-    // create parent directory of /path/to/filemod.db and return the full path
-    std::string get_db_path(bool initdir = true);
+    // create config_path: /path/to/filemod/ and return the full path
+    std::string get_config_path();
 
-    inline std::string get_mem_db_path() {
-        return ":memory:";
-    }
+    // create config_path and return /path/to/filemod/filemod.db
+    std::string get_db_path();
 
     constexpr size_t length_s(const char *str) noexcept;
 }
