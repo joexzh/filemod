@@ -14,7 +14,7 @@
 
 int main(int argc, char **argv) {
     if (!filemod::real_effective_user_match()) {
-        std::cerr << "Please don't use sudo to run this program!\n" << std::endl;
+        std::cerr << "suid is not supported!\n" << std::endl;
         return 1;
     }
 

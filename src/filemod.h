@@ -5,20 +5,24 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 #include "utils.h"
 #include "sql.h"
 #include "fs.h"
 
 namespace filemod {
 
-    template<typename DbPather, typename CfgPather>
     class FileMod {
     private:
-        Db<DbPather> _db = Db<DbPather>();
-        FS<CfgPather> _fs = FS<CfgPather>();
+        std::unique_ptr<FS> _fs; // ORDER DEPENDENCY
+        std::unique_ptr<Db> _db; // ORDER DEPENDENCY
+
+        void install_mod(int64_t mod_id, result_base &ret);
+
+        void uninstall_mod(int64_t mod_id, result_base &ret);
 
     public:
-        explicit FileMod() = default;
+        explicit FileMod(std::unique_ptr<FS> fs, std::unique_ptr<Db> db);
 
         FileMod(const FileMod &filemod) = delete;
 
@@ -30,26 +34,26 @@ namespace filemod {
 
         ~FileMod() = default;
 
-        result <std::string> add_target(const std::string &tar_dir);
+        result_base add_target(const std::string &tar_dir);
 
-        result <std::string> add_mod(int64_t target_id, const std::string &mod_dir);
+        result<int64_t> add_mod(int64_t target_id, const std::string &mod_src_dir);
 
-        result <std::string> install_mods(const std::vector<int64_t> &mod_ids);
+        result_base install_mods(const std::vector<int64_t> &mod_ids);
 
-        result <std::string> install_from_target_id(int64_t target_id);
+        result_base install_from_target_id(int64_t target_id);
 
-        result <std::string> install_from_mod_dir(int64_t target_id, const std::string &mod_dir);
+        result_base install_from_mod_dir(int64_t target_id, const std::string &mod_dir);
 
-        result <std::string> uninstall_mods(std::vector<int64_t> mod_ids);
+        result_base uninstall_mods(std::vector<int64_t> mod_ids);
 
-        result <std::string> uninstall_from_target_id(int64_t target_id);
+        result_base uninstall_from_target_id(int64_t target_id);
 
-        result <std::string> remove_mods(std::vector<int64_t> mod_ids);
+        result_base remove_mods(std::vector<int64_t> mod_ids);
 
-        result <std::string> remove_from_target_id(int64_t target_id);
+        result_base remove_from_target_id(int64_t target_id);
 
-        result <std::string> list_mods(std::vector<int64_t> mod_ids, uint8_t indent = 0, bool verbose = false);
+        result_base list_mods(std::vector<int64_t> mod_ids, uint8_t indent = 0, bool verbose = false);
 
-        result <std::string> list_targets(std::vector<int64_t> target_ids);
+        result_base list_targets(std::vector<int64_t> target_ids);
     };
 }

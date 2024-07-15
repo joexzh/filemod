@@ -5,9 +5,11 @@
 #pragma once
 
 #include <string>
+#include <filesystem>
 #include <vector>
 #include <SQLiteCpp/SQLiteCpp.h>
 
+#include "SQLiteCpp/Database.h"
 #include "utils.h"
 
 namespace filemod {
@@ -32,21 +34,24 @@ namespace filemod {
         std::vector<ModDto> ModDtos;
     };
 
-    template<typename DbPather>
     class Db {
     private:
-        SQLite::Database _db{DbPather(), SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE};
+        SQLite::Database _db;
+
+        int64_t insert_mod(int64_t target_id, const std::string &dir, int status);
 
     public:
-        explicit Db();
+        explicit Db(const std::string& path);
+
+        explicit Db(const std::filesystem::path& path);
 
         Db(const Db &db) = delete;
 
-        Db(Db &&db) = delete;
-
         Db &operator=(const Db &db) = delete;
 
-        Db &operator=(Db &&db) = delete;
+        Db(Db &&db) = default;
+
+        Db &operator=(Db &&db) = default;
 
         ~Db() = default;
 
@@ -60,7 +65,7 @@ namespace filemod {
 
         std::vector<ModDto> query_mods_by_target(int64_t target_id);
 
-        result<ModDto> query_mod_by_target_dir(int64_t target_id, const std::string &dir);
+        result<ModDto> query_mod_by_targetid_dir(int64_t target_id, const std::string &dir);
 
         result<TargetDto> query_target(int64_t id);
 
@@ -70,18 +75,18 @@ namespace filemod {
 
         int delete_target(int64_t id);
 
-        result<void> delete_target_all(int64_t id);
+        result_base delete_target_all(int64_t id);
 
         result<ModDto> query_mod(int64_t id);
 
-        int64_t insert_mod(int64_t target_id, const std::string &dir, int status);
-
-        void insert_mod_w_files(int64_t target_id, const std::string &dir, int status,
+        int64_t insert_mod_w_files(int64_t target_id, const std::string &dir, int status,
                                 const std::vector<std::string> &files);
 
         int update_mod_status(int64_t id, int status);
 
         int delete_mod(int64_t id);
+
+        std::vector<ModDto> query_mods_contain_files(const std::vector<std::string> &files);
 
         int insert_mod_files(int64_t mod_id, const std::vector<std::string> &files);
 

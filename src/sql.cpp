@@ -5,6 +5,7 @@
 #include <string_view>
 #include <unordered_set>
 #include <algorithm>
+#include "SQLiteCpp/Database.h"
 #include "sql.h"
 
 namespace filemod {
@@ -15,6 +16,7 @@ namespace filemod {
     static const char CREATE_T_BACKUP_FILES[] = "CREATE TABLE if not exists backup_files (mod_id integer, dir text, primary key (mod_id, dir)) without rowid";
     static const char CREATE_IX_TARGET[] = "CREATE INDEX ix_target on target (dir)";
     static const char CREATE_IX_MOD[] = "CREATE INDEX if not exists ix_mod on mod (target_id, dir, status, id)";
+    static const char CREATE_IX_MOD_FILES[] = "CREATE INDEX if not exists ix_mod_files (dir, mod_id)";
 
     static const char QUERY_TARGET[] = "select * from target where id=?";
     static const char QUERY_TARGET_BY_DIR[] = "select * from target where dir=?";
@@ -28,6 +30,7 @@ namespace filemod {
     static const char DELETE_MOD[] = "delete from mod where id=?";
     static const char UPDATE_MOD_STATUS[] = "update mod set status=? where id=?";
 
+    static const char QUERY_MODS_CONTAIN_FILES[] = "select m.id, m.target_id, m.dir, m.status from mod m inner join mod_files mf on m.id = mf.mod_id where mf.dir in (?";
     static const char INSERT_MOD_FILES[] = "insert into mod_files values (?,?)";
     static const char DELETE_MOD_FILES[] = "delete from mod_files where mod_id=?";
 
@@ -65,7 +68,7 @@ namespace filemod {
 
     static std::string buildstr_insert_mod_files(size_t size) {
         std::string str{INSERT_MOD_FILES};
-        for (size_t i = 0; i < size - 1; ++i) {
+        for (size_t i = 1; i < size - 1; ++i) {
             str += ",(?,?)";
         }
         return str;
@@ -73,9 +76,18 @@ namespace filemod {
 
     static std::string buildstr_insert_backup_files(size_t size) {
         std::string str{INSERT_BACKUP_FILES};
-        for (size_t i = 0; i < size - 1; ++i) {
+        for (size_t i = 1; i < size - 1; ++i) {
             str += ",(?,?)";
         }
+        return str;
+    }
+
+    static std::string buildstr_query_mods_contain_files(size_t size) {
+        std::string str{QUERY_MODS_CONTAIN_FILES};
+        for (size_t i = 1; i < size - 1; ++i) {
+            str += ",?";
+        }
+        str += ")";
         return str;
     }
 
@@ -86,30 +98,36 @@ namespace filemod {
         dto.status = static_cast<ModStatus>(stmt.getColumn(3).getInt());
     }
 
-    template<typename DbPather>
-    Db<DbPather>::Db() {
-        if (!_db.tableExists("target")) {
-            _db.exec(CREATE_T_TARGET);
-            _db.exec(CREATE_T_MOD);
-            _db.exec(CREATE_T_MOD_FILES);
-            _db.exec(CREATE_T_BACKUP_FILES);
-            _db.exec(CREATE_IX_TARGET);
-            _db.exec(CREATE_IX_MOD);
-        }
+    static inline void init_db(SQLite::Database& db) {
+        if (!db.tableExists("target")) {
+                db.exec(CREATE_T_TARGET);
+                db.exec(CREATE_T_MOD);
+                db.exec(CREATE_T_MOD_FILES);
+                db.exec(CREATE_T_BACKUP_FILES);
+                db.exec(CREATE_IX_TARGET);
+                db.exec(CREATE_IX_MOD);
+            }
     }
 
-    template<typename DbPather>
-    SQLite::Transaction Db<DbPather>::begin() {
+    Db::Db(const std::string& path) : _db{path, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE} {
+        init_db(_db);
+    }
+
+    Db::Db(const std::filesystem::path& path) : _db{path, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE} {
+        init_db(_db);
+    }
+
+    SQLite::Transaction Db::begin() {
         return SQLite::Transaction{_db};
     }
 
-    template<typename DbPather>
-    SQLite::Transaction Db<DbPather>::begin(SQLite::TransactionBehavior behavior) {
+    
+    SQLite::Transaction Db::begin(SQLite::TransactionBehavior behavior) {
         return SQLite::Transaction{_db, behavior};
     }
 
-    template<typename DbPather>
-    std::vector<TargetDto> Db<DbPather>::query_targets_mods(const std::vector<int64_t> &ids) {
+    
+    std::vector<TargetDto> Db::query_targets_mods(const std::vector<int64_t> &ids) {
         SQLite::Statement stmt{_db, buildstr_query_targets_mods(ids.size())};
         std::vector<TargetDto> targets;
         for (int i = 0; i < ids.size(); ++i) {
@@ -139,8 +157,8 @@ namespace filemod {
         return targets;
     }
 
-    template<typename DbPather>
-    std::vector<ModDto> Db<DbPather>::query_mods_files(const std::vector<int64_t> &ids) {
+    
+    std::vector<ModDto> Db::query_mods_files(const std::vector<int64_t> &ids) {
         SQLite::Statement stmt{_db, bufildstr_query_mods_files(ids.size())};
         std::vector<ModDto> mods;
         for (int i = 0; i < ids.size(); ++i) {
@@ -170,38 +188,38 @@ namespace filemod {
         return mods;
     }
 
-    template<typename DbPather>
-    result<TargetDto> Db<DbPather>::query_target(int64_t id) {
+    
+    result<TargetDto> Db::query_target(int64_t id) {
         SQLite::Statement stmt{_db, QUERY_TARGET};
         stmt.bind(1, id);
         TargetDto target;
         if (stmt.executeStep()) {
-            return result<TargetDto>{true, TargetDto{
+            return result<TargetDto>{true, "", TargetDto{
                     .id = stmt.getColumn(0).getInt(),
                     .dir = stmt.getColumn(1).getString(),
             }};
         }
 
-        return {false, target};
+        return {false, "", target};
     }
 
-    template<typename DbPather>
-    result<TargetDto> Db<DbPather>::query_target_by_dir(const std::string &dir) {
+    
+    result<TargetDto> Db::query_target_by_dir(const std::string &dir) {
         SQLite::Statement stmt{_db, QUERY_TARGET_BY_DIR};
         stmt.bind(1, dir);
         TargetDto target;
         if (stmt.executeStep()) {
-            return result<TargetDto>{true, TargetDto{
+            return result<TargetDto>{true, "", TargetDto{
                     .id = stmt.getColumn(0).getInt(),
                     .dir = stmt.getColumn(1).getString(),
             }};
         }
 
-        return {false, target};
+        return {false, "", target};
     }
 
-    template<typename DbPather>
-    std::vector<ModDto> Db<DbPather>::query_mods_by_target(int64_t target_id) {
+    
+    std::vector<ModDto> Db::query_mods_by_target(int64_t target_id) {
         SQLite::Statement stmt{_db, QUERY_MODS_BY_TARGEDID};
         stmt.bind(1, target_id);
         std::vector<ModDto> dtos;
@@ -212,36 +230,35 @@ namespace filemod {
         return dtos;
     }
 
-    template<typename DbPather>
-    result<ModDto> Db<DbPather>::query_mod_by_target_dir(int64_t target_id, const std::string &dir) {
+    
+    result<ModDto> Db::query_mod_by_targetid_dir(int64_t target_id, const std::string &dir) {
         SQLite::Statement stmt{_db, QUERY_MOD_BY_TARGEDID_DIR};
         stmt.bind(1, target_id);
         stmt.bind(2, dir);
         ModDto mod;
         if (stmt.executeStep()) {
             fill_ModDto(stmt, mod);
-            return {true, mod};
+            return {true, "", mod};
         }
-        return {false, mod};
+        return {false, "", mod};
     }
 
-    template<typename DbPather>
-    int64_t Db<DbPather>::insert_target(const std::string &dir) {
+    int64_t Db::insert_target(const std::string &dir) {
         SQLite::Statement stmt{_db, INSERT_TARGET};
         stmt.bind(1, dir);
         stmt.exec();
         return _db.getLastInsertRowid();
     }
 
-    template<typename DbPather>
-    int Db<DbPather>::delete_target(int64_t id) {
+    
+    int Db::delete_target(int64_t id) {
         SQLite::Statement stmt{_db, DELETE_TARGET};
         stmt.bind(1, id);
         return stmt.exec();
     }
 
-    template<typename DbPather>
-    result<void> Db<DbPather>::delete_target_all(int64_t id) {
+    
+    result_base Db::delete_target_all(int64_t id) {
         SQLite::Transaction tx{_db};
         auto mods = query_mods_by_target(id);
         if (std::any_of(mods.begin(), mods.end(), [](const auto &mod) { return mod.status == ModStatus::Installed; })) {
@@ -259,20 +276,20 @@ namespace filemod {
         return {true};
     }
 
-    template<typename DbPather>
-    result<ModDto> Db<DbPather>::query_mod(int64_t id) {
+    
+    result<ModDto> Db::query_mod(int64_t id) {
         SQLite::Statement stmt{_db, QUERY_MOD};
         stmt.bind(1, id);
         ModDto mod;
         if (stmt.executeStep()) {
             fill_ModDto(stmt, mod);
-            return {true, mod};
+            return {true, "", mod};
         }
-        return {false, mod};
+        return {false, "", mod};
     }
 
-    template<typename DbPather>
-    int64_t Db<DbPather>::insert_mod(int64_t target_id, const std::string &dir, int status) {
+    
+    int64_t Db::insert_mod(int64_t target_id, const std::string &dir, int status) {
         SQLite::Statement stmt{_db, INSERT_MOD};
         stmt.bind(1, target_id);
         stmt.bind(2, dir);
@@ -281,32 +298,66 @@ namespace filemod {
         return _db.getLastInsertRowid();
     }
 
-    template<typename DbPather>
-    void Db<DbPather>::insert_mod_w_files(int64_t target_id, const std::string &dir, int status,
+    
+    int64_t Db::insert_mod_w_files(int64_t target_id, const std::string &dir, int status,
                                           const std::vector<std::string> &files) {
         SQLite::Transaction tx{_db};
-        insert_mod(target_id, dir, status);
-        insert_mod_files(_db.getLastInsertRowid(), files);
+        int64_t mod_id = insert_mod(target_id, dir, status);
+        insert_mod_files(mod_id, files);
         tx.commit();
+        return mod_id;
     }
 
-    template<typename DbPather>
-    int Db<DbPather>::update_mod_status(int64_t mod_id, int status) {
+    
+    int Db::update_mod_status(int64_t mod_id, int status) {
         SQLite::Statement stmt{_db, UPDATE_MOD_STATUS};
         stmt.bind(1, status);
         stmt.bind(2, mod_id);
         return stmt.exec();
     }
 
-    template<typename DbPather>
-    int Db<DbPather>::delete_mod(int64_t id) {
+    
+    int Db::delete_mod(int64_t id) {
         SQLite::Statement stmt{_db, DELETE_MOD};
         stmt.bind(1, id);
         return stmt.exec();
     }
 
-    template<typename DbPather>
-    int Db<DbPather>::insert_mod_files(int64_t mod_id, const std::vector<std::string> &files) {
+    std::vector<ModDto> Db::query_mods_contain_files(const std::vector<std::string> &files) {
+        if (files.empty()) {
+            return {};
+        }
+
+        SQLite::Statement stmt{_db, buildstr_query_mods_contain_files(files.size())};
+        std::vector<ModDto> mods;
+        for (int i = 0; i < files.size(); ++i) {
+            stmt.bind(i + 1, files[i]);
+        }
+
+        ModDto *m_tar;
+        std::unordered_set<int> id_set;
+        while (stmt.executeStep()) {
+            int id = stmt.getColumn(0).getInt();
+
+            if (id_set.find(id) == id_set.end()) { // if first meet, create one
+                m_tar = &mods.emplace_back();
+                id_set.emplace(id);
+
+                m_tar->id = id;
+                m_tar->target_id = stmt.getColumn(1).getInt();
+                m_tar->dir = stmt.getColumn(2).getString();
+                m_tar->status = static_cast<ModStatus>(stmt.getColumn(3).getInt());
+            }
+        }
+
+        return mods;
+    }
+
+    int Db::insert_mod_files(int64_t mod_id, const std::vector<std::string> &files) {
+        if (files.empty()) {
+            return 0;
+        }
+
         SQLite::Statement stmt{_db, buildstr_insert_mod_files(files.size())};
         int i = 0;
         int nrow = 0;
@@ -320,15 +371,19 @@ namespace filemod {
         return nrow;
     }
 
-    template<typename DbPather>
-    int Db<DbPather>::delete_mod_files(int64_t mod_id) {
+    
+    int Db::delete_mod_files(int64_t mod_id) {
         SQLite::Statement stmt{_db, DELETE_MOD_FILES};
         stmt.bind(1, mod_id);
         return stmt.exec();
     }
 
-    template<typename DbPather>
-    int Db<DbPather>::insert_backup_files(int64_t mod_id, const std::vector<std::string> &backup_files) {
+    
+    int Db::insert_backup_files(int64_t mod_id, const std::vector<std::string> &backup_files) {
+        if (backup_files.empty()) {
+            return 0;
+        }
+
         SQLite::Statement stmt{_db, buildstr_insert_backup_files(backup_files.size())};
         int i = 0;
         int nrow = 0;
@@ -341,23 +396,23 @@ namespace filemod {
         return nrow;
     }
 
-    template<typename DbPather>
-    int Db<DbPather>::delete_backup_files(int64_t mod_id) {
+    
+    int Db::delete_backup_files(int64_t mod_id) {
         SQLite::Statement stmt{_db, DELETE_BACKUP_FILES};
         stmt.bind(1, mod_id);
         return stmt.exec();
     }
 
-    template<typename DbPather>
-    void Db<DbPather>::install_mod(int64_t id, const std::vector<std::string> &backup_files) {
+    
+    void Db::install_mod(int64_t id, const std::vector<std::string> &backup_files) {
         SQLite::Transaction tx{_db};
         update_mod_status(id, static_cast<int>(ModStatus::Installed));
         insert_backup_files(id, backup_files);
         tx.commit();
     }
 
-    template<typename DbPather>
-    void Db<DbPather>::uninstall_mod(int64_t id) {
+    
+    void Db::uninstall_mod(int64_t id) {
         SQLite::Transaction tx(_db);
         update_mod_status(id, static_cast<int>(ModStatus::Uninstalled));
         delete_backup_files(id);

@@ -7,15 +7,14 @@
 #include <string>
 
 namespace filemod {
-    template<typename T = void>
-    struct result {
-        bool success;
-        T data;
+    struct result_base {
+        bool success = false;
+        std::string msg;
     };
 
-    template<>
-    struct result<void> {
-        bool success;
+    template<typename T>
+    struct result : result_base {
+        T data;
     };
 
     const char DBFILE[] = "filemod.db";
