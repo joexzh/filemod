@@ -3,57 +3,62 @@
 //
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
-#include "utils.h"
-#include "sql.h"
+
 #include "fs.h"
+#include "sql.h"
+#include "utils.h"
 
 namespace filemod {
 
-    class FileMod {
-    private:
-        std::unique_ptr<FS> _fs; // ORDER DEPENDENCY
-        std::unique_ptr<Db> _db; // ORDER DEPENDENCY
+class FileMod {
+ private:
+  std::unique_ptr<FS> _fs;  // ORDER DEPENDENCY
+  std::unique_ptr<Db> _db;  // ORDER DEPENDENCY
 
-        void install_mod(int64_t mod_id, result_base &ret);
+  result_base install_mod(int64_t mod_id);
 
-        void uninstall_mod(int64_t mod_id, result_base &ret);
+  result<ModDto> uninstall_mod(int64_t mod_id);
 
-    public:
-        explicit FileMod(std::unique_ptr<FS> fs, std::unique_ptr<Db> db);
+  result_base remove_mod(int64_t mod_id);
 
-        FileMod(const FileMod &filemod) = delete;
+ public:
+  explicit FileMod(std::unique_ptr<FS> fs, std::unique_ptr<Db> db);
 
-        FileMod(FileMod &&filemod) = delete;
+  FileMod(const FileMod &filemod) = delete;
 
-        FileMod &operator=(const FileMod &filemod) = delete;
+  FileMod(FileMod &&filemod) = delete;
 
-        FileMod &operator=(FileMod &&filemod) = delete;
+  FileMod &operator=(const FileMod &filemod) = delete;
 
-        ~FileMod() = default;
+  FileMod &operator=(FileMod &&filemod) = delete;
 
-        result_base add_target(const std::string &tar_dir);
+  ~FileMod() = default;
 
-        result<int64_t> add_mod(int64_t target_id, const std::string &mod_src_dir);
+  result_base add_target(const std::string &tar_dir);
 
-        result_base install_mods(const std::vector<int64_t> &mod_ids);
+  result<int64_t> add_mod(int64_t target_id, const std::string &mod_src_dir);
 
-        result_base install_from_target_id(int64_t target_id);
+  result_base install_mods(const std::vector<int64_t> &mod_ids);
 
-        result_base install_from_mod_dir(int64_t target_id, const std::string &mod_dir);
+  result_base install_from_target_id(int64_t target_id);
 
-        result_base uninstall_mods(std::vector<int64_t> mod_ids);
+  result_base install_from_mod_dir(int64_t target_id,
+                                   const std::string &mod_dir);
 
-        result_base uninstall_from_target_id(int64_t target_id);
+  result_base uninstall_mods(std::vector<int64_t> &mod_ids);
 
-        result_base remove_mods(std::vector<int64_t> mod_ids);
+  result_base uninstall_from_target_id(int64_t target_id);
 
-        result_base remove_from_target_id(int64_t target_id);
+  result_base remove_mods(std::vector<int64_t> &mod_ids);
 
-        result_base list_mods(std::vector<int64_t> mod_ids, uint8_t indent = 0, bool verbose = false);
+  result_base remove_from_target_id(int64_t target_id);
 
-        result_base list_targets(std::vector<int64_t> target_ids);
-    };
-}
+  result_base list_mods(std::vector<int64_t> &mod_ids, uint8_t indent = 0,
+                        bool verbose = false);
+
+  result_base list_targets(std::vector<int64_t> &target_ids);
+};
+}  // namespace filemod
