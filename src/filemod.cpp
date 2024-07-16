@@ -251,9 +251,9 @@ result<ModDto> FileMod::uninstall_mod(int64_t mod_id) {
       for (auto &file_str : file_strs) {
         sorted.emplace_back(file_str);
       }
-      std::sort(sorted.begin(), sorted.end(), [](auto iter1, auto iter2) {
-        return std::distance(iter1->begin(), iter1->end()) <
-               std::distance(iter2->begin(), iter2->end());
+      std::sort(sorted.begin(), sorted.end(), [](auto &path1, auto &path2) {
+        return std::distance(path1.begin(), path1.end()) <
+               std::distance(path2.begin(), path2.end());
       });
       return sorted;
     };

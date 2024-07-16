@@ -29,7 +29,7 @@ struct file_status {
   std::filesystem::path src;
   std::filesystem::path dest;
   file_type type;
-  action action;
+  enum action action;
 };
 
 class FS {
