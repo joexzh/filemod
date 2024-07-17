@@ -9,6 +9,8 @@
 #include <unordered_set>
 
 #include "SQLiteCpp/Database.h"
+#include "SQLiteCpp/Savepoint.h"
+#include "src/utils.h"
 
 namespace filemod {
 
@@ -148,11 +150,7 @@ Db::Db(const std::filesystem::path &path)
   init_db(_db);
 }
 
-SQLite::Transaction Db::begin() { return SQLite::Transaction{_db}; }
-
-SQLite::Transaction Db::begin(SQLite::TransactionBehavior behavior) {
-  return SQLite::Transaction{_db, behavior};
-}
+SQLite::Savepoint Db::begin() { return SQLite::Savepoint{_db, FILEMOD}; }
 
 std::vector<TargetDto> Db::query_targets_mods(const std::vector<int64_t> &ids) {
   SQLite::Statement stmt{_db, buildstr_query_targets_mods(ids.size())};
@@ -293,7 +291,7 @@ int Db::delete_target(int64_t id) {
 }
 
 result_base Db::delete_target_all(int64_t id) {
-  SQLite::Transaction tx{_db};
+  SQLite::Savepoint tx{_db, FILEMOD};
   auto mods = query_mods_by_target(id);
   if (std::any_of(mods.begin(), mods.end(), [](const auto &mod) {
         return mod.status == ModStatus::Installed;
@@ -307,7 +305,7 @@ result_base Db::delete_target_all(int64_t id) {
   }
   delete_target(id);
 
-  tx.commit();
+  tx.release();
   return {true};
 }
 
@@ -334,10 +332,10 @@ int64_t Db::insert_mod(int64_t target_id, const std::string &dir, int status) {
 int64_t Db::insert_mod_w_files(int64_t target_id, const std::string &dir,
                                int status,
                                const std::vector<std::string> &files) {
-  SQLite::Transaction tx{_db};
+  SQLite::Savepoint tx{_db, FILEMOD};
   int64_t mod_id = insert_mod(target_id, dir, status);
   insert_mod_files(mod_id, files);
-  tx.commit();
+  tx.release();
   return mod_id;
 }
 
@@ -349,16 +347,15 @@ int Db::update_mod_status(int64_t mod_id, int status) {
 }
 
 int Db::delete_mod(int64_t id) {
-  SQLite::Transaction tx{_db};
+  SQLite::Savepoint tx{_db, FILEMOD};
 
   delete_mod_files(id);
-  delete_backup_files(id);
 
   SQLite::Statement stmt{_db, DELETE_MOD};
   stmt.bind(1, id);
   int rowid = stmt.exec();
 
-  tx.commit();
+  tx.release();
 
   return rowid;
 }
@@ -460,16 +457,16 @@ int Db::delete_backup_files(int64_t mod_id) {
 }
 
 void Db::install_mod(int64_t id, const std::vector<std::string> &backup_files) {
-  SQLite::Transaction tx{_db};
+  SQLite::Savepoint tx{_db, FILEMOD};
   update_mod_status(id, static_cast<int>(ModStatus::Installed));
   insert_backup_files(id, backup_files);
-  tx.commit();
+  tx.release();
 }
 
 void Db::uninstall_mod(int64_t id) {
-  SQLite::Transaction tx(_db);
+  SQLite::Savepoint tx(_db, FILEMOD);
   update_mod_status(id, static_cast<int>(ModStatus::Uninstalled));
   delete_backup_files(id);
-  tx.commit();
+  tx.release();
 }
 }  // namespace filemod

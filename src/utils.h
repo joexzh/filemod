@@ -24,6 +24,7 @@ struct result : result_base {
 };
 
 const char DBFILE[] = "filemod.db";
+const char FILEMOD[] = "filemod";
 
 bool real_effective_user_match();
 

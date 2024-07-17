@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "SQLiteCpp/Database.h"
+#include "SQLiteCpp/Savepoint.h"
 #include "utils.h"
 
 namespace filemod {
@@ -55,9 +56,7 @@ class Db {
 
   ~Db() = default;
 
-  SQLite::Transaction begin();
-
-  SQLite::Transaction begin(SQLite::TransactionBehavior behavior);
+  SQLite::Savepoint begin();
 
   std::vector<TargetDto> query_targets_mods(const std::vector<int64_t> &ids);
 

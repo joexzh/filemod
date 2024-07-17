@@ -90,7 +90,7 @@ void FS::add_mod(const std::filesystem::path &mod_src_dir,
 std::vector<std::string> FS::check_conflict_n_backup(
     const std::filesystem::path &cfg_mod_dir,
     const std::filesystem::path &target_dir) {
-  auto backup_base_dir = cfg_mod_dir / BACKUP_DIR;
+  auto backup_base_dir = cfg_mod_dir.parent_path() / BACKUP_DIR;
   if (std::filesystem::create_directory(backup_base_dir)) {
     _written.emplace_back(std::filesystem::path(), backup_base_dir,
                           file_type::dir, action::create);
@@ -150,7 +150,7 @@ void FS::uninstall_mod(
   uninstall_mod_files(target_dir, tmp_uninstalled_dir, sorted_mod_files);
 
   // restore backups
-  auto backup_base_dir = cfg_mod_dir / BACKUP_DIR;
+  auto backup_base_dir = cfg_mod_dir.parent_path() / BACKUP_DIR;
   uninstall_mod_files(backup_base_dir, target_dir, sorted_backup_files);
 }
 

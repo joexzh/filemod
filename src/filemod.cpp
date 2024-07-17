@@ -27,7 +27,7 @@ static inline void tx_wrapper(std::unique_ptr<FS> &fs, std::unique_ptr<Db> &db,
     return;
   }
 
-  dbtx.commit();
+  dbtx.release();
   fs->commit();
 }
 
@@ -97,7 +97,7 @@ result_base FileMod::install_mod(int64_t mod_id) {
     auto mods = _db->query_mods_n_files(std::vector<int64_t>{mod_id});
     if (mods.empty()) {
       ret.success = false;
-      ret.msg = "ERROR, mod not exists";
+      ret.msg = "ERROR: mod not exists";
       return;
     }
 
