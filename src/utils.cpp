@@ -40,16 +40,4 @@ std::string get_config_path() {
 
 std::string get_db_path() { return get_config_path() += DBFILE; }
 
-constexpr std::size_t length_s(const char *str) noexcept {
-  if (nullptr == str || 0 == *str) {
-    return 0;
-  }
-  //        size_t sum = 0;
-  //        while (0 != *str) {
-  //            ++sum;
-  //            ++str;
-  //        }
-  //        return sum;
-  return strlen(str);
-}
 }  // namespace filemod

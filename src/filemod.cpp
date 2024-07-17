@@ -206,10 +206,10 @@ result_base FileMod::install_from_mod_dir(int64_t target_id,
       return;
     }
 
-    ret = install_mod(_ret.data);
-    if (!_ret.success) {
+    auto install_ret = install_mod(_ret.data);
+    if (!install_ret.success) {
       ret.success = false;
-      ret.msg = std::move(_ret.msg);
+      ret.msg = std::move(install_ret.msg);
       return;
     }
   });
@@ -363,13 +363,7 @@ result_base FileMod::remove_from_target_id(int64_t target_id) {
         return;
       }
 
-      _ret = _db->delete_target_all(target_id);
-      if (!ret.success) {
-        ret.success = false;
-        ret.msg = std::move(_ret.msg);
-        return;
-      }
-
+      _db->delete_target(target_id);
       _fs->remove_target(_fs->cfg_dir() / std::to_string(target_id));
     }
   });
@@ -377,14 +371,84 @@ result_base FileMod::remove_from_target_id(int64_t target_id) {
   return ret;
 }
 
-result_base FileMod::list_mods(std::vector<int64_t> &mod_ids, uint8_t indent,
-                               bool verbose) {}
+/*
+format:
 
-result_base FileMod::list_targets(std::vector<int64_t> &target_ids) {
-  // TODO:
-  // - call _db.query_targets_mods
-  // - for each target
-  //   - print target
-  //   - call list_mods
+TARGET_ID=111 DIR=/a/b/c
+    MOD_ID=222 DIR=e/f/g STATUS=installed
+        MOD_FILES
+            a/b/c
+            e/f/g
+            r/g/c
+            a
+        BACKUP_FILES
+            xxx
+*/
+static const char MARGIN[] = "    ";
+
+static std::string _list_mods(std::vector<ModDto> &mods, bool verbose = false,
+                              uint8_t indent = 0) {
+  std::string ret;
+
+  std::string full_margin;
+  for (int i = 0; i < indent + 2; ++i) {
+    full_margin += MARGIN;
+  }
+  std::string_view margin1{full_margin.c_str(), indent * length_s(MARGIN)};
+  std::string_view margin2{full_margin.c_str(),
+                           (indent + 1) * length_s(MARGIN)};
+  std::string_view margin3{full_margin.c_str(),
+                           (indent + 2) * length_s(MARGIN)};
+
+  for (auto &mod : mods) {
+    ret += margin1;
+    ret += "MOD_ID=";
+    ret += std::to_string(mod.id);
+    ret += " DIR=";
+    ret += mod.dir;
+    ret += " STATUS=";
+    ret += mod.status == ModStatus::Installed ? "installed" : "not installed";
+    ret += "\n";
+    ret += margin2;
+    if (verbose) {
+      ret += "MOD_FILES\n";
+      for (auto &file : mod.files) {
+        ret += margin3;
+        ret += file;
+        ret += "\n";
+      }
+      ret += margin2;
+      ret += "BACKUP_FILES\n";
+      for (auto &file : mod.backup_files) {
+        ret += margin3;
+        ret += file;
+        ret += "\n";
+      }
+    }
+  }
+
+  return ret;
+}
+
+std::string FileMod::list_mods(std::vector<int64_t> &mod_ids) {
+  auto mods = _db->query_mods_n_files(mod_ids);
+  return _list_mods(mods, true);
+}
+
+std::string FileMod::list_targets(std::vector<int64_t> &target_ids) {
+  std::string ret;
+
+  auto targets = _db->query_targets_mods(target_ids);
+  for (auto &target : targets) {
+    ret += "TARGET_ID=";
+    ret + std::to_string(target.id);
+    ret += " DIR=";
+    ret += target.dir;
+    ret += "\n";
+
+    ret += _list_mods(target.ModDtos, false, 1);
+  }
+
+  return ret;
 }
 }  // namespace filemod

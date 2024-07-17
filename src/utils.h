@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cstring>
 #include <string>
 
 namespace filemod {
@@ -27,5 +28,16 @@ std::string get_config_path();
 // create config_path and return /path/to/filemod/filemod.db
 std::string get_db_path();
 
-constexpr size_t length_s(const char *str) noexcept;
+constexpr size_t length_s(const char *str) noexcept {
+  if (nullptr == str || 0 == *str) {
+    return 0;
+  }
+  //        size_t sum = 0;
+  //        while (0 != *str) {
+  //            ++sum;
+  //            ++str;
+  //        }
+  //        return sum;
+  return strlen(str);
+}
 }  // namespace filemod

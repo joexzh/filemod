@@ -56,9 +56,8 @@ class FileMod {
 
   result_base remove_from_target_id(int64_t target_id);
 
-  result_base list_mods(std::vector<int64_t> &mod_ids, uint8_t indent = 0,
-                        bool verbose = false);
+  std::string list_mods(std::vector<int64_t> &mod_ids);
 
-  result_base list_targets(std::vector<int64_t> &target_ids);
+  std::string list_targets(std::vector<int64_t> &target_ids);
 };
 }  // namespace filemod
