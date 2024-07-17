@@ -15,6 +15,6 @@ libfilemod_src = ['src/filemod.h',
                   'src/utils.cpp']
 
 libfilemod_lib = library('libfilemod', sources: libfilemod_src, dependencies: [sqlitecpp_dep])
-libfilemod_dep = declare_dependency(link_with: libfilemod_lib)
+libfilemod_dep = declare_dependency(link_with: libfilemod_lib, dependencies: [sqlitecpp_dep])
 
-executable('filemod', 'src/main.cpp', dependencies: [CLI11_dep, sqlitecpp_dep, libfilemod_dep])
+executable('filemod', 'src/main.cpp', dependencies: [CLI11_dep, libfilemod_dep])
