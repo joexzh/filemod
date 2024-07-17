@@ -37,14 +37,16 @@ FileMod::FileMod(std::unique_ptr<FS> fs, std::unique_ptr<Db> db)
 result_base FileMod::add_target(const std::string &tar_dir) {
   result_base ret;
 
+  auto tar_dir_abs = std::filesystem::absolute(tar_dir);
+
   tx_wrapper(_fs, _db, ret, [&]() {
-    auto target_ret = _db->query_target_by_dir(tar_dir);
+    auto target_ret = _db->query_target_by_dir(tar_dir_abs);
     if (target_ret.success) {
       // if target exists, do nothing
       return;
     }
 
-    int64_t target_id = _db->insert_target(tar_dir);
+    int64_t target_id = _db->insert_target(tar_dir_abs);
     _fs->create_target(target_id);
   });
 
@@ -349,12 +351,11 @@ result_base FileMod::remove_from_target_id(int64_t target_id) {
   tx_wrapper(_fs, _db, ret, [&]() {
     auto targets = _db->query_targets_mods({target_id});
     if (targets.empty()) {
-      ret.success = false;
-      ret.msg = "ERROR: target not exists";
+      // if not exists, do nothing
       return;
     }
 
-    auto target = targets[0];
+    auto &target = targets[0];
     for (auto &mod : target.ModDtos) {
       auto _ret = remove_mod(mod.id);
       if (!_ret.success) {
@@ -363,9 +364,9 @@ result_base FileMod::remove_from_target_id(int64_t target_id) {
         return;
       }
 
-      _db->delete_target(target_id);
-      _fs->remove_target(_fs->cfg_dir() / std::to_string(target_id));
     }
+    _db->delete_target(target_id);
+    _fs->remove_target(_fs->cfg_dir() / std::to_string(target_id));
   });
 
   return ret;
@@ -441,7 +442,7 @@ std::string FileMod::list_targets(std::vector<int64_t> &target_ids) {
   auto targets = _db->query_targets_mods(target_ids);
   for (auto &target : targets) {
     ret += "TARGET_ID=";
-    ret + std::to_string(target.id);
+    ret += std::to_string(target.id);
     ret += " DIR=";
     ret += target.dir;
     ret += "\n";

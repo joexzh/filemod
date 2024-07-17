@@ -123,15 +123,15 @@ int main(int argc, char **argv) {
     std::cout << "add callback: target id: " << target_id << " dir: " << dir
               << "\n";
     auto fm = create_fm();
-    if (!dir.empty() && target_id > -1) {  // add target
-      ret = fm.add_target(dir);
-    } else if (target_id > -1) {  // add mod
+    if (!dir.empty() && target_id > -1) {  // add mod
       ret = fm.add_mod(target_id, dir);
+    } else if (!dir.empty()) {  // add mod
+      ret = fm.add_target(dir);
     }
   });
 
   rmv->callback([&]() {
-    std::cout << "uns callback: target_id=" << target_id << " dir=" << dir
+    std::cout << "rmv callback: target_id=" << target_id << " dir=" << dir
               << " mod_ids.size()=" << mod_ids.size() << "\n";
     auto fm = create_fm();
     if (!mod_ids.empty()) {  // remove mods
@@ -167,7 +167,7 @@ int main(int argc, char **argv) {
   });
 
   lst->callback([&]() {
-    std::cout << "uns callback: target_id=" << target_id << " dir=" << dir
+    std::cout << "list callback: target_id=" << target_id << " dir=" << dir
               << " mod_ids.size()=" << mod_ids.size()
               << " target_ids.size()=" << target_ids.size() << "\n";
 

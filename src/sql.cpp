@@ -23,7 +23,8 @@ static const char CREATE_T_MOD_FILES[] =
 static const char CREATE_T_BACKUP_FILES[] =
     "CREATE TABLE if not exists backup_files (mod_id integer, dir text, "
     "primary key (mod_id, dir)) without rowid";
-static const char CREATE_IX_TARGET[] = "CREATE INDEX ix_target on target (dir)";
+static const char CREATE_IX_TARGET[] =
+    "CREATE UNIQUE INDEX ix_target on target (dir)";
 static const char CREATE_IX_MOD[] =
     "CREATE INDEX if not exists ix_mod on mod (target_id, dir, status, id)";
 static const char CREATE_IX_MOD_FILES[] =
