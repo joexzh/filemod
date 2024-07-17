@@ -172,10 +172,10 @@ int main(int argc, char **argv) {
               << " target_ids.size()=" << target_ids.size() << "\n";
 
     auto fm = create_fm();
-    if (!target_ids.empty()) {  // list targets
-      ret.msg = fm.list_targets(target_ids);
-    } else if (!mod_ids.empty()) {  // list mods
+    if (!mod_ids.empty()) {  // list mods
       ret.msg = fm.list_mods(mod_ids);
+    } else {  // list targets
+      ret.msg = fm.list_targets(target_ids);
     }
   });
 
