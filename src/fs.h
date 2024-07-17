@@ -40,14 +40,13 @@ class FS {
 
   int _commit_counter = 0;
 
-  explicit FS(const std::filesystem::path &cfg_dir);
-
   void move_file(const std::filesystem::path &src_file,
                  const std::filesystem::path &dest_file,
                  const std::filesystem::path &dest_base_dir);
 
  public:
-  explicit FS() = default;
+  explicit FS(const std::filesystem::path &cfg_dir);
+  explicit FS() = delete;
 
   explicit FS(const FS &fs) = delete;
 

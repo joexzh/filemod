@@ -202,7 +202,7 @@ result_base FileMod::install_from_mod_dir(int64_t target_id,
     auto _ret = add_mod(target_id, mod_dir);
     if (!_ret.success) {
       ret.success = false;
-      ret.msg = _ret.msg;
+      ret.msg = std::move(_ret.msg);
       return;
     }
 

@@ -5,11 +5,20 @@
 #include <cstdio>
 #include <filesystem>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "CLI/Validators.hpp"
 #include "filemod.h"
+#include "src/fs.h"
+#include "src/utils.h"
+
+inline auto create_fm() {
+  return filemod::FileMod(
+      std::make_unique<filemod::FS>(filemod::get_config_path()),
+      std::make_unique<filemod::Db>(filemod::get_db_path()));
+}
 
 int main(int argc, char **argv) {
   if (!filemod::real_effective_user_match()) {
@@ -47,9 +56,9 @@ int main(int argc, char **argv) {
 
   app.require_subcommand(1);
 
-  std::string target_id;
-  std::vector<std::string> target_ids;
-  std::vector<std::string> mod_ids;
+  int64_t target_id{-1};
+  std::vector<int64_t> target_ids;
+  std::vector<int64_t> mod_ids;
   std::string dir;
 
   auto add = app.add_subcommand("add", "add target or mod to management");
@@ -107,38 +116,76 @@ int main(int argc, char **argv) {
       ->excludes("--t")
       ->take_all()
       ->check(name_validator);
-  lst->add_flag("--v", "verbose")->excludes("--t")->needs("--m");
 
-  filemod::result<std::string> ret;
+  filemod::result_base ret{.success = true};
 
   add->callback([&]() {
     std::cout << "add callback: target id: " << target_id << " dir: " << dir
               << "\n";
+    auto fm = create_fm();
+    if (!dir.empty() && target_id > -1) {  // add target
+      ret = fm.add_target(dir);
+    } else if (target_id > -1) {  // add mod
+      ret = fm.add_mod(target_id, dir);
+    }
   });
 
   rmv->callback([&]() {
-
+    std::cout << "uns callback: target_id=" << target_id << " dir=" << dir
+              << " mod_ids.size()=" << mod_ids.size() << "\n";
+    auto fm = create_fm();
+    if (!mod_ids.empty()) {  // remove mods
+      ret = fm.remove_mods(mod_ids);
+    } else if (target_id > -1) {  // remove target
+      ret = fm.remove_from_target_id(target_id);
+    }
   });
 
   ins->callback([&]() {
+    std::cout << "ins callback: target_id=" << target_id << " dir=" << dir
+              << " mod_ids.size()=" << mod_ids.size() << "\n";
 
+    auto fm = create_fm();
+    if (!mod_ids.empty()) {  // install mods
+      ret = fm.install_mods(mod_ids);
+    } else if (!dir.empty()) {  // add and install mod directly from mod dir
+      ret = fm.install_from_mod_dir(target_id, dir);
+    } else if (target_id > -1) {  // install mods from target id
+      ret = fm.install_from_target_id(target_id);
+    }
   });
 
   uns->callback([&]() {
-
+    std::cout << "uns callback: target_id=" << target_id << " dir=" << dir
+              << " mod_ids.size()=" << mod_ids.size() << "\n";
+    auto fm = create_fm();
+    if (!mod_ids.empty()) {  // uninstall mods
+      ret = fm.uninstall_mods(mod_ids);
+    } else if (target_id > -1) {  // uninstall mod from target id
+      ret = fm.uninstall_from_target_id(target_id);
+    }
   });
 
   lst->callback([&]() {
+    std::cout << "uns callback: target_id=" << target_id << " dir=" << dir
+              << " mod_ids.size()=" << mod_ids.size()
+              << " target_ids.size()=" << target_ids.size() << "\n";
 
+    auto fm = create_fm();
+    if (!target_ids.empty()) {  // list targets
+      ret.msg = fm.list_targets(target_ids);
+    } else if (!mod_ids.empty()) {  // list mods
+      ret.msg = fm.list_mods(mod_ids);
+    }
   });
 
   CLI11_PARSE(app, argc, argv)
 
   if (ret.success) {
-    std::puts("succeed");
+    std::cout << ret.msg << std::endl;
     return 0;
   } else {
-    std::cerr << ret.data << "\nfailed\n";
+    std::cerr << ret.msg << "\nfailed\n";
     return 1;
   }
 }

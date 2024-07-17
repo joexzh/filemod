@@ -11,6 +11,11 @@ namespace filemod {
 struct result_base {
   bool success = false;
   std::string msg;
+
+  // result_base(result_base&& ret)  noexcept;
+  // result_base(const result_base& ret) = default;
+  // result_base &operator=(const result_base& ret) = default;
+  // result_base
 };
 
 template <typename T>

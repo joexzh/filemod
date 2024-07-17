@@ -21,13 +21,12 @@ std::string get_config_path() {
 
   if (nullptr == home) {
     dir_str += (std::filesystem::canonical("/proc/self/exe").parent_path() /=
-                "filemod_cfg/")
+                "filemod_cfg")
                    .string();
   } else {
-    dir_str.reserve(std::strlen(home) + length_s("/.config/filemod_cfg/") +
-                    length_s(DBFILE));
+    dir_str.reserve(std::strlen(home) + length_s("/.config/filemod_cfg"));
     dir_str += home;
-    dir_str += "/.config/filemod_cfg/";
+    dir_str += "/.config/filemod_cfg";
   }
 
   auto dir = std::filesystem::path(dir_str);
@@ -38,6 +37,6 @@ std::string get_config_path() {
   return dir_str;
 }
 
-std::string get_db_path() { return get_config_path() += DBFILE; }
+std::string get_db_path() { return (get_config_path() += "/") += DBFILE; }
 
 }  // namespace filemod
