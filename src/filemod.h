@@ -37,6 +37,9 @@ class FileMod {
 
   ~FileMod() = default;
 
+  template <typename Func>
+  void tx_wrapper(result_base &ret, Func func);
+
   result_base add_target(const std::string &tar_dir);
 
   result<int64_t> add_mod(int64_t target_id, const std::string &mod_src_dir);

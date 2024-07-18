@@ -68,8 +68,9 @@ class FS {
 
   void create_target(int64_t target_id);
 
-  void add_mod(const std::filesystem::path &mod_src_dir,
-               const std::filesystem::path &cfg_mod_dir);
+  void add_mod(const std::filesystem::path &cfg_mod_dir,
+               const std::filesystem::path &mod_src_dir,
+               const std::vector<std::filesystem::path> &mod_src_files);
 
   std::vector<std::string> check_conflict_n_backup(
       const std::filesystem::path &cfg_mod_dir,
@@ -100,4 +101,7 @@ class FS {
                                  const std::filesystem::path &path, Func func);
 
 };  // class FS
+
+void cross_filesystem_rename(const std::filesystem::path &src,
+                             const std::filesystem::path &dest);
 }  // namespace filemod

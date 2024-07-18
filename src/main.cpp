@@ -120,8 +120,6 @@ int main(int argc, char **argv) {
   filemod::result_base ret{.success = true};
 
   add->callback([&]() {
-    std::cout << "add callback: target id: " << target_id << " dir: " << dir
-              << "\n";
     auto fm = create_fm();
     if (!dir.empty() && target_id > -1) {  // add mod
       ret = fm.add_mod(target_id, dir);
@@ -131,8 +129,6 @@ int main(int argc, char **argv) {
   });
 
   rmv->callback([&]() {
-    std::cout << "rmv callback: target_id=" << target_id << " dir=" << dir
-              << " mod_ids.size()=" << mod_ids.size() << "\n";
     auto fm = create_fm();
     if (!mod_ids.empty()) {  // remove mods
       ret = fm.remove_mods(mod_ids);
@@ -142,9 +138,6 @@ int main(int argc, char **argv) {
   });
 
   ins->callback([&]() {
-    std::cout << "ins callback: target_id=" << target_id << " dir=" << dir
-              << " mod_ids.size()=" << mod_ids.size() << "\n";
-
     auto fm = create_fm();
     if (!mod_ids.empty()) {  // install mods
       ret = fm.install_mods(mod_ids);
@@ -156,8 +149,6 @@ int main(int argc, char **argv) {
   });
 
   uns->callback([&]() {
-    std::cout << "uns callback: target_id=" << target_id << " dir=" << dir
-              << " mod_ids.size()=" << mod_ids.size() << "\n";
     auto fm = create_fm();
     if (!mod_ids.empty()) {  // uninstall mods
       ret = fm.uninstall_mods(mod_ids);
@@ -167,10 +158,6 @@ int main(int argc, char **argv) {
   });
 
   lst->callback([&]() {
-    std::cout << "list callback: target_id=" << target_id << " dir=" << dir
-              << " mod_ids.size()=" << mod_ids.size()
-              << " target_ids.size()=" << target_ids.size() << "\n";
-
     auto fm = create_fm();
     if (!mod_ids.empty()) {  // list mods
       ret.msg = fm.list_mods(mod_ids);
