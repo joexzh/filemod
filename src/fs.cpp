@@ -5,10 +5,11 @@
 #include "fs.h"
 
 #include <algorithm>
+#include <exception>
 #include <filesystem>
+#include <stdexcept>
 #include <string>
 #include <system_error>
-#include <utility>
 
 namespace filemod {
 
@@ -253,10 +254,13 @@ void cross_filesystem_rename(const std::filesystem::path &src,
                              const std::filesystem::path &dest) {
   std::error_code err_code;
   std::filesystem::rename(src, dest, err_code);
+
   if (err_code.value() == 18) {
     // copy and delete
     std::filesystem::copy(src, dest);
     std::filesystem::remove(src);
+  } else if (err_code.value() != 0) {  // doesn't handle other errors
+    throw std::runtime_error(err_code.message());
   }
 }
 }  // namespace filemod

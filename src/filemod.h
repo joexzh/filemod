@@ -16,7 +16,7 @@ namespace filemod {
 class FileMod {
  private:
   std::unique_ptr<FS> _fs;  // ORDER DEPENDENCY
-  std::unique_ptr<Db> _db;  // ORDER DEPENDENCY
+  std::unique_ptr<DB> _db;  // ORDER DEPENDENCY
 
   result_base install_mod(int64_t mod_id);
 
@@ -25,14 +25,12 @@ class FileMod {
   result_base remove_mod(int64_t mod_id);
 
  public:
-  explicit FileMod(std::unique_ptr<FS> fs, std::unique_ptr<Db> db);
+  explicit FileMod(std::unique_ptr<FS> fs, std::unique_ptr<DB> db);
 
   FileMod(const FileMod &filemod) = delete;
-
-  FileMod(FileMod &&filemod) = delete;
-
   FileMod &operator=(const FileMod &filemod) = delete;
 
+  FileMod(FileMod &&filemod) = delete;
   FileMod &operator=(FileMod &&filemod) = delete;
 
   ~FileMod() = default;

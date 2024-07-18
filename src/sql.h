@@ -35,26 +35,17 @@ struct [[nodiscard]] TargetDto {
   std::vector<ModDto> ModDtos;
 };
 
-class Db {
- private:
-  SQLite::Database _db;
-
-  int64_t insert_mod(int64_t target_id, const std::string &dir, int status);
-
+class DB {
  public:
-  explicit Db(const std::string &path);
+  explicit DB(const std::string &path);
 
-  explicit Db(const std::filesystem::path &path);
+  DB(const DB &db) = delete;
+  DB &operator=(const DB &db) = delete;
 
-  Db(const Db &db) = delete;
+  DB(DB &&db) = default;
+  DB &operator=(DB &&db) = default;
 
-  Db &operator=(const Db &db) = delete;
-
-  Db(Db &&db) = default;
-
-  Db &operator=(Db &&db) = default;
-
-  ~Db() = default;
+  ~DB() = default;
 
   SQLite::Savepoint begin();
 
@@ -104,5 +95,10 @@ class Db {
   void install_mod(int64_t id, const std::vector<std::string> &backup_files);
 
   void uninstall_mod(int64_t id);
+
+ private:
+  SQLite::Database _db;
+
+  int64_t insert_mod(int64_t target_id, const std::string &dir, int status);
 };
 }  // namespace filemod

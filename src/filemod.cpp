@@ -30,7 +30,7 @@ void FileMod::tx_wrapper(result_base &ret, Func func) {
   _fs->commit();
 }
 
-FileMod::FileMod(std::unique_ptr<FS> fs, std::unique_ptr<Db> db)
+FileMod::FileMod(std::unique_ptr<FS> fs, std::unique_ptr<DB> db)
     : _fs{std::move(fs)}, _db{std::move(db)} {}
 
 result_base FileMod::add_target(const std::string &tar_dir) {

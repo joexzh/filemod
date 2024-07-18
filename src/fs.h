@@ -33,27 +33,13 @@ struct file_status {
 };
 
 class FS {
- private:
-  std::filesystem::path _cfg_dir;
-  std::vector<std::filesystem::path> _tmp;
-  std::vector<file_status> _written;
-
-  int _commit_counter = 0;
-
-  void move_file(const std::filesystem::path &src_file,
-                 const std::filesystem::path &dest_file,
-                 const std::filesystem::path &dest_base_dir);
-
  public:
   explicit FS(const std::filesystem::path &cfg_dir);
-  explicit FS() = delete;
 
   explicit FS(const FS &fs) = delete;
-
-  FS &operator=(const FS &fs) = delete;
-
   FS(FS &&fs) = delete;
 
+  FS &operator=(const FS &fs) = delete;
   FS &operator=(FS &&fs) = delete;
 
   ~FS();
@@ -99,6 +85,16 @@ class FS {
   template <typename Func>
   static void path_left_to_right(const std::filesystem::path &base_dir,
                                  const std::filesystem::path &path, Func func);
+
+ private:
+  std::filesystem::path _cfg_dir;
+  std::vector<file_status> _written;
+
+  int _commit_counter = 0;
+
+  void move_file(const std::filesystem::path &src_file,
+                 const std::filesystem::path &dest_file,
+                 const std::filesystem::path &dest_base_dir);
 
 };  // class FS
 
