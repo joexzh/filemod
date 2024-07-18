@@ -16,7 +16,7 @@
 
 inline auto create_fm() {
   return filemod::FileMod(
-      std::make_unique<filemod::FS>(filemod::get_config_path()),
+      std::make_unique<filemod::FS>(filemod::get_config_dir()),
       std::make_unique<filemod::Db>(filemod::get_db_path()));
 }
 

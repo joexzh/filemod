@@ -15,7 +15,7 @@ namespace filemod {
 
 bool real_effective_user_match() { return getuid() == geteuid(); }
 
-std::string get_config_path() {
+std::string get_config_dir() {
   char *home = getenv("HOME");
   std::string dir_str;
 
@@ -37,6 +37,6 @@ std::string get_config_path() {
   return dir_str;
 }
 
-std::string get_db_path() { return (get_config_path() += "/") += DBFILE; }
+std::string get_db_path() { return (get_config_dir() += "/") += DBFILE; }
 
 }  // namespace filemod

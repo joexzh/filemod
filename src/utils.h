@@ -29,7 +29,7 @@ const char FILEMOD[] = "filemod";
 bool real_effective_user_match();
 
 // create config_path: /path/to/filemod/ and return the full path
-std::string get_config_path();
+std::string get_config_dir();
 
 // create config_path and return /path/to/filemod/filemod.db
 std::string get_db_path();
