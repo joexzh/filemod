@@ -426,7 +426,6 @@ std::vector<std::string> DB::query_backup_files(int64_t mod_id) {
     files.push_back(stmt.getColumn(0).getString());
   }
   return files;
-  ;
 }
 
 int DB::insert_backup_files(int64_t mod_id,
