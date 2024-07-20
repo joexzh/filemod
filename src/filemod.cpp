@@ -431,12 +431,12 @@ static std::string _list_mods(std::vector<ModDto> &mods, bool verbose = false,
   return ret;
 }
 
-std::string FileMod::list_mods(std::vector<int64_t> &mod_ids) {
+std::string FileMod::list_mods(std::vector<int64_t> &mod_ids) const {
   auto mods = _db->query_mods_n_files(mod_ids);
   return _list_mods(mods, true);
 }
 
-std::string FileMod::list_targets(std::vector<int64_t> &target_ids) {
+std::string FileMod::list_targets(std::vector<int64_t> &target_ids) const {
   std::string ret;
 
   auto targets = _db->query_targets_mods(target_ids);

@@ -10,6 +10,7 @@
 
 #include "SQLiteCpp/Database.h"
 #include "SQLiteCpp/Savepoint.h"
+#include "SQLiteCpp/Statement.h"
 #include "src/utils.h"
 
 namespace filemod {
@@ -121,11 +122,12 @@ static inline std::string buildstr_query_mods_contain_files(size_t size) {
   return str;
 }
 
-static inline void fill_ModDto(SQLite::Statement &stmt, ModDto &dto) {
-  dto.id = stmt.getColumn(0).getInt();
-  dto.target_id = stmt.getColumn(1).getInt();
-  dto.dir = stmt.getColumn(2).getString();
-  dto.status = static_cast<ModStatus>(stmt.getColumn(3).getInt());
+static inline ModDto mod_from_stmt(SQLite::Statement &stmt) {
+  auto id = stmt.getColumn(0).getInt();
+  auto target_id = stmt.getColumn(1).getInt();
+  auto dir = stmt.getColumn(2).getString();
+  auto status = static_cast<ModStatus>(stmt.getColumn(3).getInt());
+  return ModDto{id, target_id, dir, status};
 }
 
 static inline void init_db(SQLite::Database &db) {
@@ -221,7 +223,6 @@ std::vector<ModDto> DB::query_mods_n_files(const std::vector<int64_t> &ids) {
 result<TargetDto> DB::query_target(int64_t id) {
   SQLite::Statement stmt{_db, QUERY_TARGET};
   stmt.bind(1, id);
-  TargetDto target;
   if (stmt.executeStep()) {
     return result<TargetDto>{{true, ""},
                              TargetDto{
@@ -230,13 +231,12 @@ result<TargetDto> DB::query_target(int64_t id) {
                              }};
   }
 
-  return {{false, ""}, target};
+  return {{false, ""}};
 }
 
 result<TargetDto> DB::query_target_by_dir(const std::string &dir) {
   SQLite::Statement stmt{_db, QUERY_TARGET_BY_DIR};
   stmt.bind(1, dir);
-  TargetDto target;
   if (stmt.executeStep()) {
     return result<TargetDto>{{true, ""},
                              TargetDto{
@@ -245,7 +245,7 @@ result<TargetDto> DB::query_target_by_dir(const std::string &dir) {
                              }};
   }
 
-  return {{false, ""}, target};
+  return {{false, ""}};
 }
 
 std::vector<ModDto> DB::query_mods_by_target(int64_t target_id) {
@@ -253,8 +253,7 @@ std::vector<ModDto> DB::query_mods_by_target(int64_t target_id) {
   stmt.bind(1, target_id);
   std::vector<ModDto> dtos;
   while (stmt.executeStep()) {
-    auto &dto = dtos.emplace_back();
-    fill_ModDto(stmt, dto);
+    dtos.push_back(mod_from_stmt(stmt));
   }
   return dtos;
 }
@@ -264,12 +263,10 @@ result<ModDto> DB::query_mod_by_targetid_dir(int64_t target_id,
   SQLite::Statement stmt{_db, QUERY_MOD_BY_TARGEDID_DIR};
   stmt.bind(1, target_id);
   stmt.bind(2, dir);
-  ModDto mod;
   if (stmt.executeStep()) {
-    fill_ModDto(stmt, mod);
-    return {{true, ""}, mod};
+    return {{true, ""}, mod_from_stmt(stmt)};
   }
-  return {{false, ""}, mod};
+  return {{false, ""}};
 }
 
 int64_t DB::insert_target(const std::string &dir) {
@@ -307,12 +304,10 @@ result_base DB::delete_target_all(int64_t id) {
 result<ModDto> DB::query_mod(int64_t id) {
   SQLite::Statement stmt{_db, QUERY_MOD};
   stmt.bind(1, id);
-  ModDto mod;
   if (stmt.executeStep()) {
-    fill_ModDto(stmt, mod);
-    return {{true, ""}, mod};
+    return {{true, ""}, mod_from_stmt(stmt)};
   }
-  return {{false, ""}, mod};
+  return {{false, ""}};
 }
 
 int64_t DB::insert_mod(int64_t target_id, const std::string &dir, int status) {

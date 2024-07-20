@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -18,6 +19,14 @@ inline auto create_fm() {
       std::make_unique<filemod::FS>(filemod::get_config_dir()),
       std::make_unique<filemod::DB>(filemod::get_db_path()));
 }
+
+inline bool is_set(int64_t id) {
+  return id != std::numeric_limits<int64_t>::min();
+}
+
+inline bool is_set(const std::vector<int64_t> &ids) { return !ids.empty(); }
+
+inline bool is_set(const std::string &dir) { return !dir.empty(); }
 
 int main(int argc, char **argv) {
   if (!filemod::real_effective_user_match()) {
@@ -55,7 +64,7 @@ int main(int argc, char **argv) {
 
   app.require_subcommand(1);
 
-  int64_t target_id{-1};
+  int64_t target_id{std::numeric_limits<int64_t>::min()};
   std::vector<int64_t> target_ids;
   std::vector<int64_t> mod_ids;
   std::string dir;
@@ -120,45 +129,46 @@ int main(int argc, char **argv) {
 
   add->callback([&]() {
     auto fm = create_fm();
-    if (!dir.empty() && target_id > -1) {  // add mod
+    if (is_set(target_id) && is_set(dir)) {  // add mod
       ret = fm.add_mod(target_id, dir);
-    } else if (!dir.empty()) {  // add mod
+    } else if (is_set(dir)) {  // add mod
       ret = fm.add_target(dir);
     }
   });
 
   rmv->callback([&]() {
     auto fm = create_fm();
-    if (!mod_ids.empty()) {  // remove mods
+    if (is_set(mod_ids)) {  // remove mods
       ret = fm.remove_mods(mod_ids);
-    } else if (target_id > -1) {  // remove target
+    } else if (is_set(target_id)) {  // remove target
       ret = fm.remove_from_target_id(target_id);
     }
   });
 
   ins->callback([&]() {
     auto fm = create_fm();
-    if (!mod_ids.empty()) {  // install mods
+    if (is_set(mod_ids)) {  // install mods
       ret = fm.install_mods(mod_ids);
-    } else if (!dir.empty()) {  // add and install mod directly from mod dir
+    } else if (is_set(target_id) &&
+               is_set(dir)) {  // add and install mod directly from mod dir
       ret = fm.install_from_mod_dir(target_id, dir);
-    } else if (target_id > -1) {  // install mods from target id
+    } else if (is_set(target_id)) {  // install mods from target id
       ret = fm.install_from_target_id(target_id);
     }
   });
 
   uns->callback([&]() {
     auto fm = create_fm();
-    if (!mod_ids.empty()) {  // uninstall mods
+    if (is_set(dir)) {  // uninstall mods
       ret = fm.uninstall_mods(mod_ids);
-    } else if (target_id > -1) {  // uninstall mod from target id
+    } else if (is_set(target_id)) {  // uninstall mod from target id
       ret = fm.uninstall_from_target_id(target_id);
     }
   });
 
   lst->callback([&]() {
     auto fm = create_fm();
-    if (!mod_ids.empty()) {  // list mods
+    if (is_set(mod_ids)) {  // list mods
       ret.msg = fm.list_mods(mod_ids);
     } else {  // list targets
       ret.msg = fm.list_targets(target_ids);

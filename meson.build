@@ -24,7 +24,7 @@ executable('filemod', 'src/main.cpp', dependencies: [CLI11_dep, libfilemod_dep])
 gtest_proj = subproject('gtest')
 gtest_dep = gtest_proj.get_variable('gtest_main_dep')
 
-test_src = ['test/mytest.cpp']
+test_src = ['test/dummy_test.cpp']
 
 e = executable(
     'testfilemod',
