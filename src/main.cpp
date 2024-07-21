@@ -3,12 +3,12 @@
 //
 #include <CLI/CLI.hpp>
 #include <cstdio>
+#include <exception>
 #include <filesystem>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <string>
-#include <variant>
 #include <vector>
 
 #include "filemod.h"
@@ -28,6 +28,11 @@ inline bool is_set(int64_t id) {
 inline bool is_set(const std::vector<int64_t> &ids) { return !ids.empty(); }
 
 inline bool is_set(const std::string &dir) { return !dir.empty(); }
+
+inline void false_ret(filemod::result_base &ret, const char *what) {
+  ret.success = false;
+  ret.msg = what;
+}
 
 int main(int argc, char **argv) {
   if (!filemod::real_effective_user_match()) {
@@ -129,50 +134,70 @@ int main(int argc, char **argv) {
   filemod::result_base ret{.success = true};
 
   add->callback([&]() {
-    auto fm = create_fm();
-    if (is_set(target_id) && is_set(dir)) {  // add mod
-      ret = fm.add_mod(target_id, dir);
-    } else if (is_set(dir)) {  // add mod
-      ret = fm.add_target(dir);
+    try {
+      auto fm = create_fm();
+      if (is_set(target_id) && is_set(dir)) {  // add mod
+        ret = fm.add_mod(target_id, dir);
+      } else if (is_set(dir)) {  // add mod
+        ret = fm.add_target(dir);
+      }
+    } catch (std::exception &e) {
+      false_ret(ret, e.what());
     }
   });
 
   rmv->callback([&]() {
-    auto fm = create_fm();
-    if (is_set(mod_ids)) {  // remove mods
-      ret = fm.remove_mods(mod_ids);
-    } else if (is_set(target_id)) {  // remove target
-      ret = fm.remove_from_target_id(target_id);
+    try {
+      auto fm = create_fm();
+      if (is_set(mod_ids)) {  // remove mods
+        ret = fm.remove_mods(mod_ids);
+      } else if (is_set(target_id)) {  // remove target
+        ret = fm.remove_from_target_id(target_id);
+      }
+    } catch (std::exception &e) {
+      false_ret(ret, e.what());
     }
   });
 
   ins->callback([&]() {
-    auto fm = create_fm();
-    if (is_set(mod_ids)) {  // install mods
-      ret = fm.install_mods(mod_ids);
-    } else if (is_set(target_id) &&
-               is_set(dir)) {  // add and install mod directly from mod dir
-      ret = fm.install_from_mod_dir(target_id, dir);
-    } else if (is_set(target_id)) {  // install mods from target id
-      ret = fm.install_from_target_id(target_id);
+    try {
+      auto fm = create_fm();
+      if (is_set(mod_ids)) {  // install mods
+        ret = fm.install_mods(mod_ids);
+      } else if (is_set(target_id) &&
+                 is_set(dir)) {  // add and install mod directly from mod dir
+        ret = fm.install_from_mod_dir(target_id, dir);
+      } else if (is_set(target_id)) {  // install mods from target id
+        ret = fm.install_from_target_id(target_id);
+      }
+    } catch (std::exception &e) {
+      false_ret(ret, e.what());
     }
   });
 
   uns->callback([&]() {
-    auto fm = create_fm();
-    if (is_set(mod_ids)) {  // uninstall mods
-      ret = fm.uninstall_mods(mod_ids);
-    } else if (is_set(target_id)) {  // uninstall mod from target id
-      ret = fm.uninstall_from_target_id(target_id);
+    try {
+      auto fm = create_fm();
+      if (is_set(mod_ids)) {  // uninstall mods
+        ret = fm.uninstall_mods(mod_ids);
+      } else if (is_set(target_id)) {  // uninstall mod from target id
+        ret = fm.uninstall_from_target_id(target_id);
+      }
+    } catch (std::exception &e) {
+      false_ret(ret, e.what());
     }
   });
 
   lst->callback([&]() {
-    auto fm = create_fm();
-    if (is_set(mod_ids)) {  // list mods
-      ret.msg = fm.list_mods(mod_ids);
-    } else {  // list targets
-      ret.msg = fm.list_targets(target_ids);
+    try {
+      auto fm = create_fm();
+      if (is_set(mod_ids)) {  // list mods
+        ret.msg = fm.list_mods(mod_ids);
+      } else {  // list targets
+        ret.msg = fm.list_targets(target_ids);
+      }
+    } catch (std::exception &e) {
+      false_ret(ret, e.what());
     }
   });
 
