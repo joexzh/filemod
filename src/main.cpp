@@ -160,7 +160,7 @@ int main(int argc, char **argv) {
 
   uns->callback([&]() {
     auto fm = create_fm();
-    if (is_set(dir)) {  // uninstall mods
+    if (is_set(mod_ids)) {  // uninstall mods
       ret = fm.uninstall_mods(mod_ids);
     } else if (is_set(target_id)) {  // uninstall mod from target id
       ret = fm.uninstall_from_target_id(target_id);
