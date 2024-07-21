@@ -15,26 +15,31 @@ namespace filemod {
 
 bool real_effective_user_match() { return getuid() == geteuid(); }
 
-std::string get_config_dir() {
+std::string get_exe_dir() {
+  return std::filesystem::canonical("/proc/self/exe").parent_path() /=
+         CONFIGDIR;
+}
+
+std::string get_home_cfg_dir() {
   char *home = getenv("HOME");
-  std::string dir_str;
-
   if (nullptr == home) {
-    dir_str += (std::filesystem::canonical("/proc/self/exe").parent_path() /=
-                "filemod_cfg")
-                   .string();
-  } else {
-    dir_str.reserve(std::strlen(home) + length_s("/.config/filemod_cfg"));
-    dir_str += home;
-    dir_str += "/.config/filemod_cfg";
+    return "";
   }
+  std::string dir;
+  dir.reserve(std::strlen(home) - 1 + length_s("/.config/") +
+              length_s(CONFIGDIR));
+  dir += home;
+  dir += "/.config/";
+  dir += CONFIGDIR;
+  return dir;
+}
 
-  auto dir = std::filesystem::path(dir_str);
-  if (!std::filesystem::exists(dir)) {
-    std::filesystem::create_directories(dir);
+std::string get_config_dir() {
+  auto home_dir = get_home_cfg_dir();
+  if (home_dir.empty()) {
+    return get_exe_dir();
   }
-
-  return dir_str;
+  return home_dir;
 }
 
 std::string get_db_path() { return (get_config_dir() += "/") += DBFILE; }

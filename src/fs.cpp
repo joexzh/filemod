@@ -51,7 +51,7 @@ file_status::file_status(std::filesystem::path src, std::filesystem::path dest,
 
 FS::FS(const std::filesystem::path &cfg_dir) : _cfg_dir(cfg_dir) {
   // init cfg_dir, must run before Db's initialization
-  std::filesystem::create_directory(cfg_dir);
+  std::filesystem::create_directories(cfg_dir);
 }
 
 FS::~FS() {
