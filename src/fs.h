@@ -58,9 +58,8 @@ class FS {
                const std::filesystem::path &mod_src_dir,
                const std::vector<std::filesystem::path> &mod_src_files);
 
-  std::vector<std::string> check_conflict_n_backup(
-      const std::filesystem::path &cfg_mod_dir,
-      const std::filesystem::path &target_dir);
+  std::vector<std::string> backup(const std::filesystem::path &cfg_mod_dir,
+                                  const std::filesystem::path &target_dir);
 
   void install_mod(const std::filesystem::path &cfg_mod_dir,
                    const std::filesystem::path &target_dir);
@@ -80,8 +79,6 @@ class FS {
 
   void remove_target(const std::filesystem::path &cfg_target_dir);
 
-  void delete_dirs(const std::vector<std::filesystem::path> &sorted_dirs);
-
   template <typename Func>
   static void path_left_to_right(const std::filesystem::path &base_dir,
                                  const std::filesystem::path &path, Func func);
@@ -96,8 +93,12 @@ class FS {
                  const std::filesystem::path &dest_file,
                  const std::filesystem::path &dest_base_dir);
 
-};  // class FS
+  std::vector<std::string> backup_files(
+      const std::filesystem::path &cfg_mod_dir,
+      const std::filesystem::path &target_dir,
+      const std::vector<std::filesystem::path> &files);
 
-void cross_filesystem_rename(const std::filesystem::path &src,
-                             const std::filesystem::path &dest);
+  void delete_empty_dirs(const std::vector<std::filesystem::path> &sorted_dirs);
+
+};  // class FS
 }  // namespace filemod

@@ -13,6 +13,38 @@
 
 namespace filemod {
 
+void cross_filesystem_rename(const std::filesystem::path &src,
+                             const std::filesystem::path &dest) {
+  std::error_code err_code;
+  std::filesystem::rename(src, dest, err_code);
+
+  if (err_code.value() == 18) {
+    // copy and delete
+    std::filesystem::copy(src, dest);
+    std::filesystem::remove(src);
+  } else if (err_code.value() != 0) {  // doesn't handle other errors
+    throw std::runtime_error(err_code.message());
+  }
+}
+
+static inline std::vector<std::filesystem::path> check_conflict_files(
+    const std::filesystem::path &cfg_mod_dir,
+    const std::filesystem::path &target_dir) {
+  std::vector<std::filesystem::path> conflict_files;
+  for (const auto &ent :
+       std::filesystem::recursive_directory_iterator(cfg_mod_dir)) {
+    if (ent.is_directory()) {
+      continue;
+    }
+    auto relative_mod_file = std::filesystem::relative(ent.path(), cfg_mod_dir);
+    auto target_file = target_dir / relative_mod_file;
+    if (std::filesystem::exists(target_file)) {
+      conflict_files.push_back(ent.path());
+    }
+  }
+  return conflict_files;
+}
+
 file_status::file_status(std::filesystem::path src, std::filesystem::path dest,
                          file_type type, enum action action)
     : src{std::move(src)}, dest{std::move(dest)}, type{type}, action{action} {}
@@ -89,9 +121,20 @@ void FS::add_mod(const std::filesystem::path &cfg_mod_dir,
   }
 }
 
-std::vector<std::string> FS::check_conflict_n_backup(
+std::vector<std::string> FS::backup(const std::filesystem::path &cfg_mod_dir,
+                                    const std::filesystem::path &target_dir) {
+  return backup_files(cfg_mod_dir, target_dir,
+                      check_conflict_files(cfg_mod_dir, target_dir));
+}
+
+std::vector<std::string> FS::backup_files(
     const std::filesystem::path &cfg_mod_dir,
-    const std::filesystem::path &target_dir) {
+    const std::filesystem::path &target_dir,
+    const std::vector<std::filesystem::path> &files) {
+  if (files.empty()) {
+    return {};
+  }
+
   auto backup_base_dir = cfg_mod_dir.parent_path() / BACKUP_DIR;
   if (std::filesystem::create_directory(backup_base_dir)) {
     _written.emplace_back(std::filesystem::path(), backup_base_dir,
@@ -100,18 +143,11 @@ std::vector<std::string> FS::check_conflict_n_backup(
 
   std::vector<std::string> backup_file_strs;
 
-  for (const auto &ent :
-       std::filesystem::recursive_directory_iterator(cfg_mod_dir)) {
-    if (ent.is_directory()) {
-      continue;
-    }
-    auto relative_mod_file = std::filesystem::relative(ent.path(), cfg_mod_dir);
-    auto target_file = target_dir / relative_mod_file;
-    auto backup_file = backup_base_dir / relative_mod_file;
-    if (std::filesystem::exists(target_file)) {  // found conflict
-      move_file(target_file, backup_file, backup_base_dir);
-      backup_file_strs.push_back(relative_mod_file);
-    }
+  for (auto &file : files) {
+    auto relative_file = std::filesystem::relative(file, target_dir);
+    auto backup_file = backup_base_dir / relative_file;
+    move_file(file, backup_file, backup_base_dir);
+    backup_file_strs.push_back(relative_file);
   }
 
   return backup_file_strs;
@@ -176,12 +212,12 @@ void FS::uninstall_mod_files(
     move_file(src_file, dest_file, dest_dir);
   }
 
-  delete_dirs(del_dirs);
+  delete_empty_dirs(del_dirs);
 }
 
-inline void FS::move_file(const std::filesystem::path &src_file,
-                          const std::filesystem::path &dest_file,
-                          const std::filesystem::path &dest_base_dir) {
+void FS::move_file(const std::filesystem::path &src_file,
+                   const std::filesystem::path &dest_file,
+                   const std::filesystem::path &dest_base_dir) {
   FS::path_left_to_right(
       dest_base_dir, dest_file.parent_path(), [&](auto &curr) {
         if (std::filesystem::create_directory(curr)) {
@@ -212,14 +248,15 @@ void FS::remove_mod(const std::filesystem::path &cfg_mod_dir) {
     move_file(ent, dest_file, tmp_removed_dir);
   }
 
-  delete_dirs(del_dirs);
+  delete_empty_dirs(del_dirs);
 }
 
 void FS::remove_target(const std::filesystem::path &cfg_target_dir) {
-  delete_dirs({cfg_target_dir, cfg_target_dir / BACKUP_DIR});
+  delete_empty_dirs({cfg_target_dir, cfg_target_dir / BACKUP_DIR});
 }
 
-void FS::delete_dirs(const std::vector<std::filesystem::path> &sorted_dirs) {
+void FS::delete_empty_dirs(
+    const std::vector<std::filesystem::path> &sorted_dirs) {
   for (auto start = sorted_dirs.crbegin(); start != sorted_dirs.crend();
        ++start) {
     if (std::filesystem::remove(*start)) {
@@ -249,18 +286,4 @@ void FS::path_left_to_right(const std::filesystem::path &base_dir,
     func(dir);
   }
 }  // class FS
-
-void cross_filesystem_rename(const std::filesystem::path &src,
-                             const std::filesystem::path &dest) {
-  std::error_code err_code;
-  std::filesystem::rename(src, dest, err_code);
-
-  if (err_code.value() == 18) {
-    // copy and delete
-    std::filesystem::copy(src, dest);
-    std::filesystem::remove(src);
-  } else if (err_code.value() != 0) {  // doesn't handle other errors
-    throw std::runtime_error(err_code.message());
-  }
-}
 }  // namespace filemod

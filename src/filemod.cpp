@@ -145,8 +145,7 @@ result_base FileMod::install_mod(int64_t mod_id) {
       ret.msg += std::to_string(mod.target_id);
       return;
     }
-    auto backups =
-        _fs->check_conflict_n_backup(cfg_mod_dir, target_ret.data.dir);
+    auto backups = _fs->backup(cfg_mod_dir, target_ret.data.dir);
 
     _db->install_mod(mod.id, backups);
     _fs->install_mod(cfg_mod_dir, target_ret.data.dir);
