@@ -79,10 +79,6 @@ class FS {
 
   void remove_target(const std::filesystem::path &cfg_target_dir);
 
-  template <typename Func>
-  static void path_left_to_right(const std::filesystem::path &base_dir,
-                                 const std::filesystem::path &path, Func func);
-
  private:
   std::filesystem::path _cfg_dir;
   std::vector<file_status> _written;
