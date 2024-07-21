@@ -18,11 +18,15 @@ void cross_filesystem_rename(const std::filesystem::path &src,
   std::error_code err_code;
   std::filesystem::rename(src, dest, err_code);
 
+  if (err_code.value() == 0) {
+    return;
+  }
+
   if (err_code.value() == 18) {
     // copy and delete
     std::filesystem::copy(src, dest);
     std::filesystem::remove(src);
-  } else if (err_code.value() != 0) {  // doesn't handle other errors
+  } else {  // doesn't handle other errors
     throw std::runtime_error(err_code.message());
   }
 }
@@ -53,6 +57,14 @@ inline void visit_through_path(const std::filesystem::path &relative_path,
   for (const auto &start : relative_path) {
     dir /= start;
     func(dir);
+  }
+}
+
+inline void create_directory_w(const std::filesystem::path &dir,
+                               std::vector<file_status> &written) {
+  if (std::filesystem::create_directory(dir)) {
+    written.emplace_back(std::filesystem::path(), dir, file_type::dir,
+                         action::create);
   }
 }
 
@@ -100,19 +112,13 @@ void FS::rollback() {
 void FS::create_target(int64_t target_id) {
   // create new folder named target_id
   auto target_id_dir = _cfg_dir / std::to_string(target_id);
-  if (std::filesystem::create_directory(target_id_dir)) {
-    _written.emplace_back(std::filesystem::path(), target_id_dir,
-                          file_type::dir, action::create);
-  }
+  create_directory_w(target_id_dir, _written);
 }
 
 void FS::add_mod(const std::filesystem::path &cfg_mod_dir,
                  const std::filesystem::path &mod_src_dir,
                  const std::vector<std::filesystem::path> &mod_src_files) {
-  // create dest folder
-  std::filesystem::create_directory(cfg_mod_dir);
-  _written.emplace_back(std::filesystem::path(), cfg_mod_dir, file_type::dir,
-                        action::create);
+  create_directory_w(cfg_mod_dir, _written);
 
   // copy all files from src to dest folder
   for (auto const &path : mod_src_files) {
@@ -120,10 +126,7 @@ void FS::add_mod(const std::filesystem::path &cfg_mod_dir,
         cfg_mod_dir / std::filesystem::relative(path, mod_src_dir);
 
     if (std::filesystem::is_directory(path)) {
-      if (std::filesystem::create_directory(cfg_mod_file)) {
-        _written.emplace_back(std::filesystem::path(), cfg_mod_file,
-                              file_type::dir, action::create);
-      }
+      create_directory_w(cfg_mod_file, _written);
     } else {
       std::filesystem::copy(path, cfg_mod_file);
       _written.emplace_back(std::filesystem::path(), cfg_mod_file,
@@ -147,10 +150,7 @@ std::vector<std::string> FS::backup_files(
   }
 
   auto backup_base_dir = cfg_mod_dir.parent_path() / BACKUP_DIR;
-  if (std::filesystem::create_directory(backup_base_dir)) {
-    _written.emplace_back(std::filesystem::path(), backup_base_dir,
-                          file_type::dir, action::create);
-  }
+  create_directory_w(backup_base_dir, _written);
 
   std::vector<std::string> backup_file_strs;
 
@@ -171,10 +171,7 @@ void FS::install_mod(const std::filesystem::path &cfg_mod_dir,
     auto relative_mod_file = std::filesystem::relative(ent.path(), cfg_mod_dir);
     auto target_mod_file = target_dir / relative_mod_file;
     if (ent.is_directory()) {
-      if (std::filesystem::create_directory(target_mod_file)) {
-        _written.emplace_back(std::filesystem::path(), target_mod_file,
-                              file_type::dir, action::create);
-      }
+      create_directory_w(target_mod_file, _written);
     } else {
       std::filesystem::create_symlink(ent.path(), target_mod_file);
       _written.emplace_back(std::filesystem::path(), target_mod_file,
@@ -231,12 +228,7 @@ void FS::move_file(const std::filesystem::path &src_file,
                    const std::filesystem::path &dest_base_dir) {
   visit_through_path(
       std::filesystem::relative(dest_file.parent_path(), dest_base_dir),
-      dest_base_dir, [&](auto &curr) {
-        if (std::filesystem::create_directory(curr)) {
-          _written.emplace_back(std::filesystem::path(), curr, file_type::dir,
-                                action::create);
-        }
-      });
+      dest_base_dir, [&](auto &curr) { create_directory_w(curr, _written); });
 
   cross_filesystem_rename(src_file, dest_file);
   _written.emplace_back(src_file, dest_file, file_type::file, action::move);
