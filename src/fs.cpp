@@ -4,8 +4,6 @@
 
 #include "fs.h"
 
-#include <algorithm>
-#include <exception>
 #include <filesystem>
 #include <stdexcept>
 #include <string>

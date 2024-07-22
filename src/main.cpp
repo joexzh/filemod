@@ -2,9 +2,8 @@
 // Created by Joe Tse on 11/26/23.
 //
 #include <CLI/CLI.hpp>
-#include <cstdio>
+#include <cstdlib>
 #include <exception>
-#include <filesystem>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -29,14 +28,9 @@ inline bool is_set(const std::vector<int64_t> &ids) { return !ids.empty(); }
 
 inline bool is_set(const std::string &dir) { return !dir.empty(); }
 
-inline void false_ret(filemod::result_base &ret, const char *what) {
-  ret.success = false;
-  ret.msg = what;
-}
-
-int main(int argc, char **argv) {
+inline int run(int argc, char **argv) {
   if (!filemod::real_effective_user_match()) {
-    std::cerr << "suid is not supported!\n" << std::endl;
+    std::cerr << "suid is not supported!\n";
     return 1;
   }
 
@@ -134,70 +128,50 @@ int main(int argc, char **argv) {
   filemod::result_base ret{.success = true};
 
   add->callback([&]() {
-    try {
-      auto fm = create_fm();
-      if (is_set(target_id) && is_set(dir)) {  // add mod
-        ret = fm.add_mod(target_id, dir);
-      } else if (is_set(dir)) {  // add mod
-        ret = fm.add_target(dir);
-      }
-    } catch (std::exception &e) {
-      false_ret(ret, e.what());
+    auto fm = create_fm();
+    if (is_set(target_id) && is_set(dir)) {  // add mod
+      ret = fm.add_mod(target_id, dir);
+    } else if (is_set(dir)) {  // add mod
+      ret = fm.add_target(dir);
     }
   });
 
   rmv->callback([&]() {
-    try {
-      auto fm = create_fm();
-      if (is_set(mod_ids)) {  // remove mods
-        ret = fm.remove_mods(mod_ids);
-      } else if (is_set(target_id)) {  // remove target
-        ret = fm.remove_from_target_id(target_id);
-      }
-    } catch (std::exception &e) {
-      false_ret(ret, e.what());
+    auto fm = create_fm();
+    if (is_set(mod_ids)) {  // remove mods
+      ret = fm.remove_mods(mod_ids);
+    } else if (is_set(target_id)) {  // remove target
+      ret = fm.remove_from_target_id(target_id);
     }
   });
 
   ins->callback([&]() {
-    try {
-      auto fm = create_fm();
-      if (is_set(mod_ids)) {  // install mods
-        ret = fm.install_mods(mod_ids);
-      } else if (is_set(target_id) &&
-                 is_set(dir)) {  // add and install mod directly from mod dir
-        ret = fm.install_from_mod_dir(target_id, dir);
-      } else if (is_set(target_id)) {  // install mods from target id
-        ret = fm.install_from_target_id(target_id);
-      }
-    } catch (std::exception &e) {
-      false_ret(ret, e.what());
+    auto fm = create_fm();
+    if (is_set(mod_ids)) {  // install mods
+      ret = fm.install_mods(mod_ids);
+    } else if (is_set(target_id) &&
+               is_set(dir)) {  // add and install mod directly from mod dir
+      ret = fm.install_from_mod_dir(target_id, dir);
+    } else if (is_set(target_id)) {  // install mods from target id
+      ret = fm.install_from_target_id(target_id);
     }
   });
 
   uns->callback([&]() {
-    try {
-      auto fm = create_fm();
-      if (is_set(mod_ids)) {  // uninstall mods
-        ret = fm.uninstall_mods(mod_ids);
-      } else if (is_set(target_id)) {  // uninstall mod from target id
-        ret = fm.uninstall_from_target_id(target_id);
-      }
-    } catch (std::exception &e) {
-      false_ret(ret, e.what());
+    auto fm = create_fm();
+    if (is_set(mod_ids)) {  // uninstall mods
+      ret = fm.uninstall_mods(mod_ids);
+    } else if (is_set(target_id)) {  // uninstall mod from target id
+      ret = fm.uninstall_from_target_id(target_id);
     }
   });
 
   lst->callback([&]() {
-    try {
-      auto fm = create_fm();
-      if (is_set(mod_ids)) {  // list mods
-        ret.msg = fm.list_mods(mod_ids);
-      } else {  // list targets
-        ret.msg = fm.list_targets(target_ids);
-      }
-    } catch (std::exception &e) {
-      false_ret(ret, e.what());
+    auto fm = create_fm();
+    if (is_set(mod_ids)) {  // list mods
+      ret.msg = fm.list_mods(mod_ids);
+    } else {  // list targets
+      ret.msg = fm.list_targets(target_ids);
     }
   });
 
@@ -205,9 +179,18 @@ int main(int argc, char **argv) {
 
   if (ret.success) {
     std::cout << ret.msg << std::endl;
-    return 0;
+    return EXIT_SUCCESS;
   } else {
-    std::cerr << ret.msg << "\nfailed\n";
-    return 1;
+    std::cerr << ret.msg << '\n';
+    return EXIT_FAILURE;
   }
+}
+
+int main(int argc, char **argv) {
+  try {
+    return run(argc, argv);
+  } catch (std::exception &e) {
+    std::cerr << e.what() << '\n';
+  }
+  return EXIT_FAILURE;
 }

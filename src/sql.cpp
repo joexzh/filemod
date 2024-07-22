@@ -5,7 +5,6 @@
 #include "sql.h"
 
 #include <algorithm>
-#include <string_view>
 #include <unordered_set>
 
 #include "SQLiteCpp/Database.h"
