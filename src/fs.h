@@ -14,8 +14,6 @@ const char BACKUP_DIR[] = "___filemod_backup";
 const char TEMP[] = "joexie.filemod";
 const char UNINSTALLED[] = "___filemod_uninstalled";
 
-enum class file_type : uint8_t { dir = 0, file = 1, softlink = 2 };
-
 enum class action : uint8_t {
   create = 0,
   copy = 1 /* file only */,
@@ -25,10 +23,9 @@ enum class action : uint8_t {
 
 struct file_status {
   explicit file_status(std::filesystem::path src, std::filesystem::path dest,
-                       file_type type, action action);
+                       enum action action);
   std::filesystem::path src;
   std::filesystem::path dest;
-  file_type type;
   enum action action;
 };
 

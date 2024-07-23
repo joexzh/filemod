@@ -4,6 +4,7 @@
 
 #include "fs.h"
 
+#include <exception>
 #include <filesystem>
 #include <stdexcept>
 #include <string>
@@ -61,14 +62,13 @@ inline void visit_through_path(const std::filesystem::path &relative_path,
 inline void create_directory_w(const std::filesystem::path &dir,
                                std::vector<file_status> &written) {
   if (std::filesystem::create_directory(dir)) {
-    written.emplace_back(std::filesystem::path(), dir, file_type::dir,
-                         action::create);
+    written.emplace_back(std::filesystem::path(), dir, action::create);
   }
 }
 
 file_status::file_status(std::filesystem::path src, std::filesystem::path dest,
-                         file_type type, enum action action)
-    : src{std::move(src)}, dest{std::move(dest)}, type{type}, action{action} {}
+                         enum action action)
+    : src{std::move(src)}, dest{std::move(dest)}, action{action} {}
 
 FS::FS(const std::filesystem::path &cfg_dir) : _cfg_dir(cfg_dir) {
   // init cfg_dir, must run before Db's initialization
@@ -76,11 +76,14 @@ FS::FS(const std::filesystem::path &cfg_dir) : _cfg_dir(cfg_dir) {
 }
 
 FS::~FS() {
-  if (_commit_counter != 0) {
-    rollback();
-  }
+  try {
+    if (_commit_counter != 0) {
+      rollback();
+    }
 
-  std::filesystem::remove_all(std::filesystem::temp_directory_path() / TEMP);
+    std::filesystem::remove_all(std::filesystem::temp_directory_path() / TEMP);
+  } catch (std::exception &e) {
+  }
 }
 
 const std::filesystem::path &FS::cfg_dir() { return _cfg_dir; }
@@ -128,7 +131,7 @@ void FS::add_mod(const std::filesystem::path &cfg_mod_dir,
     } else {
       std::filesystem::copy(path, cfg_mod_file);
       _written.emplace_back(std::filesystem::path(), cfg_mod_file,
-                            file_type::file, action::copy);
+                            action::copy);
     }
   }
 }
@@ -173,7 +176,7 @@ void FS::install_mod(const std::filesystem::path &cfg_mod_dir,
     } else {
       std::filesystem::create_symlink(ent.path(), target_mod_file);
       _written.emplace_back(std::filesystem::path(), target_mod_file,
-                            file_type::softlink, action::create);
+                            action::create);
     }
   }
 }
@@ -229,7 +232,7 @@ void FS::move_file(const std::filesystem::path &src_file,
       dest_base_dir, [&](auto &curr) { create_directory_w(curr, _written); });
 
   cross_filesystem_rename(src_file, dest_file);
-  _written.emplace_back(src_file, dest_file, file_type::file, action::move);
+  _written.emplace_back(src_file, dest_file, action::move);
 }
 
 void FS::remove_mod(const std::filesystem::path &cfg_mod_dir) {
@@ -263,8 +266,7 @@ void FS::delete_empty_dirs(
   for (auto start = sorted_dirs.crbegin(); start != sorted_dirs.crend();
        ++start) {
     if (std::filesystem::remove(*start)) {
-      _written.emplace_back(std::filesystem::path(), *start, file_type::dir,
-                            action::del);
+      _written.emplace_back(std::filesystem::path(), *start, action::del);
     }
   }
 }
