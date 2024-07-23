@@ -32,20 +32,21 @@ void FileMod::tx_wrapper(result_base &ret, Func func) {
 FileMod::FileMod(std::unique_ptr<FS> fs, std::unique_ptr<DB> db)
     : _fs{std::move(fs)}, _db{std::move(db)} {}
 
-result_base FileMod::add_target(const std::string &tar_dir) {
-  result_base ret;
+result<int64_t> FileMod::add_target(const std::string &tar_dir) {
+  result<int64_t> ret;
 
   auto tar_dir_abs = std::filesystem::absolute(tar_dir);
 
   tx_wrapper(ret, [&]() {
     auto target_ret = _db->query_target_by_dir(tar_dir_abs);
     if (target_ret.success) {
+      ret.data = target_ret.data.id;
       // if target exists, do nothing
       return;
     }
 
-    int64_t target_id = _db->insert_target(tar_dir_abs);
-    _fs->create_target(target_id);
+    ret.data = _db->insert_target(tar_dir_abs);
+    _fs->create_target(ret.data);
   });
 
   return ret;

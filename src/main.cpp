@@ -28,6 +28,16 @@ inline bool is_set(const std::vector<int64_t> &ids) { return !ids.empty(); }
 
 inline bool is_set(const std::string &dir) { return !dir.empty(); }
 
+inline void assign_ret64_retbase(const filemod::result<int64_t> &from,
+                                 filemod::result_base &to) {
+  to.success = from.success;
+  if (from.success) {
+    to.msg = std::to_string(from.data);
+  } else {
+    to.msg = std::move(const_cast<filemod::result<int64_t> &>(from).msg);
+  }
+}
+
 inline int run(int argc, char **argv) {
   if (!filemod::real_effective_user_match()) {
     std::cerr << "suid is not supported!\n";
@@ -130,9 +140,9 @@ inline int run(int argc, char **argv) {
   add->callback([&]() {
     auto fm = create_fm();
     if (is_set(target_id) && is_set(dir)) {  // add mod
-      ret = fm.add_mod(target_id, dir);
+      assign_ret64_retbase(fm.add_mod(target_id, dir), ret);
     } else if (is_set(dir)) {  // add mod
-      ret = fm.add_target(dir);
+      assign_ret64_retbase(fm.add_target(dir), ret);
     }
   });
 
