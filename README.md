@@ -2,23 +2,27 @@
 
 filemod helps you manage mod files, install and uninstall them atomically.
 
-## usage
+## Usage
 
 ```bash
 filemod add --tdir DIR
 filemod add --t TAR_ID --mdir DIR
+
 filemod install --t TAR_ID
 filemod install --t TAR_ID --mdir DIR
 filemod install --m MOD_ID1 MOD_ID2 ...
-filemod uninstall --t TAR_ID1
+
+filemod uninstall --t TAR_ID
 filemod uninstall -m MOD_ID1 MOD_ID2 ...
-filemod remove --t TAR_ID1
+
+filemod remove --t TAR_ID
 filemod remove --m MOD_ID1 MOD_ID2 ...
+
 filemod list [--t TAR_ID1 TAR_ID2 ...]
 filemod list --m MOD_ID1 MOD_ID2 ...
 ```
 
-### add a game directory as target atomically
+### 1. Add a game directory as target atomically
 
 ```bash
 ./filemod add --tdir /path/to/game/dir/for/mods
@@ -34,7 +38,7 @@ Return a target id if success.
 
 This is an atomic operation.
 
-### add an outside mod directory to target atomically
+### 2. Add an outside mod directory to target atomically
 
 ```bash
 ./filemod add --t TAR_ID --mdir /path/to/mod/dir/
@@ -52,7 +56,7 @@ Return a mod id if success.
 
 This is an atomic operation.
 
-### install mods atomically
+### 3. Install mods atomically
 
 ```bash
 ./filemod install --t TAR_ID # install all mods of a target
@@ -68,7 +72,7 @@ Install mod files from the config dir to target dir, auto detect conflicts and b
 
 This is an atomic operation.
 
-### uninstall mods atomically
+### 4. uninstall mods atomically
 
 ```bash
 ./filemod uninstall --t TAR_ID # uninstall all mods of a target
@@ -80,7 +84,7 @@ Uninstall mod files in target dir, and auto restore backup files if any.
 
 This an atomic operation.
 
-### remove target and mods atomically
+### 5. remove target and mods atomically
 
 ```bash
 ./filemod remove --t TAR_ID # remove a target and all of its mods
@@ -92,7 +96,7 @@ Removes target and mods from config dir.
 
 This is an atomic operation.
 
-### display targets and mods in config
+### 6. display targets and mods in config
 
 ```bash
 ./filemod list [--t TAR_ID_1 TAR_ID_2 ...] # list targets and their mods status
@@ -125,20 +129,20 @@ MOD ID 6 DIR 'Over 9000 - Weight limit mod v1.31-3-1-31' STATUS installed
     BACKUP FILES
 ```
 
-## build the project
+## Build the project
 
-### requirements:
+### Requirements:
 
 1. `meson`
-2. `g++` or `clang`
+2. `g++` or `clang` that supports c++17
 
-### git clone the source code:
+### Git clone the source code:
 
 ```bash
 git clone git@github.com:joexzh/filemod.git
 ```
 
-### retrieve dependencies:
+### Retrieve dependencies:
 
 1. git submodules:
 
@@ -150,7 +154,7 @@ git clone git@github.com:joexzh/filemod.git
 
     They will auto download when setting up meson build dir.
 
-### setup meson build dir
+### Setup meson build dir
 
 ```bash
 meson setup build # debug build
@@ -159,7 +163,7 @@ meson setup build # debug build
 meson setup build-release --buildtype=release
 ```
 
-### compile
+### Compile
 
 ```bash
 meson compile -C build
