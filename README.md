@@ -4,9 +4,23 @@ filemod helps you manage mod files, install and uninstall them atomically.
 
 ## usage
 
+```bash
+filemod add --tdir DIR
+filemod add --t TAR_ID --mdir DIR
+filemod install --t TAR_ID
+filemod install --t TAR_ID --mdir DIR
+filemod install --m MOD_ID1 MOD_ID2 ...
+filemod uninstall --t TAR_ID1
+filemod uninstall -m MOD_ID1 MOD_ID2 ...
+filemod remove --t TAR_ID1
+filemod remove --m MOD_ID1 MOD_ID2 ...
+filemod list [--t TAR_ID1 TAR_ID2 ...]
+filemod list --m MOD_ID1 MOD_ID2 ...
+```
+
 ### add a game directory as target atomically
 
-```console
+```bash
 ./filemod add --tdir /path/to/game/dir/for/mods
 ```
 
@@ -88,7 +102,7 @@ This is an atomic operation.
 
 e.g.
 
-```console
+```bash
 ./filemod list --m 6
 
 MOD ID 5 DIR 'FTFANG-7157-1-1-1705443514' STATUS installed
