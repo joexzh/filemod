@@ -41,7 +41,7 @@ inline void assign_ret64_retbase(const filemod::result<int64_t> &from,
 inline int run(int argc, char **argv) {
   if (!filemod::real_effective_user_match()) {
     std::cerr << "suid is not supported!\n";
-    return 1;
+    return EXIT_FAILURE;
   }
 
   CLI::App app{"filemod is file replacement manager."};
@@ -141,7 +141,7 @@ inline int run(int argc, char **argv) {
     auto fm = create_fm();
     if (is_set(target_id) && is_set(dir)) {  // add mod
       assign_ret64_retbase(fm.add_mod(target_id, dir), ret);
-    } else if (is_set(dir)) {  // add mod
+    } else if (is_set(dir)) {  // add target
       assign_ret64_retbase(fm.add_target(dir), ret);
     }
   });

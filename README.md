@@ -22,6 +22,8 @@ filemod list [--t TAR_ID1 TAR_ID2 ...]
 filemod list --m MOD_ID1 MOD_ID2 ...
 ```
 
+*Note: the following **Atomic/Atomically** means changes will auto rollback if something go wrong, it is in the control of `filemod`, not in the filesystem or disk level.*
+
 ### 1. Add a game directory as target atomically
 
 ```bash
