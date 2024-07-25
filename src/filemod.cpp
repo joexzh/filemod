@@ -14,6 +14,29 @@
 
 namespace filemod {
 
+static inline std::vector<ModDto> find_conflict_mods(
+    std::filesystem::path &cfg_mod_dir, ModDto &mod_w_files, DB &db) {
+  // filter out dirs
+  std::vector<std::string> no_dirs;
+  for (const auto &relative_path : mod_w_files.files) {
+    if (!std::filesystem::is_directory(cfg_mod_dir / relative_path)) {
+      no_dirs.push_back(relative_path);
+    }
+  }
+
+  std::vector<ModDto> ret;
+  // query mods contain these files
+  auto potential_victims = db.query_mods_contain_files(no_dirs);
+  // filter only current target_id and installed mods
+  for (auto &victim : potential_victims) {
+    if (victim.target_id == mod_w_files.target_id &&
+        victim.status == ModStatus::Installed) {
+      ret.push_back(victim);
+    }
+  }
+  return ret;
+}
+
 template <typename Func>
 void FileMod::tx_wrapper(result_base &ret, Func func) {
   ret.success = true;
@@ -111,29 +134,15 @@ result_base FileMod::install_mod(int64_t mod_id) {
     }
 
     // check if conflict with other installed mods
-    // filter out dirs
-    std::vector<std::string> filtered;
     auto cfg_mod_dir = _fs->cfg_dir() / std::to_string(mod.target_id) / mod.dir;
-    for (const auto &relative_path : mod.files) {
-      if (!std::filesystem::is_directory(cfg_mod_dir / relative_path)) {
-        filtered.push_back(relative_path);
-      }
-    }
-    // query mods contain these files
-    auto potential_victims = _db->query_mods_contain_files(filtered);
-    // filter only current target_id and installed mods
-    std::string conflict_ids_str;
-    for (auto &victim : potential_victims) {
-      if (victim.target_id == mod.target_id &&
-          victim.status == ModStatus::Installed) {
-        conflict_ids_str += " ";
-        conflict_ids_str += std::to_string(victim.id);
-      }
-    }
-    if (!conflict_ids_str.empty()) {
+    if (auto conflict_mods = find_conflict_mods(cfg_mod_dir, mod, *_db);
+        !conflict_mods.empty()) {
       ret.success = false;
-      ret.msg = "ERROR: cannot install mod, conflict with mod ids:";
-      ret.msg += conflict_ids_str;
+      ret.msg = "ERROR: cannot install mod, conflict with mod ids: ";
+      for (auto &conflict_mod : conflict_mods) {
+        ret.msg += std::to_string(conflict_mod.id);
+        ret.msg += " ";
+      }
       return;
     }
 
