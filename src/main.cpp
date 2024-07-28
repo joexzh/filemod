@@ -15,9 +15,7 @@
 #include "src/utils.h"
 
 inline auto create_fm() {
-  return filemod::FileMod(
-      std::make_unique<filemod::FS>(filemod::get_config_dir()),
-      std::make_unique<filemod::DB>(filemod::get_db_path()));
+  return filemod::FileMod(filemod::get_config_dir(), filemod::get_db_path());
 }
 
 inline bool is_set(int64_t id) {
@@ -28,13 +26,13 @@ inline bool is_set(const std::vector<int64_t> &ids) { return !ids.empty(); }
 
 inline bool is_set(const std::string &dir) { return !dir.empty(); }
 
-inline void assign_ret64_retbase(const filemod::result<int64_t> &from,
-                                 filemod::result_base &to) {
+inline void move_to_retbase(filemod::result<int64_t> &&from,
+                            filemod::result_base &to) {
   to.success = from.success;
   if (from.success) {
     to.msg = std::to_string(from.data);
   } else {
-    to.msg = std::move(const_cast<filemod::result<int64_t> &>(from).msg);
+    to.msg = std::move(from.msg);
   }
 }
 
@@ -140,9 +138,9 @@ inline int run(int argc, char **argv) {
   add->callback([&]() {
     auto fm = create_fm();
     if (is_set(target_id) && is_set(dir)) {  // add mod
-      assign_ret64_retbase(fm.add_mod(target_id, dir), ret);
+      move_to_retbase(fm.add_mod(target_id, dir), ret);
     } else if (is_set(dir)) {  // add target
-      assign_ret64_retbase(fm.add_target(dir), ret);
+      move_to_retbase(fm.add_target(dir), ret);
     }
   });
 
@@ -187,13 +185,12 @@ inline int run(int argc, char **argv) {
 
   CLI11_PARSE(app, argc, argv)
 
-  if (ret.success) {
-    std::cout << ret.msg << std::endl;
-    return EXIT_SUCCESS;
-  } else {
+  if (!ret.success) {
     std::cerr << ret.msg << '\n';
     return EXIT_FAILURE;
   }
+  std::cout << ret.msg << '\n';
+  return EXIT_SUCCESS;
 }
 
 int main(int argc, char **argv) {
@@ -201,6 +198,6 @@ int main(int argc, char **argv) {
     return run(argc, argv);
   } catch (std::exception &e) {
     std::cerr << e.what() << '\n';
+    return EXIT_FAILURE;
   }
-  return EXIT_FAILURE;
 }

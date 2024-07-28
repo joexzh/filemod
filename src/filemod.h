@@ -14,18 +14,8 @@
 namespace filemod {
 
 class FileMod {
- private:
-  std::unique_ptr<FS> _fs;  // ORDER DEPENDENCY
-  std::unique_ptr<DB> _db;  // ORDER DEPENDENCY
-
-  result_base install_mod(int64_t mod_id);
-
-  result<ModDto> uninstall_mod(int64_t mod_id);
-
-  result_base remove_mod(int64_t mod_id);
-
  public:
-  explicit FileMod(std::unique_ptr<FS> fs, std::unique_ptr<DB> db);
+  explicit FileMod(const std::string &cfg_dir, const std::string &db_path);
 
   FileMod(const FileMod &filemod) = delete;
   FileMod &operator=(const FileMod &filemod) = delete;
@@ -57,8 +47,18 @@ class FileMod {
 
   result_base remove_from_target_id(int64_t target_id);
 
-  std::string list_mods(std::vector<int64_t> &mod_ids) const;
+  std::string list_mods(std::vector<int64_t> &mod_ids);
 
-  std::string list_targets(std::vector<int64_t> &target_ids) const;
+  std::string list_targets(std::vector<int64_t> &target_ids);
+
+ private:
+  FS _fs;  // ORDER DEPENDENCY
+  DB _db;  // ORDER DEPENDENCY
+
+  result_base install_mod(int64_t mod_id);
+
+  result<ModDto> uninstall_mod(int64_t mod_id);
+
+  result_base remove_mod(int64_t mod_id);
 };
 }  // namespace filemod

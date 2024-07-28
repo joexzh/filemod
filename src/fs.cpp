@@ -4,11 +4,13 @@
 
 #include "fs.h"
 
+#include <cassert>
 #include <exception>
 #include <filesystem>
 #include <stdexcept>
 #include <string>
 #include <system_error>
+#include <utility>
 
 namespace filemod {
 
@@ -70,23 +72,17 @@ file_status::file_status(std::filesystem::path src, std::filesystem::path dest,
                          enum action action)
     : src{std::move(src)}, dest{std::move(dest)}, action{action} {}
 
-FS::FS(const std::filesystem::path &cfg_dir) : _cfg_dir(cfg_dir) {
-  // init cfg_dir, must run before Db's initialization
-  std::filesystem::create_directories(cfg_dir);
-}
+FS::FS(const std::filesystem::path &cfg_dir) : _cfg_dir(cfg_dir) {}
 
-FS::~FS() {
-  try {
-    if (_commit_counter != 0) {
-      rollback();
-    }
-
-    std::filesystem::remove_all(std::filesystem::temp_directory_path() / TEMP);
-  } catch (std::exception &e) {
+FS::~FS() noexcept {
+  if (_commit_counter != 0) {
+    rollback();
   }
+
+  std::filesystem::remove_all(std::filesystem::temp_directory_path() / TEMP);
 }
 
-const std::filesystem::path &FS::cfg_dir() { return _cfg_dir; }
+const std::filesystem::path &FS::cfg_dir() const { return _cfg_dir; }
 
 void FS::begin() { ++_commit_counter; }
 

@@ -33,13 +33,13 @@ class FS {
  public:
   explicit FS(const std::filesystem::path &cfg_dir);
 
-  explicit FS(const FS &fs) = delete;
+  FS(const FS &fs) = delete;
   FS(FS &&fs) = delete;
 
   FS &operator=(const FS &fs) = delete;
   FS &operator=(FS &&fs) = delete;
 
-  ~FS();
+  ~FS() noexcept;
 
   void begin();
 
@@ -47,7 +47,7 @@ class FS {
 
   void rollback();
 
-  const std::filesystem::path &cfg_dir();
+  const std::filesystem::path &cfg_dir() const;
 
   void create_target(int64_t target_id);
 

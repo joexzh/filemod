@@ -40,8 +40,8 @@ static inline std::vector<ModDto> find_conflict_mods(
 template <typename Func>
 void FileMod::tx_wrapper(result_base &ret, Func func) {
   ret.success = true;
-  _fs->begin();
-  auto dbtx = _db->begin();
+  _fs.begin();
+  auto dbtx = _db.begin();
 
   func();
   if (!ret.success) {
@@ -49,11 +49,13 @@ void FileMod::tx_wrapper(result_base &ret, Func func) {
   }
 
   dbtx.release();
-  _fs->commit();
+  _fs.commit();
 }
 
-FileMod::FileMod(std::unique_ptr<FS> fs, std::unique_ptr<DB> db)
-    : _fs{std::move(fs)}, _db{std::move(db)} {}
+FileMod::FileMod(const std::string &cfg_dir, const std::string &db_path)
+    : _fs{cfg_dir}, _db{db_path} {
+  std::filesystem::create_directories(_fs.cfg_dir());
+}
 
 result<int64_t> FileMod::add_target(const std::string &tar_dir) {
   result<int64_t> ret;
@@ -61,15 +63,15 @@ result<int64_t> FileMod::add_target(const std::string &tar_dir) {
   auto tar_dir_abs = std::filesystem::absolute(tar_dir);
 
   tx_wrapper(ret, [&]() {
-    auto target_ret = _db->query_target_by_dir(tar_dir_abs);
+    auto target_ret = _db.query_target_by_dir(tar_dir_abs);
     if (target_ret.success) {
       ret.data = target_ret.data.id;
       // if target exists, do nothing
       return;
     }
 
-    ret.data = _db->insert_target(tar_dir_abs);
-    _fs->create_target(ret.data);
+    ret.data = _db.insert_target(tar_dir_abs);
+    _fs.create_target(ret.data);
   });
 
   return ret;
@@ -80,7 +82,7 @@ result<int64_t> FileMod::add_mod(int64_t target_id,
   result<int64_t> ret{{true}};
 
   tx_wrapper(ret, [&]() {
-    if (!_db->query_target(target_id).success) {
+    if (!_db.query_target(target_id).success) {
       ret.success = false;
       ret.msg = "ERROR: target not exists!";
       return;
@@ -89,7 +91,7 @@ result<int64_t> FileMod::add_mod(int64_t target_id,
     auto mod_relative_dir =
         std::filesystem::relative(mod_src_absdir, mod_src_absdir.parent_path());
 
-    auto mod_ret = _db->query_mod_by_targetid_dir(target_id, mod_relative_dir);
+    auto mod_ret = _db.query_mod_by_targetid_dir(target_id, mod_relative_dir);
     if (mod_ret.success) {
       // if mod exists, do nothing
       ret.data = mod_ret.data.id;
@@ -104,11 +106,11 @@ result<int64_t> FileMod::add_mod(int64_t target_id,
       mod_file_relative_strs.push_back(
           std::filesystem::relative(ent.path(), mod_src_absdir));
     }
-    ret.data = _db->insert_mod_w_files(
+    ret.data = _db.insert_mod_w_files(
         target_id, mod_relative_dir,
         static_cast<int64_t>(ModStatus::Uninstalled), mod_file_relative_strs);
-    _fs->add_mod(
-        _fs->cfg_dir() / std::filesystem::path(std::to_string(target_id)) /=
+    _fs.add_mod(
+        _fs.cfg_dir() / std::filesystem::path(std::to_string(target_id)) /=
         mod_relative_dir,
         mod_src_absdir, mod_src_files);
   });
@@ -120,7 +122,7 @@ result_base FileMod::install_mod(int64_t mod_id) {
   result_base ret;
 
   tx_wrapper(ret, [&]() {
-    auto mods = _db->query_mods_n_files(std::vector<int64_t>{mod_id});
+    auto mods = _db.query_mods_n_files(std::vector<int64_t>{mod_id});
     if (mods.empty()) {
       ret.success = false;
       ret.msg = "ERROR: mod not exists";
@@ -134,8 +136,8 @@ result_base FileMod::install_mod(int64_t mod_id) {
     }
 
     // check if conflict with other installed mods
-    auto cfg_mod_dir = _fs->cfg_dir() / std::to_string(mod.target_id) / mod.dir;
-    if (auto conflict_mods = find_conflict_mods(cfg_mod_dir, mod, *_db);
+    auto cfg_mod_dir = _fs.cfg_dir() / std::to_string(mod.target_id) / mod.dir;
+    if (auto conflict_mods = find_conflict_mods(cfg_mod_dir, mod, _db);
         !conflict_mods.empty()) {
       ret.success = false;
       ret.msg = "ERROR: cannot install mod, conflict with mod ids: ";
@@ -147,17 +149,17 @@ result_base FileMod::install_mod(int64_t mod_id) {
     }
 
     // check if conflict with original files
-    auto target_ret = _db->query_target(mod.target_id);
+    auto target_ret = _db.query_target(mod.target_id);
     if (!target_ret.success) {
       ret.success = false;
       ret.msg = "ERROR: target not exists: ";
       ret.msg += std::to_string(mod.target_id);
       return;
     }
-    auto backups = _fs->backup(cfg_mod_dir, target_ret.data.dir);
+    auto backups = _fs.backup(cfg_mod_dir, target_ret.data.dir);
 
-    _db->install_mod(mod.id, backups);
-    _fs->install_mod(cfg_mod_dir, target_ret.data.dir);
+    _db.install_mod(mod.id, backups);
+    _fs.install_mod(cfg_mod_dir, target_ret.data.dir);
   });
 
   return ret;
@@ -184,7 +186,7 @@ result_base FileMod::install_from_target_id(int64_t target_id) {
   result_base ret;
 
   tx_wrapper(ret, [&]() {
-    auto targets = _db->query_targets_mods(std::vector<int64_t>{target_id});
+    auto targets = _db.query_targets_mods(std::vector<int64_t>{target_id});
     if (targets.empty()) {
       ret.success = false;
       ret.msg = "ERROR: target not exist";
@@ -231,7 +233,7 @@ result<ModDto> FileMod::uninstall_mod(int64_t mod_id) {
   result<ModDto> ret;
 
   tx_wrapper(ret, [&]() {
-    auto mods = _db->query_mods_n_files(std::vector<int64_t>{mod_id});
+    auto mods = _db.query_mods_n_files(std::vector<int64_t>{mod_id});
     if (mods.empty()) {
       ret.success = false;
       ret.msg = "ERROR: mod not exists";
@@ -247,14 +249,14 @@ result<ModDto> FileMod::uninstall_mod(int64_t mod_id) {
       // not considered error, just do nothing
       return;
     }
-    auto target_ret = _db->query_target(mod.target_id);
+    auto target_ret = _db.query_target(mod.target_id);
     if (!target_ret.success) {
       ret.success = false;
       ret.msg = "ERROR: target not exists";
       return;
     }
 
-    _db->uninstall_mod(mod_id);
+    _db.uninstall_mod(mod_id);
 
     auto create_sorted_files = [](auto &file_strs) {
       std::vector<std::filesystem::path> sorted;
@@ -269,8 +271,8 @@ result<ModDto> FileMod::uninstall_mod(int64_t mod_id) {
       return sorted;
     };
 
-    _fs->uninstall_mod(
-        _fs->cfg_dir() / std::filesystem::path(std::to_string(mod.target_id)) /=
+    _fs.uninstall_mod(
+        _fs.cfg_dir() / std::filesystem::path(std::to_string(mod.target_id)) /=
         mod.dir,
         target_ret.data.dir, create_sorted_files(mod.files),
         create_sorted_files(mod.backup_files));
@@ -297,7 +299,7 @@ result_base FileMod::uninstall_mods(std::vector<int64_t> &mod_ids) {
 result_base FileMod::uninstall_from_target_id(int64_t target_id) {
   result_base ret;
   tx_wrapper(ret, [&]() {
-    auto targets = _db->query_targets_mods(std::vector<int64_t>{target_id});
+    auto targets = _db.query_targets_mods(std::vector<int64_t>{target_id});
     if (targets.empty()) {
       ret.success = false;
       ret.msg = "ERROR: target not exists";
@@ -329,9 +331,9 @@ result_base FileMod::remove_mod(int64_t mod_id) {
       ret.msg = std::move(_ret.msg);
       return;
     }
-    _db->delete_mod(mod_id);
-    _fs->remove_mod(_fs->cfg_dir() / std::to_string(_ret.data.target_id) /
-                    _ret.data.dir);
+    _db.delete_mod(mod_id);
+    _fs.remove_mod(_fs.cfg_dir() / std::to_string(_ret.data.target_id) /
+                   _ret.data.dir);
   });
 
   return ret;
@@ -358,7 +360,7 @@ result_base FileMod::remove_from_target_id(int64_t target_id) {
   result_base ret;
 
   tx_wrapper(ret, [&]() {
-    auto targets = _db->query_targets_mods({target_id});
+    auto targets = _db.query_targets_mods({target_id});
     if (targets.empty()) {
       // if not exists, do nothing
       return;
@@ -373,8 +375,8 @@ result_base FileMod::remove_from_target_id(int64_t target_id) {
         return;
       }
     }
-    _db->delete_target(target_id);
-    _fs->remove_target(_fs->cfg_dir() / std::to_string(target_id));
+    _db.delete_target(target_id);
+    _fs.remove_target(_fs.cfg_dir() / std::to_string(target_id));
   });
 
   return ret;
@@ -439,15 +441,15 @@ static std::string _list_mods(std::vector<ModDto> &mods, bool verbose = false,
   return ret;
 }
 
-std::string FileMod::list_mods(std::vector<int64_t> &mod_ids) const {
-  auto mods = _db->query_mods_n_files(mod_ids);
+std::string FileMod::list_mods(std::vector<int64_t> &mod_ids) {
+  auto mods = _db.query_mods_n_files(mod_ids);
   return _list_mods(mods, true);
 }
 
-std::string FileMod::list_targets(std::vector<int64_t> &target_ids) const {
+std::string FileMod::list_targets(std::vector<int64_t> &target_ids) {
   std::string ret;
 
-  auto targets = _db->query_targets_mods(target_ids);
+  auto targets = _db.query_targets_mods(target_ids);
   for (auto &target : targets) {
     ret += "TARGET ID ";
     ret += std::to_string(target.id);
