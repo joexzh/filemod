@@ -22,11 +22,11 @@ enum class ModStatus {
 
 struct [[nodiscard]] ModDto {
   int64_t id;
-  int64_t target_id;
+  int64_t tar_id;
   std::string dir;
   ModStatus status;
   std::vector<std::string> files;
-  std::vector<std::string> backup_files;
+  std::vector<std::string> bak_files;
 };
 
 struct [[nodiscard]] TargetDto {
@@ -53,9 +53,9 @@ class DB {
 
   std::vector<ModDto> query_mods_n_files(const std::vector<int64_t> &ids);
 
-  std::vector<ModDto> query_mods_by_target(int64_t target_id);
+  std::vector<ModDto> query_mods_by_target(int64_t tar_id);
 
-  result<ModDto> query_mod_by_targetid_dir(int64_t target_id,
+  result<ModDto> query_mod_by_targetid_dir(int64_t tar_id,
                                            const std::string &dir);
 
   result<TargetDto> query_target(int64_t id);
@@ -70,7 +70,7 @@ class DB {
 
   result<ModDto> query_mod(int64_t id);
 
-  int64_t insert_mod_w_files(int64_t target_id, const std::string &dir,
+  int64_t insert_mod_w_files(int64_t tar_id, const std::string &dir,
                              int status, const std::vector<std::string> &files);
 
   int update_mod_status(int64_t id, int status);
@@ -88,7 +88,7 @@ class DB {
   std::vector<std::string> query_backup_files(int64_t mod_id);
 
   int insert_backup_files(int64_t mod_id,
-                          const std::vector<std::string> &backup_files);
+                          const std::vector<std::string> &bak_files);
 
   int delete_backup_files(int64_t mod_id);
 
@@ -99,6 +99,6 @@ class DB {
  private:
   SQLite::Database _db;
 
-  int64_t insert_mod(int64_t target_id, const std::string &dir, int status);
+  int64_t insert_mod(int64_t tar_id, const std::string &dir, int status);
 };
 }  // namespace filemod

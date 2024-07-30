@@ -150,7 +150,7 @@ SQLite::Savepoint DB::begin() { return SQLite::Savepoint{_db, FILEMOD}; }
 
 std::vector<TargetDto> DB::query_targets_mods(const std::vector<int64_t> &ids) {
   SQLite::Statement stmt{_db, buildstr_query_targets_mods(ids.size())};
-  std::vector<TargetDto> targets;
+  std::vector<TargetDto> tars;
   for (int i = 0; i < ids.size(); ++i) {
     stmt.bind(i + 1, ids[i]);
   }
@@ -161,7 +161,7 @@ std::vector<TargetDto> DB::query_targets_mods(const std::vector<int64_t> &ids) {
     int id = stmt.getColumn(0).getInt();
 
     if (id_set.find(id) == id_set.end()) {  // if first meet, create one
-      p_tar = &targets.emplace_back();
+      p_tar = &tars.emplace_back();
       id_set.emplace(id);
 
       p_tar->id = id;
@@ -175,7 +175,7 @@ std::vector<TargetDto> DB::query_targets_mods(const std::vector<int64_t> &ids) {
     }
   }
 
-  return targets;
+  return tars;
 }
 
 std::vector<ModDto> DB::query_mods_n_files(const std::vector<int64_t> &ids) {
@@ -193,7 +193,7 @@ std::vector<ModDto> DB::query_mods_n_files(const std::vector<int64_t> &ids) {
       id_set.emplace(id);
 
       p_mod->id = id;
-      p_mod->target_id = stmt.getColumn(1).getInt();
+      p_mod->tar_id = stmt.getColumn(1).getInt();
       p_mod->dir = stmt.getColumn(2).getString();
       p_mod->status = static_cast<ModStatus>(stmt.getColumn(3).getInt());
     }
@@ -212,7 +212,7 @@ std::vector<ModDto> DB::query_mods_n_files(const std::vector<int64_t> &ids) {
       file_set.emplace(stmt.getColumn(5).getString());
     }
     for (auto &file : file_set) {
-      p_mod->backup_files.push_back(file);
+      p_mod->bak_files.push_back(file);
     }
   }
 
@@ -247,9 +247,9 @@ result<TargetDto> DB::query_target_by_dir(const std::string &dir) {
   return {{false, ""}};
 }
 
-std::vector<ModDto> DB::query_mods_by_target(int64_t target_id) {
+std::vector<ModDto> DB::query_mods_by_target(int64_t tar_id) {
   SQLite::Statement stmt{_db, QUERY_MODS_BY_TARGEDID};
-  stmt.bind(1, target_id);
+  stmt.bind(1, tar_id);
   std::vector<ModDto> dtos;
   while (stmt.executeStep()) {
     dtos.push_back(mod_from_stmt(stmt));
@@ -257,10 +257,10 @@ std::vector<ModDto> DB::query_mods_by_target(int64_t target_id) {
   return dtos;
 }
 
-result<ModDto> DB::query_mod_by_targetid_dir(int64_t target_id,
+result<ModDto> DB::query_mod_by_targetid_dir(int64_t tar_id,
                                              const std::string &dir) {
   SQLite::Statement stmt{_db, QUERY_MOD_BY_TARGEDID_DIR};
-  stmt.bind(1, target_id);
+  stmt.bind(1, tar_id);
   stmt.bind(2, dir);
   if (stmt.executeStep()) {
     return {{true, ""}, mod_from_stmt(stmt)};
@@ -309,20 +309,20 @@ result<ModDto> DB::query_mod(int64_t id) {
   return {{false, ""}};
 }
 
-int64_t DB::insert_mod(int64_t target_id, const std::string &dir, int status) {
+int64_t DB::insert_mod(int64_t tar_id, const std::string &dir, int status) {
   SQLite::Statement stmt{_db, INSERT_MOD};
-  stmt.bind(1, target_id);
+  stmt.bind(1, tar_id);
   stmt.bind(2, dir);
   stmt.bind(3, status);
   stmt.exec();
   return _db.getLastInsertRowid();
 }
 
-int64_t DB::insert_mod_w_files(int64_t target_id, const std::string &dir,
+int64_t DB::insert_mod_w_files(int64_t tar_id, const std::string &dir,
                                int status,
                                const std::vector<std::string> &files) {
   SQLite::Savepoint tx{_db, FILEMOD};
-  int64_t mod_id = insert_mod(target_id, dir, status);
+  int64_t mod_id = insert_mod(tar_id, dir, status);
   insert_mod_files(mod_id, files);
   tx.release();
   return mod_id;
@@ -371,7 +371,7 @@ std::vector<ModDto> DB::query_mods_contain_files(
       id_set.emplace(id);
 
       m_tar->id = id;
-      m_tar->target_id = stmt.getColumn(1).getInt();
+      m_tar->tar_id = stmt.getColumn(1).getInt();
       m_tar->dir = stmt.getColumn(2).getString();
       m_tar->status = static_cast<ModStatus>(stmt.getColumn(3).getInt());
     }
@@ -423,15 +423,14 @@ std::vector<std::string> DB::query_backup_files(int64_t mod_id) {
 }
 
 int DB::insert_backup_files(int64_t mod_id,
-                            const std::vector<std::string> &backup_files) {
-  if (backup_files.empty()) {
+                            const std::vector<std::string> &bak_files) {
+  if (bak_files.empty()) {
     return 0;
   }
 
-  SQLite::Statement stmt{_db,
-                         buildstr_insert_backup_files(backup_files.size())};
+  SQLite::Statement stmt{_db, buildstr_insert_backup_files(bak_files.size())};
   int i = 0;
-  for (const auto &dir : backup_files) {
+  for (const auto &dir : bak_files) {
     stmt.bind(++i, mod_id);
     stmt.bind(++i, dir);
   }

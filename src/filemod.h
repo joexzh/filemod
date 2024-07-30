@@ -28,28 +28,27 @@ class FileMod {
   template <typename Func>
   void tx_wrapper(result_base &ret, Func func);
 
-  result<int64_t> add_target(const std::string &tar_dir);
+  result<int64_t> add_target(const std::string &tar_rel);
 
-  result<int64_t> add_mod(int64_t target_id, const std::string &mod_src_dir);
+  result<int64_t> add_mod(int64_t tar_id, const std::string &mod_rel);
 
   result_base install_mods(const std::vector<int64_t> &mod_ids);
 
-  result_base install_from_target_id(int64_t target_id);
+  result_base install_from_target_id(int64_t tar_id);
 
-  result_base install_from_mod_dir(int64_t target_id,
-                                   const std::string &mod_dir);
+  result_base install_from_mod_src(int64_t tar_id, const std::string &mod_rel);
 
   result_base uninstall_mods(std::vector<int64_t> &mod_ids);
 
-  result_base uninstall_from_target_id(int64_t target_id);
+  result_base uninstall_from_target_id(int64_t tar_id);
 
   result_base remove_mods(std::vector<int64_t> &mod_ids);
 
-  result_base remove_from_target_id(int64_t target_id);
+  result_base remove_from_target_id(int64_t tar_id);
 
   std::string list_mods(std::vector<int64_t> &mod_ids);
 
-  std::string list_targets(std::vector<int64_t> &target_ids);
+  std::string list_targets(std::vector<int64_t> &tar_ids);
 
  private:
   FS _fs;  // ORDER DEPENDENCY

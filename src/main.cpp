@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "filemod.h"
-#include "src/fs.h"
 #include "src/utils.h"
 
 inline auto create_fm() {
@@ -72,8 +71,8 @@ inline int run(int argc, char **argv) {
 
   app.require_subcommand(1);
 
-  int64_t target_id{std::numeric_limits<int64_t>::min()};
-  std::vector<int64_t> target_ids;
+  int64_t tar_id{std::numeric_limits<int64_t>::min()};
+  std::vector<int64_t> tar_ids;
   std::vector<int64_t> mod_ids;
   std::string dir;
 
@@ -83,7 +82,7 @@ inline int run(int argc, char **argv) {
       ->check(CLI::ExistingDirectory);
   auto mdir_opt =
       add->add_option("--mdir", dir, "mod directory")->excludes("--tdir");
-  add->add_option("--t", target_id, "target id")
+  add->add_option("--t", tar_id, "target id")
       ->excludes("--tdir")
       ->needs("--mdir")
       ->take_last()
@@ -91,7 +90,7 @@ inline int run(int argc, char **argv) {
   mdir_opt->needs("--t")->take_last()->check(CLI::ExistingDirectory);
 
   auto ins = app.add_subcommand("install", "install mod to target directory");
-  ins->add_option("--t", target_id, "target id")
+  ins->add_option("--t", tar_id, "target id")
       ->take_last()
       ->check(name_validator);
   ins->add_option("--mdir", dir, "mod directory")
@@ -105,7 +104,7 @@ inline int run(int argc, char **argv) {
 
   auto uns =
       app.add_subcommand("uninstall", "uninstall mod from target directory");
-  uns->add_option("--t", target_id, "target id")
+  uns->add_option("--t", tar_id, "target id")
       ->take_last()
       ->check(name_validator);
   uns->add_option("--m", mod_ids, "mod ids")
@@ -115,7 +114,7 @@ inline int run(int argc, char **argv) {
 
   auto rmv =
       app.add_subcommand("remove", "remove target or mod from management");
-  rmv->add_option("--t", target_id, "target id")
+  rmv->add_option("--t", tar_id, "target id")
       ->take_last()
       ->check(name_validator);
   rmv->add_option("--m", mod_ids, "mod ids")
@@ -125,7 +124,7 @@ inline int run(int argc, char **argv) {
       ->take_last();
 
   auto lst = app.add_subcommand("list", "list managed targets and mods");
-  lst->add_option("--t", target_ids, "target ids")
+  lst->add_option("--t", tar_ids, "target ids")
       ->take_all()
       ->check(name_validator);
   lst->add_option("--m", mod_ids, "mod ids")
@@ -137,8 +136,8 @@ inline int run(int argc, char **argv) {
 
   add->callback([&]() {
     auto fm = create_fm();
-    if (is_set(target_id) && is_set(dir)) {  // add mod
-      move_to_retbase(fm.add_mod(target_id, dir), ret);
+    if (is_set(tar_id) && is_set(dir)) {  // add mod
+      move_to_retbase(fm.add_mod(tar_id, dir), ret);
     } else if (is_set(dir)) {  // add target
       move_to_retbase(fm.add_target(dir), ret);
     }
@@ -148,8 +147,8 @@ inline int run(int argc, char **argv) {
     auto fm = create_fm();
     if (is_set(mod_ids)) {  // remove mods
       ret = fm.remove_mods(mod_ids);
-    } else if (is_set(target_id)) {  // remove target
-      ret = fm.remove_from_target_id(target_id);
+    } else if (is_set(tar_id)) {  // remove target
+      ret = fm.remove_from_target_id(tar_id);
     }
   });
 
@@ -157,11 +156,11 @@ inline int run(int argc, char **argv) {
     auto fm = create_fm();
     if (is_set(mod_ids)) {  // install mods
       ret = fm.install_mods(mod_ids);
-    } else if (is_set(target_id) &&
+    } else if (is_set(tar_id) &&
                is_set(dir)) {  // add and install mod directly from mod dir
-      ret = fm.install_from_mod_dir(target_id, dir);
-    } else if (is_set(target_id)) {  // install mods from target id
-      ret = fm.install_from_target_id(target_id);
+      ret = fm.install_from_mod_src(tar_id, dir);
+    } else if (is_set(tar_id)) {  // install mods from target id
+      ret = fm.install_from_target_id(tar_id);
     }
   });
 
@@ -169,8 +168,8 @@ inline int run(int argc, char **argv) {
     auto fm = create_fm();
     if (is_set(mod_ids)) {  // uninstall mods
       ret = fm.uninstall_mods(mod_ids);
-    } else if (is_set(target_id)) {  // uninstall mod from target id
-      ret = fm.uninstall_from_target_id(target_id);
+    } else if (is_set(tar_id)) {  // uninstall mod from target id
+      ret = fm.uninstall_from_target_id(tar_id);
     }
   });
 
@@ -179,7 +178,7 @@ inline int run(int argc, char **argv) {
     if (is_set(mod_ids)) {  // list mods
       ret.msg = fm.list_mods(mod_ids);
     } else {  // list targets
-      ret.msg = fm.list_targets(target_ids);
+      ret.msg = fm.list_targets(tar_ids);
     }
   });
 

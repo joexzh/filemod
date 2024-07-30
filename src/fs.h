@@ -6,6 +6,7 @@
 
 #include <filesystem>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace filemod {
@@ -49,49 +50,53 @@ class FS {
 
   const std::filesystem::path &cfg_dir() const;
 
-  void create_target(int64_t target_id);
+  void create_target(int64_t tar_id);
 
-  void add_mod(const std::filesystem::path &cfg_mod_dir,
-               const std::filesystem::path &mod_src_dir,
-               const std::vector<std::filesystem::path> &mod_src_files);
+  // Return relative mod files
+  std::vector<std::string> add_mod(int64_t tar_id, const std::string &mod_dir,
+                                   const std::filesystem::path &mod_src);
 
-  std::vector<std::string> backup(const std::filesystem::path &cfg_mod_dir,
-                                  const std::filesystem::path &target_dir);
+  std::vector<std::string> backup(const std::filesystem::path &cfg_m,
+                                  const std::filesystem::path &tar_dir);
 
-  void install_mod(const std::filesystem::path &cfg_mod_dir,
-                   const std::filesystem::path &target_dir);
+  void install_mod(const std::filesystem::path &src_dir,
+                   const std::filesystem::path &dest_dir);
 
-  void uninstall_mod(
-      const std::filesystem::path &cfg_mod_dir,
-      const std::filesystem::path &target_dir,
-      const std::vector<std::filesystem::path> &sorted_mod_files,
-      const std::vector<std::filesystem::path> &sorted_backup_files);
+  void uninstall_mod(const std::filesystem::path &cfg_m,
+                     const std::filesystem::path &tar_dir,
+                     const std::vector<std::string> &sorted_m,
+                     const std::vector<std::string> &sorted_bak);
 
-  void uninstall_mod_files(
-      const std::filesystem::path &src_dir,
-      const std::filesystem::path &dest_dir,
-      const std::vector<std::filesystem::path> &sorted_files);
+  void uninstall_mod_files(const std::filesystem::path &src_dir,
+                           const std::filesystem::path &dest_dir,
+                           const std::vector<std::string> &sorted);
 
-  void remove_mod(const std::filesystem::path &cfg_mod_dir);
+  void remove_mod(const std::filesystem::path &cfg_m);
 
-  void remove_target(const std::filesystem::path &cfg_target_dir);
+  void remove_target(int64_t tar_id);
+
+  std::filesystem::path cfg_tar(int64_t tar_id) {
+    return _cfg_dir / std::to_string(tar_id);
+  }
+
+  std::filesystem::path cfg_mod(int64_t tar_id, const std::string &mod_dir) {
+    return cfg_tar(tar_id) /= mod_dir;
+  }
 
  private:
   std::filesystem::path _cfg_dir;
-  std::vector<file_status> _written;
+  std::vector<file_status> _log;
+  int _counter = 0;
 
-  int _commit_counter = 0;
-
-  void move_file(const std::filesystem::path &src_file,
-                 const std::filesystem::path &dest_file,
-                 const std::filesystem::path &dest_base_dir);
+  void move_file(const std::filesystem::path &src,
+                 const std::filesystem::path &dest,
+                 const std::filesystem::path &dest_dir);
 
   std::vector<std::string> backup_files(
-      const std::filesystem::path &cfg_mod_dir,
-      const std::filesystem::path &target_dir,
+      const std::filesystem::path &cfg_m, const std::filesystem::path &tar_dir,
       const std::vector<std::filesystem::path> &files);
 
-  void delete_empty_dirs(const std::vector<std::filesystem::path> &sorted_dirs);
+  void delete_empty_dirs(const std::vector<std::filesystem::path> &sorted);
 
 };  // class FS
 }  // namespace filemod
