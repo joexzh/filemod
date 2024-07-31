@@ -5,7 +5,7 @@
 #include "sql.h"
 
 #include <algorithm>
-#include <unordered_set>
+#include <set>
 
 #include "SQLiteCpp/Database.h"
 #include "SQLiteCpp/Savepoint.h"
@@ -150,28 +150,27 @@ SQLite::Savepoint DB::begin() { return SQLite::Savepoint{_db, FILEMOD}; }
 
 std::vector<TargetDto> DB::query_targets_mods(const std::vector<int64_t> &ids) {
   SQLite::Statement stmt{_db, buildstr_query_targets_mods(ids.size())};
-  std::vector<TargetDto> tars;
   for (int i = 0; i < ids.size(); ++i) {
     stmt.bind(i + 1, ids[i]);
   }
 
-  TargetDto *p_tar;
-  std::unordered_set<int> id_set;
+  std::vector<TargetDto> tars;
+  std::set<int> id_set;
+
   while (stmt.executeStep()) {  // the result is ordered by target.id, mod.id
     int id = stmt.getColumn(0).getInt();
 
-    if (id_set.find(id) == id_set.end()) {  // if first meet, create one
-      p_tar = &tars.emplace_back();
-      id_set.emplace(id);
-
-      p_tar->id = id;
-      p_tar->dir = stmt.getColumn(1).getString();
+    if (auto [_, yes] = id_set.insert(id); yes) {  // if first meet, create one
+      tars.push_back({.id = id, .dir = stmt.getColumn(1).getString()});
     }
+    assert(!tars.empty());
+    auto &tar = tars.back();
+
     if (!stmt.getColumn(2).isNull()) {
-      auto &mod = p_tar->ModDtos.emplace_back();
-      mod.id = stmt.getColumn(2).getInt();
-      mod.dir = stmt.getColumn(3).getString();
-      mod.status = static_cast<ModStatus>(stmt.getColumn(4).getInt());
+      tar.ModDtos.push_back(
+          {.id = stmt.getColumn(2).getInt(),
+           .dir = stmt.getColumn(3).getString(),
+           .status = static_cast<ModStatus>(stmt.getColumn(4).getInt())});
     }
   }
 
@@ -180,39 +179,36 @@ std::vector<TargetDto> DB::query_targets_mods(const std::vector<int64_t> &ids) {
 
 std::vector<ModDto> DB::query_mods_n_files(const std::vector<int64_t> &ids) {
   SQLite::Statement stmt{_db, bufildstr_query_mods_n_files(ids.size())};
-  std::vector<ModDto> mods;
   for (int i = 0; i < ids.size(); ++i) {
     stmt.bind(i + 1, ids[i]);
   }
-  ModDto *p_mod;
-  std::unordered_set<int> id_set;
+
+  std::vector<ModDto> mods;
+  std::set<int> id_set;
+  std::set<std::string> file_set;
+
   while (stmt.executeStep()) {  // the result is ordered by mod.id
     int id = stmt.getColumn(0).getInt();
-    if (id_set.find(id) == id_set.end()) {  // if first meet, create one
-      p_mod = &mods.emplace_back();
-      id_set.emplace(id);
-
-      p_mod->id = id;
-      p_mod->tar_id = stmt.getColumn(1).getInt();
-      p_mod->dir = stmt.getColumn(2).getString();
-      p_mod->status = static_cast<ModStatus>(stmt.getColumn(3).getInt());
+    if (auto [_, yes] = id_set.insert(id); yes) {  // if first meet, create one
+      mods.push_back(
+          {.id = id,
+           .tar_id = stmt.getColumn(1).getInt(),
+           .dir = stmt.getColumn(2).getString(),
+           .status = static_cast<ModStatus>(stmt.getColumn(3).getInt())});
     }
+    assert(!mods.empty());
+    auto &mod = mods.back();
 
-    std::unordered_set<std::string> file_set;
     // get mod_files
     if (!stmt.getColumn(4).isNull()) {
-      file_set.emplace(stmt.getColumn(4).getString());
+      if (auto [it, yes] = file_set.insert(stmt.getColumn(4).getString());
+          yes) {
+        mod.files.push_back(*it);
+      }
     }
-    for (auto &file : file_set) {
-      p_mod->files.push_back(file);
-    }
-    file_set.clear();
     // get backup_files
     if (!stmt.getColumn(5).isNull()) {
-      file_set.emplace(stmt.getColumn(5).getString());
-    }
-    for (auto &file : file_set) {
-      p_mod->bak_files.push_back(file);
+      mod.bak_files.push_back(stmt.getColumn(5).getString());
     }
   }
 
@@ -356,24 +352,22 @@ std::vector<ModDto> DB::query_mods_contain_files(
   }
 
   SQLite::Statement stmt{_db, buildstr_query_mods_contain_files(files.size())};
-  std::vector<ModDto> mods;
   for (int i = 0; i < files.size(); ++i) {
     stmt.bind(i + 1, files[i]);
   }
 
-  ModDto *m_tar;
-  std::unordered_set<int> id_set;
+  std::vector<ModDto> mods;
+  std::set<int> id_set;
+
   while (stmt.executeStep()) {
     int id = stmt.getColumn(0).getInt();
 
-    if (id_set.find(id) == id_set.end()) {  // if first meet, create one
-      m_tar = &mods.emplace_back();
-      id_set.emplace(id);
-
-      m_tar->id = id;
-      m_tar->tar_id = stmt.getColumn(1).getInt();
-      m_tar->dir = stmt.getColumn(2).getString();
-      m_tar->status = static_cast<ModStatus>(stmt.getColumn(3).getInt());
+    if (auto [_, yes] = id_set.insert(id); yes) {  // if first meet, create one
+      mods.push_back(
+          {.id = id,
+           .tar_id = stmt.getColumn(1).getInt(),
+           .dir = stmt.getColumn(2).getString(),
+           .status = static_cast<ModStatus>(stmt.getColumn(3).getInt())});
     }
   }
 
