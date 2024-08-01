@@ -142,14 +142,14 @@ std::vector<std::string> FS::backup(const std::filesystem::path &cfg_m,
 std::vector<std::string> FS::backup_files(
     const std::filesystem::path &cfg_m, const std::filesystem::path &tar_dir,
     const std::vector<std::filesystem::path> &files) {
+  std::vector<std::string> bak_rels;
+
   if (files.empty()) {
-    return {};
+    return bak_rels;
   }
 
   auto bak_base = cfg_m.parent_path() / BACKUP_DIR;
   create_directory_w(bak_base, _log);
-
-  std::vector<std::string> bak_rels;
 
   for (auto &file : files) {
     auto rel = std::filesystem::relative(file, tar_dir);

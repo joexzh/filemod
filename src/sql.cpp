@@ -347,8 +347,10 @@ int DB::delete_mod(int64_t id) {
 
 std::vector<ModDto> DB::query_mods_contain_files(
     const std::vector<std::string> &files) {
+  std::vector<ModDto> mods;
+
   if (files.empty()) {
-    return {};
+    return mods;
   }
 
   SQLite::Statement stmt{_db, buildstr_query_mods_contain_files(files.size())};
@@ -356,9 +358,7 @@ std::vector<ModDto> DB::query_mods_contain_files(
     stmt.bind(i + 1, files[i]);
   }
 
-  std::vector<ModDto> mods;
   std::set<int> id_set;
-
   while (stmt.executeStep()) {
     int id = stmt.getColumn(0).getInt();
 

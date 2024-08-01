@@ -70,8 +70,8 @@ class DB {
 
   result<ModDto> query_mod(int64_t id);
 
-  int64_t insert_mod_w_files(int64_t tar_id, const std::string &dir,
-                             int status, const std::vector<std::string> &files);
+  int64_t insert_mod_w_files(int64_t tar_id, const std::string &dir, int status,
+                             const std::vector<std::string> &files);
 
   int update_mod_status(int64_t id, int status);
 

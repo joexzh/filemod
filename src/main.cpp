@@ -13,20 +13,22 @@
 #include "filemod.h"
 #include "src/utils.h"
 
-inline auto create_fm() {
+static inline auto create_fm() {
   return filemod::FileMod(filemod::get_config_dir(), filemod::get_db_path());
 }
 
-inline bool is_set(int64_t id) {
+static inline bool is_set(int64_t id) {
   return id != std::numeric_limits<int64_t>::min();
 }
 
-inline bool is_set(const std::vector<int64_t> &ids) { return !ids.empty(); }
+static inline bool is_set(const std::vector<int64_t> &ids) {
+  return !ids.empty();
+}
 
-inline bool is_set(const std::string &dir) { return !dir.empty(); }
+static inline bool is_set(const std::string &dir) { return !dir.empty(); }
 
-inline void move_to_retbase(filemod::result<int64_t> &&from,
-                            filemod::result_base &to) {
+static inline void move_to_retbase(filemod::result<int64_t> &&from,
+                                   filemod::result_base &to) {
   to.success = from.success;
   if (from.success) {
     to.msg = std::to_string(from.data);
@@ -35,7 +37,7 @@ inline void move_to_retbase(filemod::result<int64_t> &&from,
   }
 }
 
-inline int run(int argc, char **argv) {
+static inline int run(int argc, char **argv) {
   if (!filemod::real_effective_user_match()) {
     std::cerr << "suid is not supported!\n";
     return EXIT_FAILURE;

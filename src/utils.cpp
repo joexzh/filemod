@@ -20,11 +20,13 @@ std::string get_exe_dir() {
 }
 
 std::string get_home_cfg_dir() {
+  std::string dir;
+
   char *home = getenv("HOME");
   if (nullptr == home) {
-    return "";
+    return dir;
   }
-  std::string dir;
+
   dir.reserve(std::strlen(home) - 1 + length_s("/.config/") +
               length_s(CONFIGDIR));
   dir += home;
@@ -34,11 +36,10 @@ std::string get_home_cfg_dir() {
 }
 
 std::string get_config_dir() {
-  auto home_dir = get_home_cfg_dir();
-  if (home_dir.empty()) {
-    return get_exe_dir();
+  if (auto home_dir = get_home_cfg_dir(); !home_dir.empty()) {
+    return home_dir;
   }
-  return home_dir;
+  return get_exe_dir();
 }
 
 std::string get_db_path() { return (get_config_dir() += "/") += DBFILE; }
