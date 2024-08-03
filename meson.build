@@ -16,20 +16,29 @@ libfilemod_src = [
     'src/utils.cpp',
 ]
 
-libfilemod_lib = library('libfilemod', sources: libfilemod_src, dependencies: [sqlitecpp_dep])
+libfilemod_lib = library(
+    'libfilemod',
+    sources: libfilemod_src,
+    dependencies: [sqlitecpp_dep],
+    cpp_args: ['-Wnrvo'],
+)
 libfilemod_dep = declare_dependency(link_with: libfilemod_lib, dependencies: [sqlitecpp_dep])
 
-executable('filemod', 'src/main.cpp', dependencies: [CLI11_dep, libfilemod_dep])
+executable(
+    'filemod',
+    'src/main.cpp',
+    dependencies: [CLI11_dep, libfilemod_dep],
+    link_args: '-fsanitize=address',
+)
 
 gtest_proj = subproject('gtest')
 gtest_dep = gtest_proj.get_variable('gtest_main_dep')
 
-test_src = ['test/dummy_test.cpp']
+test_src = ['test/testsql.cpp', 'test/testfs.cpp', 'test/testfilemod.cpp']
 
 e = executable(
     'testfilemod',
     sources: test_src,
-    dependencies: gtest_dep,
-    link_with: libfilemod_lib,
+    dependencies: [gtest_dep, libfilemod_dep],
 )
 test('gtest test', e)
