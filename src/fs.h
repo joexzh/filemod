@@ -12,7 +12,7 @@
 namespace filemod {
 
 const char BACKUP_DIR[] = "___filemod_backup";
-const char TEMP[] = "joexie.filemod";
+const char FILEMOD_TEMP_DIR[] = "joexie.filemod";
 const char UNINSTALLED[] = "___filemod_uninstalled";
 
 enum class action : uint8_t {
@@ -32,6 +32,20 @@ struct file_status {
 
 class FS {
  public:
+  static std::filesystem::path backup_dir(
+      const std::filesystem::path &cfg_tar) {
+    return cfg_tar / BACKUP_DIR;
+  }
+
+  static std::filesystem::path tmp_dir() {
+    return std::filesystem::temp_directory_path() /= FILEMOD_TEMP_DIR;
+  }
+
+  static std::filesystem::path uninstall_dir(
+      const std::filesystem::path &tar_id) {
+    return (tmp_dir() /= tar_id) /= UNINSTALLED;
+  }
+
   explicit FS(const std::filesystem::path &cfg_dir);
 
   FS(const FS &fs) = delete;
@@ -53,23 +67,17 @@ class FS {
   void create_target(int64_t tar_id);
 
   // Return relative mod files
-  std::vector<std::string> add_mod(int64_t tar_id, const std::string &mod_dir,
+  std::vector<std::string> add_mod(int64_t tar_id,
                                    const std::filesystem::path &mod_src);
 
-  std::vector<std::string> backup(const std::filesystem::path &cfg_m,
-                                  const std::filesystem::path &tar_dir);
-
-  void install_mod(const std::filesystem::path &src_dir,
-                   const std::filesystem::path &dest_dir);
+  // Return relative backup files
+  std::vector<std::string> install_mod(const std::filesystem::path &src_dir,
+                                       const std::filesystem::path &dest_dir);
 
   void uninstall_mod(const std::filesystem::path &cfg_m,
                      const std::filesystem::path &tar_dir,
                      const std::vector<std::string> &sorted_m,
                      const std::vector<std::string> &sorted_bak);
-
-  void uninstall_mod_files(const std::filesystem::path &src_dir,
-                           const std::filesystem::path &dest_dir,
-                           const std::vector<std::string> &sorted);
 
   void remove_mod(const std::filesystem::path &cfg_m);
 
@@ -84,7 +92,7 @@ class FS {
   }
 
  private:
-  std::filesystem::path _cfg_dir;
+  const std::filesystem::path _cfg_dir;
   std::vector<file_status> _log;
   int _counter = 0;
 
@@ -97,6 +105,10 @@ class FS {
       const std::vector<std::filesystem::path> &files);
 
   void delete_empty_dirs(const std::vector<std::filesystem::path> &sorted);
+
+  void uninstall_mod_files(const std::filesystem::path &src_dir,
+                           const std::filesystem::path &dest_dir,
+                           const std::vector<std::string> &rel_sorted);
 
 };  // class FS
 }  // namespace filemod

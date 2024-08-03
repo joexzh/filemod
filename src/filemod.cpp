@@ -96,7 +96,7 @@ result<int64_t> FileMod::add_mod(int64_t tar_id, const std::string &mod_rel) {
       return;
     }
 
-    auto files = _fs.add_mod(tar_id, mod_dir, mod_src);
+    auto files = _fs.add_mod(tar_id, mod_src);
     ret.data = _db.insert_mod_w_files(
         tar_id, mod_dir, static_cast<int64_t>(ModStatus::Uninstalled), files);
   });
@@ -134,7 +134,6 @@ result_base FileMod::install_mod(int64_t mod_id) {
       return;
     }
 
-    // check if conflict with original files
     auto tar_ret = _db.query_target(mod.tar_id);
     if (!tar_ret.success) {
       ret.success = false;
@@ -142,10 +141,9 @@ result_base FileMod::install_mod(int64_t mod_id) {
       ret.msg += std::to_string(mod.tar_id);
       return;
     }
-    auto bak_files = _fs.backup(cfg_m, tar_ret.data.dir);
 
-    _db.install_mod(mod.id, bak_files);
-    _fs.install_mod(cfg_m, tar_ret.data.dir);
+    auto baks = _fs.install_mod(cfg_m, tar_ret.data.dir);
+    _db.install_mod(mod.id, baks);
   });
 
   return ret;
