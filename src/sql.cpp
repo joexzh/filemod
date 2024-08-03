@@ -5,6 +5,7 @@
 #include "sql.h"
 
 #include <algorithm>
+#include <optional>
 #include <set>
 
 #include "SQLiteCpp/Database.h"
@@ -30,7 +31,7 @@ static const char CREATE_IX_TARGET[] =
 static const char CREATE_IX_MOD[] =
     "CREATE INDEX if not exists ix_mod on mod (target_id, dir, status, id)";
 static const char CREATE_IX_MOD_FILES[] =
-    "CREATE INDEX if not exists ix_mod_files (dir, mod_id)";
+    "CREATE INDEX if not exists ix_mod_files on mod_files (dir, mod_id)";
 
 static const char QUERY_TARGET[] = "select * from target where id=?";
 static const char QUERY_TARGET_BY_DIR[] = "select * from target where dir=?";
@@ -186,6 +187,7 @@ std::vector<ModDto> DB::query_mods_n_files(const std::vector<int64_t> &ids) {
   std::vector<ModDto> mods;
   std::set<int> id_set;
   std::set<std::string> file_set;
+  std::set<std::string> bak_set;
 
   while (stmt.executeStep()) {  // the result is ordered by mod.id
     int id = stmt.getColumn(0).getInt();
@@ -199,17 +201,18 @@ std::vector<ModDto> DB::query_mods_n_files(const std::vector<int64_t> &ids) {
     assert(!mods.empty());
     auto &mod = mods.back();
 
-    // get mod_files
-    if (!stmt.getColumn(4).isNull()) {
-      if (auto [it, yes] = file_set.insert(stmt.getColumn(4).getString());
-          yes) {
-        mod.files.push_back(*it);
+    auto push_files = [&](int i, auto &s, auto &v) {
+      if (!stmt.getColumn(i).isNull()) {
+        if (auto [it, yes] = s.insert(stmt.getColumn(i).getString()); yes) {
+          v.push_back(*it);
+        }
       }
-    }
+    };
+
+    // get mod_files
+    push_files(4, file_set, mod.files);
     // get backup_files
-    if (!stmt.getColumn(5).isNull()) {
-      mod.bak_files.push_back(stmt.getColumn(5).getString());
-    }
+    push_files(5, bak_set, mod.bak_files);
   }
 
   return mods;
@@ -267,8 +270,10 @@ result<ModDto> DB::query_mod_by_targetid_dir(int64_t tar_id,
 int64_t DB::insert_target(const std::string &dir) {
   SQLite::Statement stmt{_db, INSERT_TARGET};
   stmt.bind(1, dir);
-  stmt.exec();
-  return _db.getLastInsertRowid();
+  if (stmt.exec()) {
+    return _db.getLastInsertRowid();
+  }
+  return 0;
 }
 
 int DB::delete_target(int64_t id) {
@@ -310,8 +315,10 @@ int64_t DB::insert_mod(int64_t tar_id, const std::string &dir, int status) {
   stmt.bind(1, tar_id);
   stmt.bind(2, dir);
   stmt.bind(3, status);
-  stmt.exec();
-  return _db.getLastInsertRowid();
+  if (stmt.exec()) {
+    return _db.getLastInsertRowid();
+  }
+  return 0;
 }
 
 int64_t DB::insert_mod_w_files(int64_t tar_id, const std::string &dir,
@@ -319,7 +326,9 @@ int64_t DB::insert_mod_w_files(int64_t tar_id, const std::string &dir,
                                const std::vector<std::string> &files) {
   SQLite::Savepoint tx{_db, FILEMOD};
   int64_t mod_id = insert_mod(tar_id, dir, status);
-  insert_mod_files(mod_id, files);
+  if (mod_id) {
+    insert_mod_files(mod_id, files);
+  }
   tx.release();
   return mod_id;
 }

@@ -73,24 +73,10 @@ class DB {
   int64_t insert_mod_w_files(int64_t tar_id, const std::string &dir, int status,
                              const std::vector<std::string> &files);
 
-  int update_mod_status(int64_t id, int status);
-
   int delete_mod(int64_t id);
 
   std::vector<ModDto> query_mods_contain_files(
       const std::vector<std::string> &files);
-  std::vector<std::string> query_mod_files(int64_t mod_id);
-
-  int insert_mod_files(int64_t mod_id, const std::vector<std::string> &files);
-
-  int delete_mod_files(int64_t mod_id);
-
-  std::vector<std::string> query_backup_files(int64_t mod_id);
-
-  int insert_backup_files(int64_t mod_id,
-                          const std::vector<std::string> &bak_files);
-
-  int delete_backup_files(int64_t mod_id);
 
   void install_mod(int64_t id, const std::vector<std::string> &backup_files);
 
@@ -100,5 +86,20 @@ class DB {
   SQLite::Database _db;
 
   int64_t insert_mod(int64_t tar_id, const std::string &dir, int status);
+
+  int update_mod_status(int64_t id, int status);
+
+  std::vector<std::string> query_mod_files(int64_t mod_id);
+
+  std::vector<std::string> query_backup_files(int64_t mod_id);
+
+  int insert_mod_files(int64_t mod_id, const std::vector<std::string> &files);
+
+  int delete_mod_files(int64_t mod_id);
+
+  int insert_backup_files(int64_t mod_id,
+                          const std::vector<std::string> &bak_files);
+
+  int delete_backup_files(int64_t mod_id);
 };
 }  // namespace filemod
