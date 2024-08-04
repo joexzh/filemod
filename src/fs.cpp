@@ -59,13 +59,6 @@ inline static void visit_through_path(const std::filesystem::path &rel_path,
   }
 }
 
-inline static void create_directory_w(const std::filesystem::path &dir,
-                                      std::vector<file_status> &log) {
-  if (std::filesystem::create_directory(dir)) {
-    log.emplace_back(std::filesystem::path(), dir, action::create);
-  }
-}
-
 file_status::file_status(std::filesystem::path src, std::filesystem::path dest,
                          enum action action)
     : src{std::move(src)}, dest{std::move(dest)}, action{action} {}
@@ -73,7 +66,7 @@ file_status::file_status(std::filesystem::path src, std::filesystem::path dest,
 FS::FS(const std::filesystem::path &cfg_dir) : _cfg_dir(cfg_dir) {}
 
 FS::~FS() noexcept {
-  if (_counter != 0) {
+  if (_counter > 0) {
     rollback();
   }
 
@@ -107,14 +100,14 @@ void FS::rollback() {
 
 void FS::create_target(int64_t tar_id) {
   // create new folder named tar_id
-  create_directory_w(cfg_tar(tar_id), _log);
+  create_directory_w(cfg_tar(tar_id));
 }
 
 std::vector<std::string> FS::add_mod(int64_t tar_id,
                                      const std::filesystem::path &mod_src) {
   auto cfg_m = cfg_mod(
       tar_id, std::filesystem::relative(mod_src, mod_src.parent_path()));
-  create_directory_w(cfg_m, _log);
+  create_directory_w(cfg_m);
 
   std::vector<std::string> rels;
   // copy from src to dest folder
@@ -124,10 +117,10 @@ std::vector<std::string> FS::add_mod(int64_t tar_id,
     auto dest = cfg_m / rel;
 
     if (src.is_directory()) {
-      create_directory_w(dest, _log);
+      create_directory_w(dest);
     } else {
       std::filesystem::copy(src, dest);
-      _log.emplace_back(std::filesystem::path(), dest, action::copy);
+      log_copy(dest);
     }
 
     rels.push_back(rel);
@@ -145,7 +138,7 @@ std::vector<std::string> FS::backup_files(
   }
 
   auto bak_dir = backup_dir(cfg_m.parent_path());
-  create_directory_w(bak_dir, _log);
+  create_directory_w(bak_dir);
 
   for (auto &file : files) {
     auto rel = std::filesystem::relative(file, tar_dir);
@@ -169,10 +162,10 @@ std::vector<std::string> FS::install_mod(
     auto rel = std::filesystem::relative(src.path(), src_dir);
     auto dest = dest_dir / rel;
     if (src.is_directory()) {
-      create_directory_w(dest, _log);
+      create_directory_w(dest);
     } else {
       std::filesystem::create_symlink(src.path(), dest);
-      _log.emplace_back(std::filesystem::path(), dest, action::create);
+      log_create(dest);
     }
   }
 
@@ -222,11 +215,10 @@ void FS::move_file(const std::filesystem::path &src,
                    const std::filesystem::path &dest,
                    const std::filesystem::path &dest_dir) {
   visit_through_path(std::filesystem::relative(dest.parent_path(), dest_dir),
-                     dest_dir,
-                     [&](auto &curr) { create_directory_w(curr, _log); });
+                     dest_dir, [&](auto &curr) { create_directory_w(curr); });
 
   cross_filesystem_rename(src, dest);
-  _log.emplace_back(src, dest, action::move);
+  log_move(src, dest);
 }
 
 void FS::remove_mod(const std::filesystem::path &cfg_m) {
@@ -257,7 +249,7 @@ void FS::remove_target(int64_t tar_id) {
 void FS::delete_empty_dirs(const std::vector<std::filesystem::path> &sorted) {
   for (auto start = sorted.crbegin(); start != sorted.crend(); ++start) {
     if (std::filesystem::remove(*start)) {
-      _log.emplace_back(std::filesystem::path(), *start, action::del);
+      log_del(*start);
     }
   }
 }

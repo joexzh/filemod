@@ -34,7 +34,12 @@ executable(
 gtest_proj = subproject('gtest')
 gtest_dep = gtest_proj.get_variable('gtest_main_dep')
 
-test_src = ['test/testsql.cpp', 'test/testfs.cpp', 'test/testfilemod.cpp']
+test_src = [
+    'test/testsql.cpp',
+    'test/testfs.cpp',
+    'test/testfilemod.cpp',
+    'test/testhelper.h',
+]
 
 e = executable(
     'testfilemod',

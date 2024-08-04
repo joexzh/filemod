@@ -1,22 +1,13 @@
 #include <gtest/gtest.h>
 #include <src/sql.h>
 
-#include <filesystem>
 #include <string>
 #include <vector>
 
-class PathTest : public testing::Test {
+#include "test/testhelper.h"
+
+class DBTest : public PathHelper {
  protected:
-  ~PathTest() noexcept override { std::filesystem::remove_all(_base); }
-
-  std::filesystem::path _base{std::filesystem::current_path() / "test"};
-  std::filesystem::path _game1_dir{_base / "games" / "game1"};
-};
-
-class DBTest : public PathTest {
- protected:
-  DBTest() {}
-
   int64_t insert_mod1(int64_t tar_id) {
     return _db.insert_mod_w_files(
         tar_id, _mod1_dir, static_cast<int>(filemod::ModStatus::Uninstalled),
@@ -29,13 +20,6 @@ class DBTest : public PathTest {
         _mod2_files);
   }
 
-  std::string _mod1_dir{"mod1_dir"};
-  std::vector<std::string> _mod1_files{"mod1", "mod1/readme.txt",
-                                       "mod1/asset/a.so"};
-  std::string _mod2_dir{"mod2_dir"};
-  std::vector<std::string> _mod2_files{"mod2", "mod2/readme.txt",
-                                       "mod2/asset/a.so"};
-  std::vector<std::string> _baks = {"a/b/c", "de/f"};
   filemod::DB _db{":memory:"};
 };
 

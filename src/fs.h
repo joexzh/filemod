@@ -96,6 +96,37 @@ class FS {
   std::vector<file_status> _log;
   int _counter = 0;
 
+  void log_create(const std::filesystem::path &dest) {
+    if (_counter) {
+      _log.emplace_back(std::filesystem::path(), dest, action::create);
+    }
+  }
+
+  void log_move(const std::filesystem::path &src,
+                const std::filesystem::path &dest) {
+    if (_counter) {
+      _log.emplace_back(src, dest, action::move);
+    }
+  }
+
+  void log_copy(const std::filesystem::path &dest) {
+    if (_counter) {
+      _log.emplace_back(std::filesystem::path(), dest, action::copy);
+    }
+  }
+
+  void log_del(const std::filesystem::path &dest) {
+    if (_counter) {
+      _log.emplace_back(std::filesystem::path(), dest, action::del);
+    }
+  }
+
+  void create_directory_w(const std::filesystem::path &dir) {
+    if (std::filesystem::create_directory(dir)) {
+      log_create(dir);
+    }
+  }
+
   void move_file(const std::filesystem::path &src,
                  const std::filesystem::path &dest,
                  const std::filesystem::path &dest_dir);
