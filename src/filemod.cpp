@@ -192,9 +192,9 @@ result_base FileMod::install_from_target_id(int64_t tar_id) {
   return ret;
 }
 
-result_base FileMod::install_from_mod_src(int64_t tar_id,
-                                          const std::string &mod_rel) {
-  result_base ret;
+result<int64_t> FileMod::install_from_mod_src(int64_t tar_id,
+                                              const std::string &mod_rel) {
+  result<int64_t> ret;
   tx_wrapper(ret, [&]() {
     auto add_ret = add_mod(tar_id, mod_rel);
     if (!add_ret.success) {
@@ -202,6 +202,7 @@ result_base FileMod::install_from_mod_src(int64_t tar_id,
       ret.msg = std::move(add_ret.msg);
       return;
     }
+    ret.data = add_ret.data;
 
     auto ins_ret = install_mod(add_ret.data);
     if (!ins_ret.success) {
@@ -257,7 +258,7 @@ result<ModDto> FileMod::uninstall_mod(int64_t mod_id) {
   return ret;
 }
 
-result_base FileMod::uninstall_mods(std::vector<int64_t> &mod_ids) {
+result_base FileMod::uninstall_mods(const std::vector<int64_t> &mod_ids) {
   result_base ret;
   tx_wrapper(ret, [&]() {
     for (auto mod_id : mod_ids) {
@@ -314,7 +315,7 @@ result_base FileMod::remove_mod(int64_t mod_id) {
   return ret;
 }
 
-result_base FileMod::remove_mods(std::vector<int64_t> &mod_ids) {
+result_base FileMod::remove_mods(const std::vector<int64_t> &mod_ids) {
   result_base ret;
 
   tx_wrapper(ret, [&]() {
@@ -372,8 +373,8 @@ TARGET ID 111 DIR /a/b/c
 */
 static const char MARGIN[] = "    ";
 
-static std::string _list_mods(std::vector<ModDto> &mods, bool verbose = false,
-                              uint8_t indent = 0) {
+static std::string _list_mods(const std::vector<ModDto> &mods,
+                              bool verbose = false, uint8_t indent = 0) {
   std::string ret;
 
   std::string full_margin;
@@ -416,15 +417,14 @@ static std::string _list_mods(std::vector<ModDto> &mods, bool verbose = false,
   return ret;
 }
 
-std::string FileMod::list_mods(std::vector<int64_t> &mod_ids) {
-  auto mods = _db.query_mods_n_files(mod_ids);
-  return _list_mods(mods, true);
+std::string FileMod::list_mods(const std::vector<int64_t> &mod_ids) {
+  return _list_mods(query_mods(mod_ids), true);
 }
 
-std::string FileMod::list_targets(std::vector<int64_t> &tar_ids) {
+std::string FileMod::list_targets(const std::vector<int64_t> &tar_ids) {
   std::string ret;
 
-  auto tars = _db.query_targets_mods(tar_ids);
+  auto tars = query_targets(tar_ids);
   for (auto &tar : tars) {
     ret += "TARGET ID ";
     ret += std::to_string(tar.id);

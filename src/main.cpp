@@ -160,7 +160,7 @@ static inline int run(int argc, char **argv) {
       ret = fm.install_mods(mod_ids);
     } else if (is_set(tar_id) &&
                is_set(dir)) {  // add and install mod directly from mod dir
-      ret = fm.install_from_mod_src(tar_id, dir);
+      move_to_retbase(fm.install_from_mod_src(tar_id, dir), ret);
     } else if (is_set(tar_id)) {  // install mods from target id
       ret = fm.install_from_target_id(tar_id);
     }
