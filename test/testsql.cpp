@@ -20,7 +20,7 @@ class DBTest : public PathHelper {
         _mod2_files);
   }
 
-  filemod::DB _db{":memory:"};
+  filemod::DB _db{_db_path};
 };
 
 TEST_F(DBTest, insert_target) {

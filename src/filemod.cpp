@@ -361,17 +361,28 @@ result_base FileMod::remove_from_target_id(int64_t tar_id) {
 /*
 format:
 
-TARGET ID 111 DIR /a/b/c
+TARGET ID 111 DIR '/a/b/c'
     MOD ID 222 DIR e/f/g STATUS installed
         MOD FILES
-            a/b/c
-            e/f/g
-            r/g/c
-            a
+            'a/b/c'
+            'e/f/g'
+            'r/g/c'
+            'a'
         BACKUP FILES
-            xxx
+            'xxx'
 */
 static const char MARGIN[] = "    ";
+
+static inline void _list_files(const std::vector<std::string> &files,
+                               std::string_view &margin, std::string &ret) {
+  for (auto &file : files) {
+    ret += margin;
+    ret += '\'';
+    ret += file;
+    ret += '\'';
+    ret += "\n";
+  }
+}
 
 static std::string _list_mods(const std::vector<ModDto> &mods,
                               bool verbose = false, uint8_t indent = 0) {
@@ -399,18 +410,10 @@ static std::string _list_mods(const std::vector<ModDto> &mods,
     if (verbose) {
       ret += margin2;
       ret += "MOD FILES\n";
-      for (auto &file : mod.files) {
-        ret += margin3;
-        ret += file;
-        ret += "\n";
-      }
+      _list_files(mod.files, margin3, ret);
       ret += margin2;
       ret += "BACKUP FILES\n";
-      for (auto &file : mod.bak_files) {
-        ret += margin3;
-        ret += file;
-        ret += "\n";
-      }
+      _list_files(mod.bak_files, margin3, ret);
     }
   }
 

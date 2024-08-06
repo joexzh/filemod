@@ -1,49 +1,12 @@
 #include <gtest/gtest.h>
 
 #include <filesystem>
-#include <fstream>
 #include <string>
 #include <vector>
 
 #include "src/fs.h"
 #include "src/utils.h"
 #include "test/testhelper.h"
-
-class FSTest : public PathHelper {
- public:
-  FSTest() {
-    // '/tmp/filemod_cfg'
-    std::filesystem::create_directories(_cfg_dir);
-    // '/tmp/joexie.filemod/games/game1'
-    std::filesystem::create_directories(_game1_dir);
-  }
-  ~FSTest() override {
-    std::filesystem::remove_all(_cfg_dir);
-    std::filesystem::remove_all(_tmp_dir);
-  }
-
- protected:
-  const std::filesystem::path _cfg_dir{std::filesystem::temp_directory_path() /
-                                       filemod::CONFIGDIR};
-  const std::filesystem::path _mod1_src{_tmp_dir / _mod1_dir};
-  const int64_t _tar_id = 1;
-
-  filemod::FS create_fs() { return filemod::FS{_cfg_dir}; }
-
-  void create_mod1_files(const std::filesystem::path &base,
-                         bool include_file = true) {
-    std::filesystem::create_directories(base);
-
-    for (int i = 0; i < _mod1_files.size(); ++i) {
-      auto p = base / _mod1_files[i];
-      if (i < _mod1_files.size() - 1) {
-        std::filesystem::create_directories(p);
-      } else if (include_file) {
-        std::ofstream{p};
-      }
-    }
-  }
-};
 
 TEST_F(FSTest, create_target) {
   auto fs = create_fs();
@@ -63,7 +26,6 @@ TEST_F(FSTest, create_target_rollback) {
 
 TEST_F(FSTest, add_mod) {
   auto fs = create_fs();
-  create_mod1_files(_mod1_src);
   fs.create_target(_tar_id);
   auto files = fs.add_mod(_tar_id, _mod1_src);
 
@@ -75,7 +37,6 @@ TEST_F(FSTest, add_mod) {
 TEST_F(FSTest, add_mod_rollback) {
   {
     auto fs = create_fs();
-    create_mod1_files(_mod1_src);
     fs.create_target(_tar_id);
     fs.begin();
     auto files = fs.add_mod(_tar_id, _mod1_src);
