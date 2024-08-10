@@ -60,11 +60,9 @@ FileMod::FileMod(const std::string &cfg_dir, const std::string &db_path)
 result<int64_t> FileMod::add_target(const std::string &tar_rel) {
   result<int64_t> ret;
 
-  auto tar_dir = std::filesystem::absolute(tar_rel);
-
   tx_wrapper(ret, [&]() {
-    auto tar_ret = _db.query_target_by_dir(tar_dir);
-    if (tar_ret.success) {
+    auto tar_dir = std::filesystem::absolute(tar_rel);
+    if (auto tar_ret = _db.query_target_by_dir(tar_dir); tar_ret.success) {
       ret.data = tar_ret.data.id;
       // if target exists, do nothing
       return;
@@ -78,7 +76,7 @@ result<int64_t> FileMod::add_target(const std::string &tar_rel) {
 }
 
 result<int64_t> FileMod::add_mod(int64_t tar_id, const std::string &mod_rel) {
-  result<int64_t> ret{{true}};
+  result<int64_t> ret;
 
   tx_wrapper(ret, [&]() {
     if (!_db.query_target(tar_id).success) {
@@ -89,8 +87,8 @@ result<int64_t> FileMod::add_mod(int64_t tar_id, const std::string &mod_rel) {
     auto mod_src = std::filesystem::absolute(mod_rel);
     auto mod_dir = std::filesystem::relative(mod_src, mod_src.parent_path());
 
-    auto mod_ret = _db.query_mod_by_targetid_dir(tar_id, mod_dir);
-    if (mod_ret.success) {
+    if (auto mod_ret = _db.query_mod_by_targetid_dir(tar_id, mod_dir);
+        mod_ret.success) {
       // if mod exists, do nothing
       ret.data = mod_ret.data.id;
       return;
@@ -154,8 +152,7 @@ result_base FileMod::install_mods(const std::vector<int64_t> &mod_ids) {
 
   tx_wrapper(ret, [&]() {
     for (const auto &mod_id : mod_ids) {
-      auto _ret = install_mod(mod_id);
-      if (!_ret.success) {
+      if (auto _ret = install_mod(mod_id); !ret.success) {
         ret.success = false;
         ret.msg = std::move(_ret.msg);
         return;
@@ -180,8 +177,7 @@ result_base FileMod::install_from_target_id(int64_t tar_id) {
     auto &tar = tars[0];
     for (auto &mod : tar.ModDtos) {
       if (ModStatus::Uninstalled == mod.status) {
-        auto _ret = install_mod(mod.id);
-        if (!_ret.success) {
+        if (auto _ret = install_mod(mod.id); !_ret.success) {
           ret.success = false;
           ret.msg = std::move(_ret.msg);
           return;
@@ -196,15 +192,15 @@ result<int64_t> FileMod::install_from_mod_src(int64_t tar_id,
                                               const std::string &mod_rel) {
   result<int64_t> ret;
   tx_wrapper(ret, [&]() {
-    auto add_ret = add_mod(tar_id, mod_rel);
-    if (!add_ret.success) {
+    if (auto add_ret = add_mod(tar_id, mod_rel); !add_ret.success) {
       ret.success = false;
       ret.msg = std::move(add_ret.msg);
       return;
+    } else {
+      ret.data = add_ret.data;
     }
-    ret.data = add_ret.data;
 
-    auto ins_ret = install_mod(add_ret.data);
+    auto ins_ret = install_mod(ret.data);
     if (!ins_ret.success) {
       ret.success = false;
       ret.msg = std::move(ins_ret.msg);
@@ -380,7 +376,7 @@ static inline void _list_files(const std::vector<std::string> &files,
     ret += '\'';
     ret += file;
     ret += '\'';
-    ret += "\n";
+    ret += '\n';
   }
 }
 
@@ -406,7 +402,7 @@ static std::string _list_mods(const std::vector<ModDto> &mods,
     ret += mod.dir;
     ret += "' STATUS ";
     ret += mod.status == ModStatus::Installed ? "installed" : "not installed";
-    ret += "\n";
+    ret += '\n';
     if (verbose) {
       ret += margin2;
       ret += "MOD FILES\n";

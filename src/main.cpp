@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "filemod.h"
-#include "src/utils.h"
+#include "utils.h"
 
 static inline auto create_fm() {
   return filemod::FileMod(filemod::get_config_dir(), filemod::get_db_path());
