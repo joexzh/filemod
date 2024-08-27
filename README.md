@@ -6,20 +6,20 @@ filemod helps you manage mod files, install and uninstall them atomically.
 
 ```bash
 filemod add --tdir DIR
-filemod add --t TAR_ID --mdir DIR
+filemod add -t TAR_ID --mdir DIR
 
-filemod install --t TAR_ID
-filemod install --t TAR_ID --mdir DIR
-filemod install --m MOD_ID1 MOD_ID2 ...
+filemod install -t TAR_ID
+filemod install -t TAR_ID --mdir DIR
+filemod install -m MOD_ID1 MOD_ID2 ...
 
-filemod uninstall --t TAR_ID
+filemod uninstall -t TAR_ID
 filemod uninstall -m MOD_ID1 MOD_ID2 ...
 
-filemod remove --t TAR_ID
-filemod remove --m MOD_ID1 MOD_ID2 ...
+filemod remove -t TAR_ID
+filemod remove -m MOD_ID1 MOD_ID2 ...
 
-filemod list [--t TAR_ID1 TAR_ID2 ...]
-filemod list --m MOD_ID1 MOD_ID2 ...
+filemod list [-t TAR_ID1 TAR_ID2 ...]
+filemod list -m MOD_ID1 MOD_ID2 ...
 ```
 
 *Note: the following **Atomic/Atomically** means changes will auto rollback if something go wrong, it is in the control of `filemod`, not in the filesystem or disk level.*
@@ -43,13 +43,13 @@ This is an atomic operation.
 ### 2. Add an outside mod directory to target atomically
 
 ```bash
-./filemod add --t TAR_ID --mdir /path/to/mod/dir/
+./filemod add -t TAR_ID --mdir /path/to/mod/dir/
 ```
 
 e.g.
 
 ```bash
-./filemod add --t 1 --mdir '/home/joexie/Downloads/mods/FTFANG-7157-1-1-1705443514'
+./filemod add -t 1 --mdir '/home/joexie/Downloads/mods/FTFANG-7157-1-1-1705443514'
 ```
 
 The mod is downloaded from internet, nexusmods for example. You should extract the zip/tar.gz file by hand before running this command.
@@ -61,13 +61,13 @@ This is an atomic operation.
 ### 3. Install mods atomically
 
 ```bash
-./filemod install --t TAR_ID # install all mods of a target
+./filemod install -t TAR_ID # install all mods of a target
 
 
-./filemod install --t TAR_ID --mdir MOD_DIR # add the mod to target, and install it
+./filemod install -t TAR_ID --mdir MOD_DIR # add the mod to target, and install it
 
 
-./filemod install --m MOD_ID_1 MOD_ID_2 ... # install specific mods, ids are separated by whitespace
+./filemod install -m MOD_ID_1 MOD_ID_2 ... # install specific mods, ids are separated by whitespace
 ```
 
 Install mod files from the config dir to target dir, auto detect conflicts and backup original game files.
@@ -77,9 +77,9 @@ This is an atomic operation.
 ### 4. uninstall mods atomically
 
 ```bash
-./filemod uninstall --t TAR_ID # uninstall all mods of a target
+./filemod uninstall -t TAR_ID # uninstall all mods of a target
 
-./filemod uninstall --m MOD_ID_1 MOD_ID_2 ... # uninstall mods, ids are separated by whitespace
+./filemod uninstall -m MOD_ID_1 MOD_ID_2 ... # uninstall mods, ids are separated by whitespace
 ```
 
 Uninstall mod files in target dir, and auto restore backup files if any.
@@ -89,9 +89,9 @@ This an atomic operation.
 ### 5. remove target and mods atomically
 
 ```bash
-./filemod remove --t TAR_ID # remove a target and all of its mods
+./filemod remove -t TAR_ID # remove a target and all of its mods
 
-./filemod remove --m MOD_ID_1 MOD_ID_2 ... # remove mods
+./filemod remove -m MOD_ID_1 MOD_ID_2 ... # remove mods
 ```
 
 Removes target and mods from config dir.
@@ -101,15 +101,15 @@ This is an atomic operation.
 ### 6. display targets and mods in config
 
 ```bash
-./filemod list [--t TAR_ID_1 TAR_ID_2 ...] # list targets and their mods status
+./filemod list [-t TAR_ID_1 TAR_ID_2 ...] # list targets and their mods status
 
-./filemod list --m MOD_ID_1 MOD_ID_2 ... # list mods status, mod files and backup files
+./filemod list -m MOD_ID_1 MOD_ID_2 ... # list mods status, mod files and backup files
 ```
 
 e.g.
 
 ```bash
-./filemod list --m 6
+./filemod list -m 6
 
 MOD ID 5 DIR 'FTFANG-7157-1-1-1705443514' STATUS installed
     MOD FILES
