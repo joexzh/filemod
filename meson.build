@@ -24,11 +24,16 @@ libfilemod_lib = library(
 )
 libfilemod_dep = declare_dependency(link_with: libfilemod_lib, dependencies: [sqlitecpp_dep])
 
+link_args = []
+if get_option('buildtype').startswith('debug')
+    link_args += '-fsanitize=address'
+endif
+
 executable(
     'filemod',
     'src/main.cpp',
     dependencies: [CLI11_dep, libfilemod_dep],
-    link_args: '-fsanitize=address',
+    link_args: link_args,
 )
 
 gtest_proj = subproject('gtest', default_options: ['default_library=shared'])
