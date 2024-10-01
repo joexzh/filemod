@@ -57,8 +57,8 @@ class FileMod {
   std::string list_targets(const std::vector<int64_t> &tar_ids);
 
  private:
-  FS _fs;
-  DB _db;
+  FS _fs;  // ORDER DEPENDENCY
+  DB _db;  // ORDER DEPENDENCY
 
   template <typename Func>
   void tx_wrapper(result_base &ret, Func func);

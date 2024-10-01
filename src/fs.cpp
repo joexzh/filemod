@@ -26,7 +26,8 @@ static void cross_filesystem_rename(const std::filesystem::path &src,
     // copy and delete
     std::filesystem::copy(src, dest);
     std::filesystem::remove(src);
-  } else {  // doesn't handle other errors
+  } else {
+    // doesn't handle other errors
     throw std::runtime_error(err_code.message());
   }
 }
@@ -63,15 +64,18 @@ file_status::file_status(std::filesystem::path src, std::filesystem::path dest,
                          enum action action)
     : src{std::move(src)}, dest{std::move(dest)}, action{action} {}
 
-FS::FS(const std::filesystem::path &cfg_dir) : _cfg_dir(cfg_dir) {}
+FS::FS(const std::filesystem::path &cfg_dir) : _cfg_dir(cfg_dir) {
+  std::filesystem::create_directories(cfg_dir);
+}
 
 FS::~FS() noexcept {
   if (_counter > 0) {
     rollback();
   }
 
-  std::filesystem::remove_all(std::filesystem::temp_directory_path() /
-                              FILEMOD_TEMP_DIR);
+  std::error_code dummy;
+  std::filesystem::remove_all(
+      std::filesystem::temp_directory_path() / FILEMOD_TEMP_DIR, dummy);
 }
 
 const std::filesystem::path &FS::cfg_dir() const { return _cfg_dir; }
@@ -248,7 +252,8 @@ void FS::remove_target(int64_t tar_id) {
 
 void FS::delete_empty_dirs(const std::vector<std::filesystem::path> &sorted) {
   for (auto start = sorted.crbegin(); start != sorted.crend(); ++start) {
-    if (std::filesystem::remove(*start)) {
+    std::error_code dummy;
+    if (std::filesystem::remove(*start, dummy)) {
       log_del(*start);
     }
   }

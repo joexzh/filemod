@@ -22,7 +22,14 @@ std::string get_exe_dir() {
 std::string get_home_cfg_dir() {
   std::string dir;
 
+#ifdef __linux__
   char *home = getenv("HOME");
+#elif _WIN32
+  char *home = getenv("USERPROFILE");
+#else
+  static_assert(false, "not supported OS");
+#endif
+
   if (nullptr == home) {
     return dir;
   }
@@ -42,6 +49,6 @@ std::string get_config_dir() {
   return get_exe_dir();
 }
 
-std::string get_db_path() { return (get_config_dir() += "/") += DBFILE; }
+std::string get_db_path() { return (get_config_dir() += '/') += DBFILE; }
 
 }  // namespace filemod

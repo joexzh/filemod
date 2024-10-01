@@ -53,9 +53,7 @@ void FileMod::tx_wrapper(result_base &ret, Func func) {
 }
 
 FileMod::FileMod(const std::string &cfg_dir, const std::string &db_path)
-    : _fs{cfg_dir}, _db{db_path} {
-  std::filesystem::create_directories(_fs.cfg_dir());
-}
+    : _fs{cfg_dir}, _db{db_path} {}
 
 result<int64_t> FileMod::add_target(const std::string &tar_rel) {
   result<int64_t> ret;
