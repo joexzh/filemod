@@ -16,18 +16,19 @@ libfilemod_src = [
     'src/utils.cpp',
 ]
 
+link_args = []
+if get_option('buildtype').startswith('debug')
+    link_args += '-fsanitize=address'
+endif
+
 libfilemod_lib = library(
     'libfilemod',
     sources: libfilemod_src,
     dependencies: [sqlitecpp_dep],
     cpp_args: ['-Wnrvo'],
+    link_args: link_args,
 )
 libfilemod_dep = declare_dependency(link_with: libfilemod_lib, dependencies: [sqlitecpp_dep])
-
-link_args = []
-if get_option('buildtype').startswith('debug')
-    link_args += '-fsanitize=address'
-endif
 
 executable(
     'filemod',
@@ -50,5 +51,6 @@ e = executable(
     'testfilemod',
     sources: test_src,
     dependencies: [gtest_dep, libfilemod_dep],
+    link_args: link_args,
 )
 test('gtest test', e)
