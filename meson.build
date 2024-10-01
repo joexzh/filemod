@@ -1,7 +1,7 @@
 project('filemod', 'cpp', version: '0.1.0', default_options: ['cpp_std=c++17', 'default_library=static'])
 
-sqlitecpp_dep = subproject('SQLiteCpp').get_variable('sqlitecpp_dep')
-CLI11_dep = subproject('CLI11').get_variable('CLI11_dep')
+sqlitecpp_dep = subproject('sqlitecpp').get_variable('sqlitecpp_dep')
+CLI11_dep = subproject('cli11').get_variable('CLI11_dep')
 
 libfilemod_src = [
     'src/filemod.h',

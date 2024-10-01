@@ -1,2 +1,2 @@
 [wrap-redirect]
-filename = SQLiteCpp/subprojects/sqlite3.wrap
+filename = SQLiteCpp-3.3.2/subprojects/sqlite3.wrap
