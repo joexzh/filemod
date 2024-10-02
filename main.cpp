@@ -11,10 +11,6 @@
 #include <string>
 #include <vector>
 
-static inline auto create_fm() {
-  return filemod::modder(filemod::get_config_dir(), filemod::get_db_path());
-}
-
 static inline bool is_set(int64_t id) {
   return id != std::numeric_limits<int64_t>::min();
 }
@@ -130,50 +126,50 @@ static inline int run(int argc, char **argv) {
   filemod::result_base ret{.success = true};
 
   add->callback([&]() {
-    auto fm = create_fm();
+    auto modder = filemod::create_modder();
     if (is_set(tar_id) && is_set(dir)) {  // add mod
-      move_to_retbase(fm.add_mod(tar_id, dir), ret);
+      move_to_retbase(modder.add_mod(tar_id, dir), ret);
     } else if (is_set(dir)) {  // add target
-      move_to_retbase(fm.add_target(dir), ret);
+      move_to_retbase(modder.add_target(dir), ret);
     }
   });
 
   rmv->callback([&]() {
-    auto fm = create_fm();
+    auto modder = filemod::create_modder();
     if (is_set(mod_ids)) {  // remove mods
-      ret = fm.remove_mods(mod_ids);
+      ret = modder.remove_mods(mod_ids);
     } else if (is_set(tar_id)) {  // remove target
-      ret = fm.remove_from_target_id(tar_id);
+      ret = modder.remove_from_target_id(tar_id);
     }
   });
 
   ins->callback([&]() {
-    auto fm = create_fm();
+    auto modder = filemod::create_modder();
     if (is_set(mod_ids)) {  // install mods
-      ret = fm.install_mods(mod_ids);
+      ret = modder.install_mods(mod_ids);
     } else if (is_set(tar_id) &&
                is_set(dir)) {  // add and install mod directly from mod dir
-      move_to_retbase(fm.install_from_mod_src(tar_id, dir), ret);
+      move_to_retbase(modder.install_from_mod_src(tar_id, dir), ret);
     } else if (is_set(tar_id)) {  // install mods from target id
-      ret = fm.install_from_target_id(tar_id);
+      ret = modder.install_from_target_id(tar_id);
     }
   });
 
   uns->callback([&]() {
-    auto fm = create_fm();
+    auto modder = filemod::create_modder();
     if (is_set(mod_ids)) {  // uninstall mods
-      ret = fm.uninstall_mods(mod_ids);
+      ret = modder.uninstall_mods(mod_ids);
     } else if (is_set(tar_id)) {  // uninstall mod from target id
-      ret = fm.uninstall_from_target_id(tar_id);
+      ret = modder.uninstall_from_target_id(tar_id);
     }
   });
 
   lst->callback([&]() {
-    auto fm = create_fm();
+    auto modder = filemod::create_modder();
     if (is_set(mod_ids)) {  // list mods
-      ret.msg = fm.list_mods(mod_ids);
+      ret.msg = modder.list_mods(mod_ids);
     } else {  // list targets
-      ret.msg = fm.list_targets(tar_ids);
+      ret.msg = modder.list_targets(tar_ids);
     }
   });
 

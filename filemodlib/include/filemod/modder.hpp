@@ -69,4 +69,8 @@ class modder {
 
   result_base remove_mod(int64_t mod_id);
 };
+
+inline modder create_modder() {
+  return modder(get_config_dir(), get_db_path());
+}
 }  // namespace filemod

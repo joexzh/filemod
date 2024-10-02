@@ -187,7 +187,7 @@ result_base modder::install_from_target_id(int64_t tar_id) {
 }
 
 result<int64_t> modder::install_from_mod_src(int64_t tar_id,
-                                              const std::string &mod_rel) {
+                                             const std::string &mod_rel) {
   result<int64_t> ret;
   tx_wrapper(ret, [&]() {
     if (auto add_ret = add_mod(tar_id, mod_rel); !add_ret.success) {
