@@ -22,8 +22,6 @@ const char DBFILE[] = "filemod.db";
 const char FILEMOD[] = "filemod";
 const char CONFIGDIR[] = "filemod_cfg";
 
-bool real_effective_user_match();
-
 std::string get_exe_dir();
 
 std::string get_home_cfg_dir();

@@ -10,8 +10,8 @@
 #include <fstream>
 #include <string>
 
-#include "src/fs.h"
-#include "src/utils.h"
+#include "filemod/fs.hpp"
+#include "filemod/utils.hpp"
 
 class PathHelper : public testing::Test {
  public:

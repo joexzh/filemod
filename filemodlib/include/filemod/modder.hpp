@@ -7,23 +7,23 @@
 #include <string>
 #include <vector>
 
-#include "fs.h"
-#include "sql.h"
-#include "utils.h"
+#include "fs.hpp"
+#include "sql.hpp"
+#include "utils.hpp"
 
 namespace filemod {
 
-class FileMod {
+class modder {
  public:
-  explicit FileMod(const std::string &cfg_dir, const std::string &db_path);
+  explicit modder(const std::string &cfg_dir, const std::string &db_path);
 
-  FileMod(const FileMod &filemod) = delete;
-  FileMod &operator=(const FileMod &filemod) = delete;
+  modder(const modder &filemod) = delete;
+  modder &operator=(const modder &filemod) = delete;
 
-  FileMod(FileMod &&filemod) = delete;
-  FileMod &operator=(FileMod &&filemod) = delete;
+  modder(modder &&filemod) = delete;
+  modder &operator=(modder &&filemod) = delete;
 
-  ~FileMod() = default;
+  ~modder() = default;
 
   result<int64_t> add_target(const std::string &tar_rel);
 

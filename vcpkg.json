@@ -1,0 +1,7 @@
+{
+  "dependencies": [
+    "gtest",
+    "sqlitecpp",
+    "cli11"
+  ]
+}

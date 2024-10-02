@@ -2,13 +2,13 @@
 
 #include <filesystem>
 
-#include "src/filemod.h"
-#include "testhelper.h"
+#include "filemod/modder.hpp"
+#include "testhelper.hpp"
 
 class FilemodTest : public FSTest {
  public:
  protected:
-  filemod::FileMod _fm{_cfg_dir, _db_path};
+  filemod::modder _fm{_cfg_dir, _db_path};
 };
 
 TEST_F(FilemodTest, add_target) {

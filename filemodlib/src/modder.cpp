@@ -2,15 +2,15 @@
 // Created by Joe Tse on 11/26/23.
 //
 
-#include "filemod.h"
+#include "modder.hpp"
 
 #include <algorithm>
 #include <filesystem>
 #include <string>
 
-#include "fs.h"
-#include "sql.h"
-#include "utils.h"
+#include "fs.hpp"
+#include "sql.hpp"
+#include "utils.hpp"
 
 namespace filemod {
 
@@ -38,7 +38,7 @@ static inline std::vector<ModDto> find_conflict_mods(
 }
 
 template <typename Func>
-void FileMod::tx_wrapper(result_base &ret, Func func) {
+void modder::tx_wrapper(result_base &ret, Func func) {
   ret.success = true;
   _fs.begin();
   auto dbtx = _db.begin();
@@ -52,10 +52,10 @@ void FileMod::tx_wrapper(result_base &ret, Func func) {
   _fs.commit();
 }
 
-FileMod::FileMod(const std::string &cfg_dir, const std::string &db_path)
+modder::modder(const std::string &cfg_dir, const std::string &db_path)
     : _fs{cfg_dir}, _db{db_path} {}
 
-result<int64_t> FileMod::add_target(const std::string &tar_rel) {
+result<int64_t> modder::add_target(const std::string &tar_rel) {
   result<int64_t> ret;
 
   tx_wrapper(ret, [&]() {
@@ -73,7 +73,7 @@ result<int64_t> FileMod::add_target(const std::string &tar_rel) {
   return ret;
 }
 
-result<int64_t> FileMod::add_mod(int64_t tar_id, const std::string &mod_rel) {
+result<int64_t> modder::add_mod(int64_t tar_id, const std::string &mod_rel) {
   result<int64_t> ret;
 
   tx_wrapper(ret, [&]() {
@@ -100,7 +100,7 @@ result<int64_t> FileMod::add_mod(int64_t tar_id, const std::string &mod_rel) {
   return ret;
 }
 
-result_base FileMod::install_mod(int64_t mod_id) {
+result_base modder::install_mod(int64_t mod_id) {
   result_base ret;
 
   tx_wrapper(ret, [&]() {
@@ -145,7 +145,7 @@ result_base FileMod::install_mod(int64_t mod_id) {
   return ret;
 }
 
-result_base FileMod::install_mods(const std::vector<int64_t> &mod_ids) {
+result_base modder::install_mods(const std::vector<int64_t> &mod_ids) {
   result_base ret;
 
   tx_wrapper(ret, [&]() {
@@ -161,7 +161,7 @@ result_base FileMod::install_mods(const std::vector<int64_t> &mod_ids) {
   return ret;
 }
 
-result_base FileMod::install_from_target_id(int64_t tar_id) {
+result_base modder::install_from_target_id(int64_t tar_id) {
   result_base ret;
 
   tx_wrapper(ret, [&]() {
@@ -186,7 +186,7 @@ result_base FileMod::install_from_target_id(int64_t tar_id) {
   return ret;
 }
 
-result<int64_t> FileMod::install_from_mod_src(int64_t tar_id,
+result<int64_t> modder::install_from_mod_src(int64_t tar_id,
                                               const std::string &mod_rel) {
   result<int64_t> ret;
   tx_wrapper(ret, [&]() {
@@ -208,7 +208,7 @@ result<int64_t> FileMod::install_from_mod_src(int64_t tar_id,
   return ret;
 }
 
-result<ModDto> FileMod::uninstall_mod(int64_t mod_id) {
+result<ModDto> modder::uninstall_mod(int64_t mod_id) {
   result<ModDto> ret;
 
   tx_wrapper(ret, [&]() {
@@ -252,7 +252,7 @@ result<ModDto> FileMod::uninstall_mod(int64_t mod_id) {
   return ret;
 }
 
-result_base FileMod::uninstall_mods(const std::vector<int64_t> &mod_ids) {
+result_base modder::uninstall_mods(const std::vector<int64_t> &mod_ids) {
   result_base ret;
   tx_wrapper(ret, [&]() {
     for (auto mod_id : mod_ids) {
@@ -267,7 +267,7 @@ result_base FileMod::uninstall_mods(const std::vector<int64_t> &mod_ids) {
   return ret;
 }
 
-result_base FileMod::uninstall_from_target_id(int64_t tar_id) {
+result_base modder::uninstall_from_target_id(int64_t tar_id) {
   result_base ret;
   tx_wrapper(ret, [&]() {
     auto tars = _db.query_targets_mods(std::vector<int64_t>{tar_id});
@@ -292,7 +292,7 @@ result_base FileMod::uninstall_from_target_id(int64_t tar_id) {
   return ret;
 }
 
-result_base FileMod::remove_mod(int64_t mod_id) {
+result_base modder::remove_mod(int64_t mod_id) {
   result_base ret;
 
   tx_wrapper(ret, [&]() {
@@ -309,7 +309,7 @@ result_base FileMod::remove_mod(int64_t mod_id) {
   return ret;
 }
 
-result_base FileMod::remove_mods(const std::vector<int64_t> &mod_ids) {
+result_base modder::remove_mods(const std::vector<int64_t> &mod_ids) {
   result_base ret;
 
   tx_wrapper(ret, [&]() {
@@ -326,7 +326,7 @@ result_base FileMod::remove_mods(const std::vector<int64_t> &mod_ids) {
   return ret;
 }
 
-result_base FileMod::remove_from_target_id(int64_t tar_id) {
+result_base modder::remove_from_target_id(int64_t tar_id) {
   result_base ret;
 
   tx_wrapper(ret, [&]() {
@@ -414,11 +414,11 @@ static std::string _list_mods(const std::vector<ModDto> &mods,
   return ret;
 }
 
-std::string FileMod::list_mods(const std::vector<int64_t> &mod_ids) {
+std::string modder::list_mods(const std::vector<int64_t> &mod_ids) {
   return _list_mods(query_mods(mod_ids), true);
 }
 
-std::string FileMod::list_targets(const std::vector<int64_t> &tar_ids) {
+std::string modder::list_targets(const std::vector<int64_t> &tar_ids) {
   std::string ret;
 
   auto tars = query_targets(tar_ids);

@@ -4,15 +4,15 @@
 
 #pragma once
 
+#include <SQLiteCpp/Database.h>
 #include <SQLiteCpp/SQLiteCpp.h>
+#include <SQLiteCpp/Savepoint.h>
 
 #include <filesystem>
 #include <string>
 #include <vector>
 
-#include "SQLiteCpp/Database.h"
-#include "SQLiteCpp/Savepoint.h"
-#include "utils.h"
+#include "utils.hpp"
 
 namespace filemod {
 enum class ModStatus {

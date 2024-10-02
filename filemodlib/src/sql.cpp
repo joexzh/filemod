@@ -2,16 +2,17 @@
 // Created by Joe Tse on 11/28/23.
 //
 
-#include "sql.h"
+#include "sql.hpp"
+
+#include <SQLiteCpp/Database.h>
+#include <SQLiteCpp/Savepoint.h>
+#include <SQLiteCpp/Statement.h>
 
 #include <algorithm>
 #include <optional>
 #include <set>
 
-#include "SQLiteCpp/Database.h"
-#include "SQLiteCpp/Savepoint.h"
-#include "SQLiteCpp/Statement.h"
-#include "src/utils.h"
+#include "utils.hpp"
 
 namespace filemod {
 

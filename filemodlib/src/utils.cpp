@@ -2,7 +2,7 @@
 // Created by Joe Tse on 4/11/24.
 //
 
-#include "utils.h"
+#include "utils.hpp"
 
 #include <unistd.h>
 
@@ -11,8 +11,6 @@
 #include <filesystem>
 
 namespace filemod {
-
-bool real_effective_user_match() { return getuid() == geteuid(); }
 
 std::string get_exe_dir() {
   return std::filesystem::canonical("/proc/self/exe").parent_path() /=

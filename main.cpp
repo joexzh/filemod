@@ -4,17 +4,15 @@
 #include <CLI/CLI.hpp>
 #include <cstdlib>
 #include <exception>
+#include <filemod/modder.hpp>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "filemod.h"
-#include "utils.h"
-
 static inline auto create_fm() {
-  return filemod::FileMod(filemod::get_config_dir(), filemod::get_db_path());
+  return filemod::modder(filemod::get_config_dir(), filemod::get_db_path());
 }
 
 static inline bool is_set(int64_t id) {
@@ -38,11 +36,6 @@ static inline void move_to_retbase(filemod::result<int64_t> &&from,
 }
 
 static inline int run(int argc, char **argv) {
-  if (!filemod::real_effective_user_match()) {
-    std::cerr << "suid is not supported!\n";
-    return EXIT_FAILURE;
-  }
-
   CLI::App app{"filemod is file replacement manager."};
   app.set_help_all_flag("--help-all");
 

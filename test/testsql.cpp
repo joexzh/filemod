@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
-#include <src/sql.h>
 
 #include <string>
 #include <vector>
 
-#include "test/testhelper.h"
+#include "filemod/sql.hpp"
+#include "testhelper.hpp"
 
 class DBTest : public PathHelper {
  protected:

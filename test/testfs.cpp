@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
-#include "src/fs.h"
-#include "src/utils.h"
-#include "test/testhelper.h"
+#include "filemod/fs.hpp"
+#include "filemod/utils.hpp"
+#include "testhelper.hpp"
 
 TEST_F(FSTest, create_target) {
   auto fs = create_fs();

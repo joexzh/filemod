@@ -1,7 +1,7 @@
 build
-build-*
-subprojects/*
-!subprojects/*.wrap
+bin
 .idea
 .cache
 .vscode
+.vs
+CMakeUserPresets.json 
