@@ -18,6 +18,7 @@ struct result : result_base {
   T data;
 };
 
+const char UnSupportedOS[] = "Unsupported OS!";
 const char DBFILE[] = "filemod.db";
 const char FILEMOD[] = "filemod";
 const char CONFIGDIR[] = "filemod_cfg";

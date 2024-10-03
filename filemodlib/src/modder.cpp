@@ -60,13 +60,13 @@ result<int64_t> modder::add_target(const std::string &tar_rel) {
 
   tx_wrapper(ret, [&]() {
     auto tar_dir = std::filesystem::absolute(tar_rel);
-    if (auto tar_ret = _db.query_target_by_dir(tar_dir); tar_ret.success) {
+    if (auto tar_ret = _db.query_target_by_dir(tar_dir.string()); tar_ret.success) {
       ret.data = tar_ret.data.id;
       // if target exists, do nothing
       return;
     }
 
-    ret.data = _db.insert_target(tar_dir);
+    ret.data = _db.insert_target(tar_dir.string());
     _fs.create_target(ret.data);
   });
 
@@ -85,7 +85,7 @@ result<int64_t> modder::add_mod(int64_t tar_id, const std::string &mod_rel) {
     auto mod_src = std::filesystem::absolute(mod_rel);
     auto mod_dir = std::filesystem::relative(mod_src, mod_src.parent_path());
 
-    if (auto mod_ret = _db.query_mod_by_targetid_dir(tar_id, mod_dir);
+    if (auto mod_ret = _db.query_mod_by_targetid_dir(tar_id, mod_dir.string());
         mod_ret.success) {
       // if mod exists, do nothing
       ret.data = mod_ret.data.id;
@@ -94,7 +94,7 @@ result<int64_t> modder::add_mod(int64_t tar_id, const std::string &mod_rel) {
 
     auto files = _fs.add_mod(tar_id, mod_src);
     ret.data = _db.insert_mod_w_files(
-        tar_id, mod_dir, static_cast<int64_t>(ModStatus::Uninstalled), files);
+        tar_id, mod_dir.string(), static_cast<int64_t>(ModStatus::Uninstalled), files);
   });
 
   return ret;

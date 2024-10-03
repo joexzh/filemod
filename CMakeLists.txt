@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 project(filemod)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 set(OSBitness 32)
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -16,6 +16,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${FullOutputDir}")
 if (MSVC)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
     set(BUILD_SHARED_LIBS TRUE)
+    add_compile_definitions(_DISABLE_VECTOR_ANNOTATION)
+    add_compile_definitions(_DISABLE_STRING_ANNOTATION) # workaround https://github.com/actions/runner-images/issues/7739#issuecomment-1596775652
 
     add_compile_options($<$<CONFIG:Debug>:/fsanitize=address>)
     add_link_options($<$<CONFIG:Debug>:/fsanitize=address>)

@@ -110,7 +110,8 @@ void FS::create_target(int64_t tar_id) {
 std::vector<std::string> FS::add_mod(int64_t tar_id,
                                      const std::filesystem::path &mod_src) {
   auto cfg_m = cfg_mod(
-      tar_id, std::filesystem::relative(mod_src, mod_src.parent_path()));
+      tar_id,
+      std::filesystem::relative(mod_src, mod_src.parent_path()).string());
   create_directory_w(cfg_m);
 
   std::vector<std::string> rels;
@@ -127,7 +128,7 @@ std::vector<std::string> FS::add_mod(int64_t tar_id,
       log_copy(dest);
     }
 
-    rels.push_back(rel);
+    rels.push_back(rel.string());
   }
   return rels;
 }
@@ -148,7 +149,7 @@ std::vector<std::string> FS::backup_files(
     auto rel = std::filesystem::relative(file, tar_dir);
     auto bak_file = bak_dir / rel;
     move_file(file, bak_file, bak_dir);
-    rel_baks.push_back(rel);
+    rel_baks.push_back(rel.string());
   }
 
   return rel_baks;
@@ -184,11 +185,11 @@ void FS::uninstall_mod(const std::filesystem::path &cfg_m,
     return;
   }
 
-  auto uni_dir = uninstall_dir(*-- --cfg_m.end());
-  std::filesystem::create_directories(uni_dir);
+  auto tmp_uni_dir = uninstall_dir(*-- --cfg_m.end());
+  std::filesystem::create_directories(tmp_uni_dir);
 
   // remove (move) symlinks and dirs
-  uninstall_mod_files(tar_dir, uni_dir, sorted_m);
+  uninstall_mod_files(tar_dir, tmp_uni_dir, sorted_m);
 
   // restore backups
   auto bak_dir = backup_dir(cfg_m.parent_path());

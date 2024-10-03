@@ -8,11 +8,11 @@
 class FilemodTest : public FSTest {
  public:
  protected:
-  filemod::modder _fm{_cfg_dir, _db_path};
+  filemod::modder _fm{_cfg_dir.string(), _db_path.string()};
 };
 
 TEST_F(FilemodTest, add_target) {
-  auto ret = _fm.add_target(_game1_dir);
+  auto ret = _fm.add_target(_game1_dir.string());
 
   ASSERT_TRUE(ret.success);
   EXPECT_LT(0, ret.data);
@@ -23,8 +23,8 @@ TEST_F(FilemodTest, add_target) {
 }
 
 TEST_F(FilemodTest, add_mod) {
-  auto tar_ret = _fm.add_target(_game1_dir);
-  auto mod_ret = _fm.add_mod(tar_ret.data, _mod1_src);
+  auto tar_ret = _fm.add_target(_game1_dir.string());
+  auto mod_ret = _fm.add_mod(tar_ret.data, _mod1_src.string());
 
   ASSERT_TRUE(mod_ret.success);
   EXPECT_LT(0, mod_ret.data);
@@ -35,8 +35,8 @@ TEST_F(FilemodTest, add_mod) {
 }
 
 TEST_F(FilemodTest, install_mods) {
-  auto tar_ret = _fm.add_target(_game1_dir);
-  auto mod_ret = _fm.add_mod(tar_ret.data, _mod1_src);
+  auto tar_ret = _fm.add_target(_game1_dir.string());
+  auto mod_ret = _fm.add_mod(tar_ret.data, _mod1_src.string());
   auto ins_ret = _fm.install_mods({mod_ret.data});
 
   EXPECT_TRUE(ins_ret.success);
@@ -51,8 +51,8 @@ TEST_F(FilemodTest, install_mods) {
 }
 
 TEST_F(FilemodTest, install_from_target_id) {
-  auto tar_ret = _fm.add_target(_game1_dir);
-  auto mod_ret = _fm.add_mod(tar_ret.data, _mod1_src);
+  auto tar_ret = _fm.add_target(_game1_dir.string());
+  auto mod_ret = _fm.add_mod(tar_ret.data, _mod1_src.string());
   auto ret = _fm.install_from_target_id(tar_ret.data);
 
   EXPECT_TRUE(ret.success);
@@ -67,8 +67,8 @@ TEST_F(FilemodTest, install_from_target_id) {
 }
 
 TEST_F(FilemodTest, install_from_mod_src) {
-  auto tar_ret = _fm.add_target(_game1_dir);
-  auto mod_ret = _fm.install_from_mod_src(tar_ret.data, _mod1_src);
+  auto tar_ret = _fm.add_target(_game1_dir.string());
+  auto mod_ret = _fm.install_from_mod_src(tar_ret.data, _mod1_src.string());
 
   EXPECT_TRUE(mod_ret.success);
   EXPECT_LT(0, mod_ret.data);
@@ -83,8 +83,8 @@ TEST_F(FilemodTest, install_from_mod_src) {
 }
 
 TEST_F(FilemodTest, uninstall_mods) {
-  auto tar_ret = _fm.add_target(_game1_dir);
-  auto mod_ret = _fm.install_from_mod_src(tar_ret.data, _mod1_src);
+  auto tar_ret = _fm.add_target(_game1_dir.string());
+  auto mod_ret = _fm.install_from_mod_src(tar_ret.data, _mod1_src.string());
   auto ret = _fm.uninstall_mods({mod_ret.data});
 
   EXPECT_TRUE(ret.success);
@@ -98,8 +98,8 @@ TEST_F(FilemodTest, uninstall_mods) {
 }
 
 TEST_F(FilemodTest, uninstall_from_target_id) {
-  auto tar_ret = _fm.add_target(_game1_dir);
-  auto mod_ret = _fm.install_from_mod_src(tar_ret.data, _mod1_src);
+  auto tar_ret = _fm.add_target(_game1_dir.string());
+  auto mod_ret = _fm.install_from_mod_src(tar_ret.data, _mod1_src.string());
   auto ret = _fm.uninstall_from_target_id(tar_ret.data);
 
   EXPECT_TRUE(ret.success);
@@ -113,8 +113,8 @@ TEST_F(FilemodTest, uninstall_from_target_id) {
 }
 
 TEST_F(FilemodTest, remove_mods) {
-  auto tar_ret = _fm.add_target(_game1_dir);
-  auto mod_ret = _fm.install_from_mod_src(tar_ret.data, _mod1_src);
+  auto tar_ret = _fm.add_target(_game1_dir.string());
+  auto mod_ret = _fm.install_from_mod_src(tar_ret.data, _mod1_src.string());
   auto ret = _fm.remove_mods({mod_ret.data});
 
   EXPECT_TRUE(ret.success);
@@ -126,8 +126,8 @@ TEST_F(FilemodTest, remove_mods) {
 }
 
 TEST_F(FilemodTest, remove_from_target_id) {
-  auto tar_ret = _fm.add_target(_game1_dir);
-  auto mod_ret = _fm.install_from_mod_src(tar_ret.data, _mod1_src);
+  auto tar_ret = _fm.add_target(_game1_dir.string());
+  auto mod_ret = _fm.install_from_mod_src(tar_ret.data, _mod1_src.string());
   auto ret = _fm.remove_from_target_id(tar_ret.data);
 
   EXPECT_TRUE(ret.success);

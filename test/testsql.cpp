@@ -20,17 +20,17 @@ class DBTest : public PathHelper {
         _mod2_files);
   }
 
-  filemod::DB _db{_db_path};
+  filemod::DB _db{_db_path.string()};
 };
 
 TEST_F(DBTest, insert_target) {
-  auto id = _db.insert_target(_game1_dir);
+  auto id = _db.insert_target(_game1_dir.string());
 
   EXPECT_LT(0, id);
 }
 
 TEST_F(DBTest, query_target) {
-  auto id = _db.insert_target(_game1_dir);
+  auto id = _db.insert_target(_game1_dir.string());
   auto ret = _db.query_target(id);
 
   EXPECT_TRUE(ret.success);
@@ -40,8 +40,8 @@ TEST_F(DBTest, query_target) {
 }
 
 TEST_F(DBTest, query_target_by_dir) {
-  auto id = _db.insert_target(_game1_dir);
-  auto ret = _db.query_target_by_dir(_game1_dir);
+  auto id = _db.insert_target(_game1_dir.string());
+  auto ret = _db.query_target_by_dir(_game1_dir.string());
 
   EXPECT_TRUE(ret.success);
   EXPECT_LT(0, ret.data.id);
@@ -50,21 +50,21 @@ TEST_F(DBTest, query_target_by_dir) {
 }
 
 TEST_F(DBTest, delete_target) {
-  auto id = _db.insert_target(_game1_dir);
+  auto id = _db.insert_target(_game1_dir.string());
   int cnt = _db.delete_target(id);
 
   EXPECT_EQ(1, cnt);
 }
 
 TEST_F(DBTest, insert_mod_w_files) {
-  auto tar_id = _db.insert_target(_game1_dir);
+  auto tar_id = _db.insert_target(_game1_dir.string());
   auto mod_id = insert_mod1(tar_id);
 
   EXPECT_LT(0, mod_id);
 }
 
 TEST_F(DBTest, delete_mod) {
-  auto tar_id = _db.insert_target(_game1_dir);
+  auto tar_id = _db.insert_target(_game1_dir.string());
   auto mod_id = insert_mod1(tar_id);
   int cnt = _db.delete_mod(mod_id);
 
@@ -72,7 +72,7 @@ TEST_F(DBTest, delete_mod) {
 }
 
 TEST_F(DBTest, query_mod) {
-  auto tar_id = _db.insert_target(_game1_dir);
+  auto tar_id = _db.insert_target(_game1_dir.string());
   auto mod_id = insert_mod1(tar_id);
   auto ret = _db.query_mod(mod_id);
 
@@ -86,7 +86,7 @@ TEST_F(DBTest, query_mod) {
 }
 
 TEST_F(DBTest, query_mods_n_files) {
-  auto tar_id = _db.insert_target(_game1_dir);
+  auto tar_id = _db.insert_target(_game1_dir.string());
   auto mod_id = insert_mod1(tar_id);
   auto mods = _db.query_mods_n_files({mod_id});
 
@@ -101,7 +101,7 @@ TEST_F(DBTest, query_mods_n_files) {
 }
 
 TEST_F(DBTest, query_targets_mods) {
-  auto tar_id = _db.insert_target(_game1_dir);
+  auto tar_id = _db.insert_target(_game1_dir.string());
   auto mod_id = insert_mod1(tar_id);
   auto tars = _db.query_targets_mods({tar_id});
 
@@ -120,7 +120,7 @@ TEST_F(DBTest, query_targets_mods) {
 }
 
 TEST_F(DBTest, query_mods_by_target) {
-  auto tar_id = _db.insert_target(_game1_dir);
+  auto tar_id = _db.insert_target(_game1_dir.string());
   auto mod_id = insert_mod1(tar_id);
   auto mods = _db.query_mods_by_target(tar_id);
 
@@ -133,7 +133,7 @@ TEST_F(DBTest, query_mods_by_target) {
 }
 
 TEST_F(DBTest, query_mod_by_targetid_dir) {
-  auto tar_id = _db.insert_target(_game1_dir);
+  auto tar_id = _db.insert_target(_game1_dir.string());
   auto mod_id = insert_mod1(tar_id);
   auto ret = _db.query_mod_by_targetid_dir(tar_id, _mod1_dir);
 
@@ -145,7 +145,7 @@ TEST_F(DBTest, query_mod_by_targetid_dir) {
 }
 
 TEST_F(DBTest, query_mods_contain_files) {
-  auto tar_id = _db.insert_target(_game1_dir);
+  auto tar_id = _db.insert_target(_game1_dir.string());
   auto mod1_id = insert_mod1(tar_id);
   insert_mod2(tar_id);
   auto mods = _db.query_mods_contain_files(_mod1_files);
@@ -156,7 +156,7 @@ TEST_F(DBTest, query_mods_contain_files) {
 }
 
 TEST_F(DBTest, install_mod) {
-  auto tar_id = _db.insert_target(_game1_dir);
+  auto tar_id = _db.insert_target(_game1_dir.string());
   auto mod_id = insert_mod1(tar_id);
   _db.install_mod(mod_id, _baks);
   auto mods = _db.query_mods_n_files({mod_id});
@@ -168,7 +168,7 @@ TEST_F(DBTest, install_mod) {
 }
 
 TEST_F(DBTest, uninstall_mod) {
-  auto tar_id = _db.insert_target(_game1_dir);
+  auto tar_id = _db.insert_target(_game1_dir.string());
   auto mod_id = insert_mod1(tar_id);
   _db.install_mod(mod_id, _baks);
   _db.uninstall_mod(mod_id);

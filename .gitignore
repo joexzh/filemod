@@ -4,4 +4,5 @@ bin
 .cache
 .vscode
 .vs
-CMakeUserPresets.json 
+CMakeUserPresets.json
+CMakeSettings.json
