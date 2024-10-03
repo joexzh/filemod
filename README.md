@@ -6,7 +6,7 @@ filemod is a command line tool for managing replacement files, especially useful
 
 ### Auto rollback
 
-During the running process, if some of the files are moved/deleted/symlinked, and then encountered errors like not having permissions, the previous moved/deleted/symlinked changes will be rolled back, back to the state before running the command.
+During the running process, if some of the files are moved/deleted/symlinked, then encountered errors like not having permissions, the previous moved/deleted/symlinked changes will be rolled back, back to the state before running the command.
 
 ### Auto detect conflicts
 
@@ -36,7 +36,7 @@ filemod list [-t TAR_ID1 TAR_ID2 ...]
 filemod list -m MOD_ID1 MOD_ID2 ...
 ```
 
-> Some commands require **Administrator Privilege** on **Windows** because it's required for some syscalls such as create symbolic link.
+> Some commands require **Administrator Privilege** on **Windows** because it's required for syscalls such as create symbolic link.
 
 The configuration directory is located in one of the three places:
 
@@ -44,7 +44,7 @@ The configuration directory is located in one of the three places:
 2. On Windows, `$env:USERPROFILE/.config/filemod_cfg`
 3. Otherwise, under `filemod` executable directory.
 
-### 1. Add a game directory as target
+### 1. Add an existing game directory as target
 
 ```bash
 ./filemod add --tdir /path/to/game/dir/for/mods
@@ -56,9 +56,9 @@ e.g.
 /filemod add --tdir '/home/joexie/.steam/debian-installation/steamapps/common/The Witcher 3/mods'
 ```
 
-Returns a target id if success.
+Returns target id if success.
 
-### 2. Add an outside mod directory to target
+### 2. Add an existing mod directory to target
 
 ```bash
 ./filemod add -t TAR_ID --mdir /path/to/mod/dir/
@@ -70,9 +70,9 @@ e.g.
 ./filemod add -t 1 --mdir '/home/joexie/Downloads/mods/FTFANG-7157-1-1-1705443514'
 ```
 
-You should download the mod package first, from nexusmods for example, extract the zip/tar.gz file to a directory ,and then use this directory as `--mdir` argument.
+You should download the mod package first, from nexusmods for example, extract the zip/tar.gz file to a directory, then use this directory as the argument of `--mdir`.
 
-Returns a mod id if success.
+Returns mod id if success.
 
 ### 3. Install mods
 

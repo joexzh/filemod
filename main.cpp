@@ -32,7 +32,7 @@ static inline void move_to_retbase(filemod::result<int64_t> &&from,
 }
 
 static inline int run(int argc, char **argv) {
-  CLI::App app{"filemod is file replacement manager."};
+  CLI::App app{"filemod is a file replacement manager."};
   app.set_help_all_flag("--help-all");
 
   class MyFormatter : public CLI::Formatter {
