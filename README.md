@@ -19,21 +19,21 @@ If the `install` command replaces the files that are not managed by `filemod` (h
 ## Usage
 
 ```bash
-filemod add --tdir DIR
-filemod add -t TAR_ID --mdir DIR
+filemod add --tdir <DIR>
+filemod add -t <TAR_ID> --mdir <DIR>
 
-filemod install -t TAR_ID
-filemod install -t TAR_ID --mdir DIR
-filemod install -m MOD_ID1 MOD_ID2 ...
+filemod install -t <TAR_ID>
+filemod install -t <TAR_ID> --mdir <DIR>
+filemod install -m <MOD_ID1> <MOD_ID2> ...
 
-filemod uninstall -t TAR_ID
-filemod uninstall -m MOD_ID1 MOD_ID2 ...
+filemod uninstall -t <TAR_ID>
+filemod uninstall -m <MOD_ID1> <MOD_ID2> ...
 
-filemod remove -t TAR_ID
-filemod remove -m MOD_ID1 MOD_ID2 ...
+filemod remove -t <TAR_ID>
+filemod remove -m <MOD_ID1> <MOD_ID2> ...
 
-filemod list [-t TAR_ID1 TAR_ID2 ...]
-filemod list -m MOD_ID1 MOD_ID2 ...
+filemod list [-t <TAR_ID1> <TAR_ID2> ...]
+filemod list -m <MOD_ID1> <MOD_ID2> ...
 ```
 
 > Some commands require **Administrator Privilege** on **Windows** because it's required for syscalls such as create symbolic link.
@@ -47,7 +47,7 @@ The configuration directory is located in one of the three places:
 ### 1. Add an existing game directory as target
 
 ```bash
-./filemod add --tdir /path/to/game/dir/for/mods
+./filemod add --tdir /path/to/game/installation
 ```
 
 e.g. 
@@ -58,7 +58,9 @@ e.g.
 
 Returns target id if success.
 
-### 2. Add an existing mod directory to target
+> Note that some target paths are not game installation roots, in this case, `The Witcher 3`'s target path is `/path/to/game/The Witcher 3/mods`.
+
+### 2. Add an existing mod directory to database
 
 ```bash
 ./filemod add -t TAR_ID --mdir /path/to/mod/dir/
@@ -70,7 +72,9 @@ e.g.
 ./filemod add -t 1 --mdir '/home/joexie/Downloads/mods/FTFANG-7157-1-1-1705443514'
 ```
 
-You should download the mod package first, from nexusmods for example, extract the zip/tar.gz file to a directory, then use this directory as the argument of `--mdir`.
+This also copy the mods files to `filemod_cfg`, prepare for `install`.
+
+> You should download the mod package first, from nexusmods for example, extract the zip/tar.gz file to a directory, then use this directory as the argument of `--mdir`.
 
 Returns mod id if success.
 
@@ -84,7 +88,7 @@ Returns mod id if success.
 ./filemod install -m MOD_ID_1 MOD_ID_2 ... # install specific mods, ids are separated by whitespace
 ```
 
-Installs mod files from the config dir to target dir, auto detect conflicts and backup original game files.
+Installs the mods under management. This creates symlinks to the game directory.
 
 ### 4. uninstall mods
 
@@ -94,7 +98,7 @@ Installs mod files from the config dir to target dir, auto detect conflicts and 
 ./filemod uninstall -m MOD_ID_1 MOD_ID_2 ... # uninstall mods, ids are separated by whitespace
 ```
 
-Uninstalls mod files in target dir, and auto restore backup files if any.
+Uninstalls the mods under management. This deletes symlinks from the game directory.
 
 ### 5. remove target and mods
 
@@ -104,9 +108,9 @@ Uninstalls mod files in target dir, and auto restore backup files if any.
 ./filemod remove -m MOD_ID_1 MOD_ID_2 ... # remove mods
 ```
 
-Deletes target and mods from config dir.
+Removes mods from management. This deletes the associated database records and files in `filemod_cfg`. Only works for non-installed mods.
 
-### 6. display targets and mods in config
+### 6. display targets and mods information
 
 ```bash
 ./filemod list [-t TAR_ID_1 TAR_ID_2 ...] # list targets and their mods status
