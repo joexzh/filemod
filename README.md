@@ -81,11 +81,11 @@ Returns mod id if success.
 ### 3. Install mods
 
 ```bash
-./filemod install -t TAR_ID # install all mods of a target
+./filemod install -t <TAR_ID> # install all mods of a target
 
-./filemod install -t TAR_ID --mdir MOD_DIR # add the mod to target, and install it
+./filemod install -t <TAR_ID> --mdir <MOD_DIR> # add the mod to target, and install it
 
-./filemod install -m MOD_ID_1 MOD_ID_2 ... # install specific mods, ids are separated by whitespace
+./filemod install -m <MOD_ID_1> <MOD_ID_2> ... # install specific mods, ids are separated by whitespace
 ```
 
 Installs the mods under management. This creates symlinks to the game directory.
@@ -93,9 +93,9 @@ Installs the mods under management. This creates symlinks to the game directory.
 ### 4. uninstall mods
 
 ```bash
-./filemod uninstall -t TAR_ID # uninstall all mods of a target
+./filemod uninstall -t <TAR_ID> # uninstall all mods of a target
 
-./filemod uninstall -m MOD_ID_1 MOD_ID_2 ... # uninstall mods, ids are separated by whitespace
+./filemod uninstall -m <MOD_ID_1> <MOD_ID_2> ... # uninstall mods, ids are separated by whitespace
 ```
 
 Uninstalls the mods under management. This deletes symlinks from the game directory.
@@ -103,9 +103,9 @@ Uninstalls the mods under management. This deletes symlinks from the game direct
 ### 5. remove target and mods
 
 ```bash
-./filemod remove -t TAR_ID # remove a target and all of its mods
+./filemod remove -t <TAR_ID> # remove a target and all of its mods
 
-./filemod remove -m MOD_ID_1 MOD_ID_2 ... # remove mods
+./filemod remove -m <MOD_ID_1> <MOD_ID_2> ... # remove mods
 ```
 
 Removes mods from management. This deletes the associated database records and files in `filemod_cfg`. Only works for non-installed mods.
@@ -113,9 +113,9 @@ Removes mods from management. This deletes the associated database records and f
 ### 6. display targets and mods information
 
 ```bash
-./filemod list [-t TAR_ID_1 TAR_ID_2 ...] # list targets and their mods status
+./filemod list [-t <TAR_ID_1> <TAR_ID_2> ...] # list targets and their mods status
 
-./filemod list -m MOD_ID_1 MOD_ID_2 ... # list mods status, mod files and backup files
+./filemod list -m <MOD_ID_1> <MOD_ID_2> ... # list mods status, mod files and backup files
 ```
 
 e.g.
