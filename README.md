@@ -1,6 +1,20 @@
-# filemod: a mod manager for games
+# filemod: a tool for managing replacement files
 
-filemod helps you manage mod files, install and uninstall them atomically.
+filemod is a command line tool for managing replacement files, especially useful for managing game modding files. Currently supports Linux and Windows.
+
+## Features
+
+### Auto rollback
+
+During the running process, if some of the files are moved/deleted/symlinked, and then encountered errors like not having permissions, the previous moved/deleted/symlinked changes will be rolled back, back to the state before running the command.
+
+### Auto detect conflicts
+
+The `install` command will check if there are conflicts between some other installed mods. If there are any, the program stops and reports the conflicting mods and files.
+
+### Auto backup and restore
+
+If the `install` command replaces the files that are not managed by `filemod` (hence not considered conflicting), these files are backed up in the `filemod`'s configuration directory. They will be restored to their original places after `uninstall`ing the mod.
 
 ## Usage
 
@@ -22,9 +36,15 @@ filemod list [-t TAR_ID1 TAR_ID2 ...]
 filemod list -m MOD_ID1 MOD_ID2 ...
 ```
 
-*Note: the following **Atomic/Atomically** means changes will auto rollback if something go wrong, it is in the control of `filemod`, not in the filesystem or disk level.*
+> Some commands require **Administrator Privilege** on **Windows** because it's required for some syscalls such as create symbolic link.
 
-### 1. Add a game directory as target atomically
+The configuration directory is located in one of the three places:
+
+1. On Linux, `$HOME/.config/filemod_cfg`
+2. On Windows, `$env:USERPROFILE/.config/filemod_cfg`
+3. Otherwise, under `filemod` executable directory.
+
+### 1. Add a game directory as target
 
 ```bash
 ./filemod add --tdir /path/to/game/dir/for/mods
@@ -36,11 +56,9 @@ e.g.
 /filemod add --tdir '/home/joexie/.steam/debian-installation/steamapps/common/The Witcher 3/mods'
 ```
 
-Return a target id if success.
+Returns a target id if success.
 
-This is an atomic operation.
-
-### 2. Add an outside mod directory to target atomically
+### 2. Add an outside mod directory to target
 
 ```bash
 ./filemod add -t TAR_ID --mdir /path/to/mod/dir/
@@ -52,29 +70,23 @@ e.g.
 ./filemod add -t 1 --mdir '/home/joexie/Downloads/mods/FTFANG-7157-1-1-1705443514'
 ```
 
-The mod is downloaded from internet, nexusmods for example. You should extract the zip/tar.gz file by hand before running this command.
+You should download the mod package first, from nexusmods for example, extract the zip/tar.gz file to a directory ,and then use this directory as `--mdir` argument.
 
-Return a mod id if success.
+Returns a mod id if success.
 
-This is an atomic operation.
-
-### 3. Install mods atomically
+### 3. Install mods
 
 ```bash
 ./filemod install -t TAR_ID # install all mods of a target
 
-
 ./filemod install -t TAR_ID --mdir MOD_DIR # add the mod to target, and install it
-
 
 ./filemod install -m MOD_ID_1 MOD_ID_2 ... # install specific mods, ids are separated by whitespace
 ```
 
-Install mod files from the config dir to target dir, auto detect conflicts and backup original game files.
+Installs mod files from the config dir to target dir, auto detect conflicts and backup original game files.
 
-This is an atomic operation.
-
-### 4. uninstall mods atomically
+### 4. uninstall mods
 
 ```bash
 ./filemod uninstall -t TAR_ID # uninstall all mods of a target
@@ -82,11 +94,9 @@ This is an atomic operation.
 ./filemod uninstall -m MOD_ID_1 MOD_ID_2 ... # uninstall mods, ids are separated by whitespace
 ```
 
-Uninstall mod files in target dir, and auto restore backup files if any.
+Uninstalls mod files in target dir, and auto restore backup files if any.
 
-This an atomic operation.
-
-### 5. remove target and mods atomically
+### 5. remove target and mods
 
 ```bash
 ./filemod remove -t TAR_ID # remove a target and all of its mods
@@ -94,9 +104,7 @@ This an atomic operation.
 ./filemod remove -m MOD_ID_1 MOD_ID_2 ... # remove mods
 ```
 
-Removes target and mods from config dir.
-
-This is an atomic operation.
+Deletes target and mods from config dir.
 
 ### 6. display targets and mods in config
 
@@ -113,21 +121,21 @@ e.g.
 
 MOD ID 5 DIR 'FTFANG-7157-1-1-1705443514' STATUS installed
     MOD FILES
-        ReadMe.txt
-        modFTFA
-        modFTFA/content
-        modFTFA/content/scripts
-        modFTFA/content/scripts/game
-        modFTFA/content/scripts/game/gui
-        modFTFA/content/scripts/game/gui/menus
-        modFTFA/content/scripts/game/gui/menus/mapMenu.ws
+        'ReadMe.txt'
+        'modFTFA'
+        'modFTFA/content'
+        'modFTFA/content/scripts'
+        'modFTFA/content/scripts/game'
+        'modFTFA/content/scripts/game/gui'
+        'modFTFA/content/scripts/game/gui/menus'
+        'modFTFA/content/scripts/game/gui/menus/mapMenu.ws'
     BACKUP FILES
 MOD ID 6 DIR 'Over 9000 - Weight limit mod v1.31-3-1-31' STATUS installed
     MOD FILES
-        modOver9000
-        modOver9000/content
-        modOver9000/content/blob0.bundle
-        modOver9000/content/metadata.store
+        'modOver9000'
+        'modOver9000/content'
+        'modOver9000/content/blob0.bundle'
+        'modOver9000/content/metadata.store'
     BACKUP FILES
 ```
 
@@ -135,42 +143,6 @@ MOD ID 6 DIR 'Over 9000 - Weight limit mod v1.31-3-1-31' STATUS installed
 
 ### Requirements:
 
-1. `meson`
-2. `g++` or `clang` that supports c++17
-
-### Git clone the source code:
-
-```bash
-git clone git@github.com:joexzh/filemod.git
-```
-
-### Retrieve dependencies:
-
-1. git submodules:
-
-    ```bash
-    git submodule update --init --recursive
-    ```
-
-2. meson wraps.
-
-    They will auto download when setting up meson build dir.
-
-### Setup meson build dir
-
-```bash
-meson setup build # debug build
-
-# or release build
-meson setup build-release --buildtype=release
-```
-
-### Compile
-
-```bash
-meson compile -C build
-# or
-cd build && meson compile
-```
-
-You will get a `filemod` executable in build dir.
+1. `g++` ,`clang` or `msvc` that supports C++20
+2. `cmake`
+3. `vcpkg`
