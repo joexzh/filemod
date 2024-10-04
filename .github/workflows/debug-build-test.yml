@@ -55,5 +55,4 @@ jobs:
       - name: Test
         if: runner.os == 'Windows'
         run: |
-          Start-Process -Verb RunAs ${{github.workspace}}/build/bin/filemod_test
-        shell: pwsh
+          ${{github.workspace}}/build/bin/filemod_test
