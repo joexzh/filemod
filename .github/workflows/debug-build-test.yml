@@ -50,10 +50,10 @@ jobs:
       - name: Test
         if: runner.os == 'Linux'
         run: |
-          ${{github.workflow}}/build/bin/filemod_test
+          ${{github.workspace}}/build/bin/filemod_test
       
       - name: Test
         if: runner.os == 'Windows'
         run: |
-          Start-Process -Verb RunAs ${{github.workflow}}/build/bin/filemod_test
+          Start-Process -Verb RunAs ${{github.workspace}}/build/bin/filemod_test
         shell: pwsh
