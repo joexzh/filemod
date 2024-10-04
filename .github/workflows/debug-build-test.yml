@@ -37,6 +37,8 @@ jobs:
                                   # action you need, `v11` in this case to stay up
                                   # to date with fixes on the v11 branch.
 
+      - uses: ilammy/msvc-dev-cmd@v1
+
       - name: Configure CMake
         run: |
           cmake -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -B ${{github.workspace}}/build -G Ninja
@@ -46,5 +48,11 @@ jobs:
           cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target all --
 
       - name: Test
+        if: runner.os != 'Windows'
         run: |
-          ${{github.workspace}}/build/bin/filemod_test
+          ${{github.workflow}}/build/bin/filemod_test
+      
+      - name: Test
+        if: runner.os == 'Windows'
+        run: |
+          Start-Process -Verb RunAsAdmin ${{github.workflow}}/build/bin/filemod_test
