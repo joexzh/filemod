@@ -30,3 +30,10 @@ if (TARGET_TYPE STREQUAL "SHARED_LIBRARY")
         PUBLIC_HEADER DESTINATION include/filemod
     )
 endif()
+if (WIN32)
+    install(FILES
+        "${CMAKE_BINARY_DIR}/bin/SQLiteCpp.dll"
+        "${CMAKE_BINARY_DIR}/bin/sqlite3.dll"
+            DESTINATION bin
+    )
+endif()
