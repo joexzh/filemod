@@ -7,7 +7,6 @@
 #include <filemod/modder.hpp>
 #include <iostream>
 #include <limits>
-#include <memory>
 #include <string>
 #include <vector>
 

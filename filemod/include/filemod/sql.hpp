@@ -4,11 +4,8 @@
 
 #pragma once
 
-#include <SQLiteCpp/Database.h>
-#include <SQLiteCpp/SQLiteCpp.h>
-#include <SQLiteCpp/Savepoint.h>
-
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -36,6 +33,9 @@ struct [[nodiscard]] TargetDto {
 };
 
 class DB {
+ private:
+  class sp_wrap;  // put here for prior declare
+
  public:
   explicit DB(const std::string &path);
 
@@ -45,9 +45,9 @@ class DB {
   DB(DB &&db) = default;
   DB &operator=(DB &&db) = default;
 
-  ~DB() = default;
+  ~DB();
 
-  SQLite::Savepoint begin();
+  sp_wrap begin();
 
   std::vector<TargetDto> query_targets_mods(const std::vector<int64_t> &ids);
 
@@ -83,7 +83,8 @@ class DB {
   void uninstall_mod(int64_t id);
 
  private:
-  SQLite::Database _db;
+  struct db_wrap;
+  std::unique_ptr<db_wrap> _dr;  // for hiding SQLiteCpp header
 
   int64_t insert_mod(int64_t tar_id, const std::string &dir, int status);
 
@@ -101,5 +102,20 @@ class DB {
                           const std::vector<std::string> &bak_files);
 
   int delete_backup_files(int64_t mod_id);
+};
+
+class DB::sp_wrap {
+ public:
+  ~sp_wrap();
+  void release();
+  void rollback();
+
+ private:
+  struct impl;
+  std::unique_ptr<impl> impl_;
+
+  explicit sp_wrap(std::unique_ptr<impl> &&impl);
+
+  friend DB;
 };
 }  // namespace filemod

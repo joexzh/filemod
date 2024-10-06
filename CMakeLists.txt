@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
 set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
-project(filemod)
+set(FILEMOD_VERSION 0.0.1)
+project(filemod-cli VERSION ${FILEMOD_VERSION})
 set(CMAKE_CXX_STANDARD 20)
 
-set(FullOutputDir "${${PROJECT_NAME}_BINARY_DIR}/bin")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${FullOutputDir}/static_libs")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${FullOutputDir}")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${FullOutputDir}")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin/static")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
+
+add_compile_definitions(FILEMOD_VERSION=${FILEMOD_VERSION})
 
 if (MSVC)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
@@ -23,10 +25,20 @@ endif()
 
 find_package(CLI11 CONFIG REQUIRED)
 
-if (NOT TARGET filemodlib)
-    add_subdirectory(filemodlib)
+if (NOT TARGET filemod)
+    add_subdirectory(filemod)
 endif()
 add_subdirectory(test)
 
 add_executable(${PROJECT_NAME} main.cpp)
-target_link_libraries(${PROJECT_NAME} filemodlib CLI11::CLI11)
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME filemod)
+target_link_libraries(${PROJECT_NAME} filemod CLI11::CLI11)
+
+install(TARGETS ${PROJECT_NAME})
+
+include(InstallRequiredSystemLibraries)
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_PACKAGE_VERSION_MAJOR "${${PROJECT_NAME}_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${${PROJECT_NAME}_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${${PROJECT_NAME}_VERSION_PATCH}")
+include(CPack)
