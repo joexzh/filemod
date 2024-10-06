@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <cassert>
 #include <memory>
-#include <optional>
 #include <set>
 
 #include "utils.hpp"
@@ -170,6 +169,8 @@ DB::DB(const std::string &path)
 DB::~DB() = default;
 
 DB::sp_wrap DB::begin() {
+  // can't use std::unique_make due to lack of move constructor in
+  // SQLite::Savepoint
   return sp_wrap(std::unique_ptr<sp_wrap::impl>{
       new sp_wrap::impl{.sp = SQLite::Savepoint{_dr->db, FILEMOD}}});
 }

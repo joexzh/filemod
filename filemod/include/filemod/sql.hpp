@@ -34,7 +34,10 @@ struct [[nodiscard]] TargetDto {
 
 class DB {
  private:
-  class sp_wrap;  // put here for prior declare
+  // SQLite::Database wrapper, for hiding SQLiteCpp/Database.hpp header
+  struct db_wrap;
+  // SQLite::Savepoint wrapper, for hiding SQLiteCpp/Savepoint.hpp header
+  class sp_wrap;
 
  public:
   explicit DB(const std::string &path);
@@ -83,8 +86,7 @@ class DB {
   void uninstall_mod(int64_t id);
 
  private:
-  struct db_wrap;
-  std::unique_ptr<db_wrap> _dr;  // for hiding SQLiteCpp header
+  std::unique_ptr<db_wrap> _dr;
 
   int64_t insert_mod(int64_t tar_id, const std::string &dir, int status);
 
