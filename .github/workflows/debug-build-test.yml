@@ -48,11 +48,5 @@ jobs:
           cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target all --
 
       - name: Test
-        if: runner.os == 'Linux'
-        run: |
-          ${{github.workspace}}/build/bin/filemod_test
-      
-      - name: Test
-        if: runner.os == 'Windows'
         run: |
           ${{github.workspace}}/build/bin/filemod_test
