@@ -1,0 +1,90 @@
+name: release-upload
+on:
+  push:
+    tags:
+      - "v[0-9]+.*"
+    branches:
+    # - master
+    - dev
+
+jobs:
+  create_release:
+    name: Create Github Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+
+  build_release:
+    name: ${{ matrix.os }}-${{ github.workflow }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: windows-latest
+            triplet: x64-windows
+          - os: ubuntu-latest
+            triplet: x64-linux
+    env:
+      BUILD_TYPE: Release
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      # Setup the build machine with the most recent versions of CMake and Ninja. Both are cached if not already: on subsequent runs both will be quickly restored from GitHub cache service.
+      - uses: lukka/get-cmake@latest
+
+      - name: Setup anew (or from cache) vcpkg (and does not build any package)
+        uses: lukka/run-vcpkg@v11 # Always specify the specific _version_ of the
+                                  # action you need, `v11` in this case to stay up
+                                  # to date with fixes on the v11 branch.
+
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure CMake
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -B ${{github.workspace}}/build -G Ninja
+
+      - name: Build
+        run: |
+          cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target all --
+
+      - name: Test
+        run: |
+          ${{github.workspace}}/build/bin/filemod_test
+
+      - name: Install NSIS
+        run: #todo
+
+      - name: CPack On Linux
+        if: runner.os != 'Windows'
+        working-directory: ${{github.workspace}}/build
+        run:
+          sudo cpack
+          
+      - name: CPack On Windows
+        if: runner.os =='Windows'
+        working-directory: ${{github.workspace}}/build
+        run:
+          cpack
+
+      - name: Upload On Linux
+        if: runner.os != 'Windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          files:|
+            ${{github.workspace}}/build/*.deb
+            ${{github.workspace}}/build/*.tar.gz
+
+      - name: Upload On Windows
+        if: runner.os == 'Windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{github.workspace}}/build/*.exe
