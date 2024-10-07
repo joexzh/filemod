@@ -59,9 +59,6 @@ jobs:
         run: |
           ${{github.workspace}}/build/bin/filemod_test
 
-      # - name: Install NSIS
-      #   run: #todo
-
       - name: CPack On Linux
         if: runner.os != 'Windows'
         working-directory: ${{github.workspace}}/build
@@ -74,17 +71,20 @@ jobs:
         run:
           cpack
 
-      - name: Upload On Linux
+      - name: Upload .deb On Linux
         if: runner.os != 'Windows'
-        uses: actions/upload-artifact@v4
+        uses: svenstaro/upload-release-action@v2
         with:
-          path: |
-            ${{github.workspace}}/build/*.deb
-            ${{github.workspace}}/build/*.tar.gz
+          file: ${{github.workspace}}/build/*.deb
 
-      - name: Upload On Windows
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
+      - name: Upload .tar.gz On Linux
+        if: runner.os != 'Windows'
+        uses: svenstaro/upload-release-action@v2
         with:
-          path: |
-            ${{github.workspace}}/build/*.exe
+          file: ${{github.workspace}}/build/*.tar.gz
+
+      - name: Upload Binary On Windows
+        if: runner.os == 'Windows'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: ${{github.workspace}}/build/*.exe
