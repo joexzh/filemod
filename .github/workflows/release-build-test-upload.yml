@@ -12,8 +12,6 @@ jobs:
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v2
-        with:
-          draft: true
 
   build_release:
     name: ${{ matrix.os }}-${{ github.workflow }}
@@ -73,15 +71,18 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           file: ${{github.workspace}}/build/*.deb
+          file_glob: true
 
       - name: Upload .tar.gz On Linux
         if: runner.os != 'Windows'
         uses: svenstaro/upload-release-action@v2
         with:
           file: ${{github.workspace}}/build/*.tar.gz
+          file_glob: true
 
       - name: Upload Binary On Windows
         if: runner.os == 'Windows'
         uses: svenstaro/upload-release-action@v2
         with:
           file: ${{github.workspace}}/build/*.exe
+          file_glob: true
