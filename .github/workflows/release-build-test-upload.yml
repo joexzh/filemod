@@ -59,8 +59,8 @@ jobs:
         run: |
           ${{github.workspace}}/build/bin/filemod_test
 
-      - name: Install NSIS
-        run: #todo
+      # - name: Install NSIS
+      #   run: #todo
 
       - name: CPack On Linux
         if: runner.os != 'Windows'
