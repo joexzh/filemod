@@ -42,47 +42,27 @@ jobs:
 
       - uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Configure CMake
+      - name: CMake preset workflow (config, build, test and pack)
         run: |
-          cmake -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -B ${{github.workspace}}/build -G Ninja
-
-      - name: Build
-        run: |
-          cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target all --
-
-      - name: Test
-        run: |
-          ${{github.workspace}}/build/bin/filemod_test
-
-      - name: CPack On Linux
-        if: runner.os != 'Windows'
-        working-directory: ${{github.workspace}}/build
-        run:
-          sudo cpack
-          
-      - name: CPack On Windows
-        if: runner.os =='Windows'
-        working-directory: ${{github.workspace}}/build
-        run:
-          cpack
+          cmake --workflow --preset release-workflow
 
       - name: Upload .deb On Linux
         if: runner.os != 'Windows'
         uses: svenstaro/upload-release-action@v2
         with:
-          file: ${{github.workspace}}/build/*.deb
+          file: ${{github.workspace}}/build/ninja-multi/*.deb
           file_glob: true
 
       - name: Upload .tar.gz On Linux
         if: runner.os != 'Windows'
         uses: svenstaro/upload-release-action@v2
         with:
-          file: ${{github.workspace}}/build/*.tar.gz
+          file: ${{github.workspace}}/build/ninja-multi/*.tar.gz
           file_glob: true
 
       - name: Upload Binary On Windows
         if: runner.os == 'Windows'
         uses: svenstaro/upload-release-action@v2
         with:
-          file: ${{github.workspace}}/build/*.exe
+          file: ${{github.workspace}}/build/ninja-multi/*.exe
           file_glob: true

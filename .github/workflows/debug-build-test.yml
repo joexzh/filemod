@@ -39,14 +39,6 @@ jobs:
 
       - uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Configure CMake
+      - name: CMake preset workflow (config, build and test)
         run: |
-          cmake -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -B ${{github.workspace}}/build -G Ninja
-
-      - name: Build
-        run: |
-          cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target all --
-
-      - name: Test
-        run: |
-          ${{github.workspace}}/build/bin/filemod_test
+          cmake --workflow --preset debug-workflow
