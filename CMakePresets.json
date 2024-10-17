@@ -38,18 +38,12 @@
         {
             "name": "debug-test",
             "configurePreset": "ninja-multi",
-            "configuration": "Debug",
-            "output": {
-                "verbosity": "verbose"
-            }
+            "configuration": "Debug"
         },
         {
             "name": "release-test",
             "configurePreset": "ninja-multi",
-            "configuration": "Release",
-            "output": {
-                "verbosity": "verbose"
-            }
+            "configuration": "Release"
         }
     ],
     "packagePresets": [
