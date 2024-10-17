@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.25)
 set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 set(FILEMOD_VERSION 0.0.1)
 project(filemod-cli VERSION ${FILEMOD_VERSION})
@@ -29,6 +29,7 @@ if (NOT TARGET filemod)
     add_subdirectory(filemod)
 endif()
 add_subdirectory(test)
+enable_testing()
 
 add_executable(${PROJECT_NAME} main.cpp)
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME filemod)

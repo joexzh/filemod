@@ -6,7 +6,6 @@ endif()
 
 find_package(GTest CONFIG REQUIRED)
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-enable_testing()
 include(GoogleTest)
 
 set(Sources

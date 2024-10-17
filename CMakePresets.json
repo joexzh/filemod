@@ -1,0 +1,101 @@
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "default",
+            "hidden": true,
+            "displayName": "Default Config",
+            "description": "Default build using Ninja generator",
+            "generator": "Ninja",
+            "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            }
+        },
+        {
+            "name": "ninja-multi",
+            "inherits": "default",
+            "displayName": "Ninja Multi-Config",
+            "description": "Default build using Ninja Multi-Config generator",
+            "generator": "Ninja Multi-Config"
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "debug-build",
+            "configurePreset": "ninja-multi",
+            "configuration": "Debug"
+        },
+        {
+            "name": "release-build",
+            "configurePreset": "ninja-multi",
+            "configuration": "Release"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "debug-test",
+            "configurePreset": "ninja-multi",
+            "configuration": "Debug",
+            "output": {
+                "verbosity": "verbose"
+            }
+        },
+        {
+            "name": "release-test",
+            "configurePreset": "ninja-multi",
+            "configuration": "Release",
+            "output": {
+                "verbosity": "verbose"
+            }
+        }
+    ],
+    "packagePresets": [
+        {
+            "name": "default",
+            "configurePreset": "ninja-multi"
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "debug-workflow",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "ninja-multi"
+                },
+                {
+                    "type": "build",
+                    "name": "debug-build"
+                },
+                {
+                    "type": "test",
+                    "name": "debug-test"
+                }
+            ]
+        },
+        {
+            "name": "release-workflow",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "ninja-multi"
+                },
+                {
+                    "type": "build",
+                    "name": "release-build"
+                },
+                {
+                    "type": "test",
+                    "name": "release-test"
+                },
+                {
+                    "type": "package",
+                    "name": "default"
+                }
+            ]
+        }
+    ]
+}
