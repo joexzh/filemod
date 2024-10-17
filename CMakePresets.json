@@ -12,6 +12,12 @@
             "architecture": {
                 "value": "x64",
                 "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": {
+                    "value": true,
+                    "type": "BOOL"
+                }
             }
         },
         {

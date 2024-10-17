@@ -7,3 +7,4 @@ out
 .vs
 CMakeUserPresets.json
 CMakeSettings.json
+compile_commands.json
