@@ -177,7 +177,7 @@ DB::sp_wrap DB::begin() {
 
 std::vector<TargetDto> DB::query_targets_mods(const std::vector<int64_t> &ids) {
   SQLite::Statement stmt{_dr->db, buildstr_query_targets_mods(ids.size())};
-  for (int i = 0; i < ids.size(); ++i) {
+  for (size_t i = 0; i < ids.size(); ++i) {
     stmt.bind(i + 1, ids[i]);
   }
 
@@ -206,7 +206,7 @@ std::vector<TargetDto> DB::query_targets_mods(const std::vector<int64_t> &ids) {
 
 std::vector<ModDto> DB::query_mods_n_files(const std::vector<int64_t> &ids) {
   SQLite::Statement stmt{_dr->db, bufildstr_query_mods_n_files(ids.size())};
-  for (int i = 0; i < ids.size(); ++i) {
+  for (size_t i = 0; i < ids.size(); ++i) {
     stmt.bind(i + 1, ids[i]);
   }
 
@@ -390,7 +390,7 @@ std::vector<ModDto> DB::query_mods_contain_files(
 
   SQLite::Statement stmt{_dr->db,
                          buildstr_query_mods_contain_files(files.size())};
-  for (int i = 0; i < files.size(); ++i) {
+  for (size_t i = 0; i < files.size(); ++i) {
     stmt.bind(i + 1, files[i]);
   }
 

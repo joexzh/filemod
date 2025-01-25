@@ -67,9 +67,9 @@ std::string get_home_cfg_dir() {
   std::string dir;
 
 #ifdef __linux__
-  char *home = getenv("HOME");
+  char *home = std::getenv("HOME");
 #elif _WIN32
-  char *home = getenv("USERPROFILE");
+  char *home = std::getenv("USERPROFILE");
 #else
   static_assert(false, UnSupportedOS);
 #endif
