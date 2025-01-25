@@ -55,7 +55,7 @@ class FSTest : public PathHelper {
                          bool include_file = true) {
     std::filesystem::create_directories(base);
 
-    for (int i = 0; i < _mod1_files.size(); ++i) {
+    for (size_t i = 0; i < _mod1_files.size(); ++i) {
       auto p = base / _mod1_files[i];
       if (i < _mod1_files.size() - 1) {
         std::filesystem::create_directories(p);
