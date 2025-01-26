@@ -17,12 +17,12 @@ static void cross_filesystem_rename(const std::filesystem::path &src,
   std::error_code err_code;
   std::filesystem::rename(src, dest, err_code);
 
-  if (err_code.value() == 0) {
+  if (!err_code) {
     return;
   }
 
-  if (err_code.value() == 18) {
-    // copy and delete
+  if (err_code.value() == static_cast<int>(std::errc::cross_device_link)) {
+    // cannot rename cross device, do copy and remove instead
     std::filesystem::copy(src, dest);
     std::filesystem::remove(src);
   } else {
