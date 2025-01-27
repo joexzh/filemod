@@ -13,6 +13,8 @@
 #include "utils.hpp"
 
 namespace filemod {
+static const char *const err_tar_not_exist = "ERROR: target not exist";
+static const char *const err_mod_not_exist = "ERROR: mod not exist";
 
 static inline std::vector<ModDto> find_conflict_mods(
     std::filesystem::path &cfg_m, ModDto &mod, DB &db) {
@@ -80,7 +82,7 @@ result<int64_t> modder::add_mod(int64_t tar_id, const std::string &mod_rel) {
   tx_wrapper(ret, [&]() {
     if (!_db.query_target(tar_id).success) {
       ret.success = false;
-      ret.msg = "ERROR: target not exists!";
+      ret.msg = err_tar_not_exist;
       return;
     }
     auto mod_src = std::filesystem::absolute(mod_rel);
@@ -109,7 +111,7 @@ result_base modder::install_mod(int64_t mod_id) {
     auto mods = _db.query_mods_n_files(std::vector<int64_t>{mod_id});
     if (mods.empty()) {
       ret.success = false;
-      ret.msg = "ERROR: mod not exists";
+      ret.msg = err_mod_not_exist;
       return;
     }
 
@@ -135,7 +137,8 @@ result_base modder::install_mod(int64_t mod_id) {
     auto tar_ret = _db.query_target(mod.tar_id);
     if (!tar_ret.success) {
       ret.success = false;
-      ret.msg = "ERROR: target not exists: ";
+      ret.msg = err_tar_not_exist;
+      ret.msg += ": ";
       ret.msg += std::to_string(mod.tar_id);
       return;
     }
@@ -170,7 +173,7 @@ result_base modder::install_from_target_id(int64_t tar_id) {
     auto tars = _db.query_targets_mods(std::vector<int64_t>{tar_id});
     if (tars.empty()) {
       ret.success = false;
-      ret.msg = "ERROR: tar not exist";
+      ret.msg = err_tar_not_exist;
       return;
     }
 
@@ -217,7 +220,7 @@ result<ModDto> modder::uninstall_mod(int64_t mod_id) {
     auto mods = _db.query_mods_n_files(std::vector<int64_t>{mod_id});
     if (mods.empty()) {
       ret.success = false;
-      ret.msg = "ERROR: mod not exists";
+      ret.msg = err_mod_not_exist;
       return;
     }
 
@@ -233,7 +236,7 @@ result<ModDto> modder::uninstall_mod(int64_t mod_id) {
     auto tar_ret = _db.query_target(mod.tar_id);
     if (!tar_ret.success) {
       ret.success = false;
-      ret.msg = "ERROR: target not exists";
+      ret.msg = err_tar_not_exist;
       return;
     }
 
@@ -275,7 +278,7 @@ result_base modder::uninstall_from_target_id(int64_t tar_id) {
     auto tars = _db.query_targets_mods(std::vector<int64_t>{tar_id});
     if (tars.empty()) {
       ret.success = false;
-      ret.msg = "ERROR: tar not exists";
+      ret.msg = err_tar_not_exist;
       return;
     }
     auto &tar = tars[0];
