@@ -55,13 +55,13 @@ class FS {
 
   ~FS() noexcept;
 
-  void begin();
+  void begin() noexcept { ++_counter; };
 
-  void commit();
+  void commit() noexcept { --_counter; };
 
   void rollback();
 
-  const std::filesystem::path &cfg_dir() const;
+  const std::filesystem::path &cfg_dir() const noexcept { return _cfg_dir; }
 
   void create_target(int64_t tar_id);
 

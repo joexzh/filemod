@@ -77,12 +77,6 @@ FS::~FS() noexcept {
       std::filesystem::temp_directory_path() / FILEMOD_TEMP_DIR, dummy);
 }
 
-const std::filesystem::path &FS::cfg_dir() const { return _cfg_dir; }
-
-void FS::begin() { ++_counter; }
-
-void FS::commit() { --_counter; }
-
 void FS::rollback() {
   for (auto start = _log.crbegin(); start != _log.crend(); ++start) {
     switch (start->action) {
