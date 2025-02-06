@@ -8,14 +8,11 @@
 
 #include "fs.hpp"
 #include "sql.hpp"
-#include "utils.hpp"
 
 namespace filemod {
 
 class modder {
  public:
-  explicit modder(const std::string &cfg_dir, const std::string &db_path);
-
   modder(const modder &filemod) = delete;
   modder &operator=(const modder &filemod) = delete;
 
@@ -23,6 +20,15 @@ class modder {
   modder &operator=(modder &&filemod) = delete;
 
   ~modder() = default;
+
+  // Default modder using utils' get_config_dir() and get_db_path()
+  modder();
+
+  explicit modder(const std::string &cfg_dir, const std::string &db_path)
+      : _fs{cfg_dir}, _db{db_path} {}
+
+  explicit modder(std::string &&cfg_dir, std::string &&db_path)
+      : _fs{std::move(cfg_dir)}, _db{db_path} {}
 
   result<int64_t> add_target(const std::string &tar_rel);
 
@@ -67,9 +73,5 @@ class modder {
   result<ModDto> uninstall_mod(int64_t mod_id);
 
   result_base remove_mod(int64_t mod_id);
-};
-
-inline modder create_modder() {
-  return modder(get_config_dir(), get_db_path());
-}
+};  // class modder
 }  // namespace filemod

@@ -54,8 +54,7 @@ void modder::tx_wrapper(result_base &ret, Func func) {
   _fs.commit();
 }
 
-modder::modder(const std::string &cfg_dir, const std::string &db_path)
-    : _fs{cfg_dir}, _db{db_path} {}
+modder::modder() : modder(get_config_dir(), get_db_path()) {}
 
 result<int64_t> modder::add_target(const std::string &tar_rel) {
   result<int64_t> ret;
