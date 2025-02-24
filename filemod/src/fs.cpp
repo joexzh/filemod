@@ -6,7 +6,6 @@
 
 #include <filesystem>
 #include <stdexcept>
-#include <string>
 #include <system_error>
 #include <utility>
 
@@ -106,14 +105,13 @@ void FS::create_target(int64_t tar_id) {
   create_directory_w(cfg_tar(tar_id));
 }
 
-std::vector<std::string> FS::add_mod(int64_t tar_id,
-                                     const std::filesystem::path &mod_src) {
+std::vector<std::filesystem::path> FS::add_mod(
+    int64_t tar_id, const std::filesystem::path &mod_src) {
   auto cfg_m = cfg_mod(
-      tar_id,
-      std::filesystem::relative(mod_src, mod_src.parent_path()).string());
+      tar_id, std::filesystem::relative(mod_src, mod_src.parent_path()));
   create_directory_w(cfg_m);
 
-  std::vector<std::string> rels;
+  std::vector<std::filesystem::path> rels;
   // copy from src to dest folder
   for (auto const &src :
        std::filesystem::recursive_directory_iterator(mod_src)) {
@@ -127,15 +125,15 @@ std::vector<std::string> FS::add_mod(int64_t tar_id,
       log_copy(dest);
     }
 
-    rels.push_back(rel.string());
+    rels.push_back(rel);
   }
   return rels;
 }
 
-std::vector<std::string> FS::backup_files(
+std::vector<std::filesystem::path> FS::backup_files(
     const std::filesystem::path &cfg_m, const std::filesystem::path &tar_dir,
     const std::vector<std::filesystem::path> &files) {
-  std::vector<std::string> rel_baks;
+  std::vector<std::filesystem::path> rel_baks;
 
   if (files.empty()) {
     return rel_baks;
@@ -148,13 +146,13 @@ std::vector<std::string> FS::backup_files(
     auto rel = std::filesystem::relative(file, tar_dir);
     auto bak_file = bak_dir / rel;
     move_file(file, bak_file, bak_dir);
-    rel_baks.push_back(rel.string());
+    rel_baks.push_back(rel);
   }
 
   return rel_baks;
 }
 
-std::vector<std::string> FS::install_mod(
+std::vector<std::filesystem::path> FS::install_mod(
     const std::filesystem::path &src_dir,
     const std::filesystem::path &dest_dir) {
   // check if conflict with original files
@@ -178,8 +176,8 @@ std::vector<std::string> FS::install_mod(
 
 void FS::uninstall_mod(const std::filesystem::path &cfg_m,
                        const std::filesystem::path &tar_dir,
-                       const std::vector<std::string> &sorted_m,
-                       const std::vector<std::string> &sorted_bak) {
+                       const std::vector<std::filesystem::path> &sorted_m,
+                       const std::vector<std::filesystem::path> &sorted_bak) {
   if (sorted_m.empty() && sorted_bak.empty()) {
     return;
   }
@@ -195,9 +193,9 @@ void FS::uninstall_mod(const std::filesystem::path &cfg_m,
   uninstall_mod_files(bak_dir, tar_dir, sorted_bak);
 }
 
-void FS::uninstall_mod_files(const std::filesystem::path &src_dir,
-                             const std::filesystem::path &dest_dir,
-                             const std::vector<std::string> &rel_sorted) {
+void FS::uninstall_mod_files(
+    const std::filesystem::path &src_dir, const std::filesystem::path &dest_dir,
+    const std::vector<std::filesystem::path> &rel_sorted) {
   std::vector<std::filesystem::path> del_dirs;
 
   for (auto &rel : rel_sorted) {

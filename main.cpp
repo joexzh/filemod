@@ -124,12 +124,15 @@ static inline int run(int argc, char **argv) {
 
   filemod::result_base ret{.success = true};
 
+  // inside callbacks dir is utf8 encoded
+
   add->callback([&]() {
     auto modder = filemod::create_modder();
     if (is_set(tar_id) && is_set(dir)) {  // add mod
-      move_to_retbase(modder.add_mod(tar_id, dir), ret);
+      move_to_retbase(modder.add_mod(tar_id, filemod::utf8str_to_path(dir)),
+                      ret);
     } else if (is_set(dir)) {  // add target
-      move_to_retbase(modder.add_target(dir), ret);
+      move_to_retbase(modder.add_target(filemod::utf8str_to_path(dir)), ret);
     }
   });
 
@@ -148,7 +151,9 @@ static inline int run(int argc, char **argv) {
       ret = modder.install_mods(mod_ids);
     } else if (is_set(tar_id) &&
                is_set(dir)) {  // add and install mod directly from mod dir
-      move_to_retbase(modder.install_from_mod_src(tar_id, dir), ret);
+      move_to_retbase(
+          modder.install_from_mod_src(tar_id, filemod::utf8str_to_path(dir)),
+          ret);
     } else if (is_set(tar_id)) {  // install mods from target id
       ret = modder.install_from_target_id(tar_id);
     }
@@ -172,7 +177,8 @@ static inline int run(int argc, char **argv) {
     }
   });
 
-  CLI11_PARSE(app, argc, argv)
+  argv = app.ensure_utf8(argv);
+  CLI11_PARSE(app, argc, argv);
 
   if (!ret.success) {
     std::cerr << ret.msg << '\n';

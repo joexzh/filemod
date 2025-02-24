@@ -25,6 +25,7 @@ static inline std::filesystem::path getexepath() {
   return std::filesystem::canonical("/proc/self/exe");
 }
 #elif _WIN32
+
 // Create a string with last error message
 static std::string WinErrToStr(DWORD error) {
   if (error) {
@@ -55,15 +56,44 @@ static inline std::filesystem::path getexepath() {
   }
   throw std::runtime_error(WinErrToStr(err));
 }
+
+// convert string of code page %cp to wstring
+static std::wstring cp_to_wstr(std::string_view sv, uint64_t cp) {
+  int sz = MultiByteToWideChar(cp, 0, sv.data(), sv.size() + 1, NULL, 0);
+  if (0 == sz) {
+    throw std::runtime_error("MultiByteToWideChar error");
+  }
+  std::wstring wstr(sz - 1, L'\0');
+  MultiByteToWideChar(cp, 0, sv.data(), sv.size() + 1, &wstr[0], sz);
+  return wstr;
+}
+
+// convert wstring (UTF-16) to string of code page %cp
+static std::string wstr_to_cp(std::wstring_view wsv, uint64_t cp) {
+  int sz = WideCharToMultiByte(cp, 0, wsv.data(), wsv.size() + 1, NULL, 0, NULL,
+                               NULL);
+  if (0 == sz) {
+    throw std::runtime_error("WideCharToMultiByte error");
+  }
+  std::string utf8str(sz - 1, '\0');
+  WideCharToMultiByte(cp, 0, wsv.data(), wsv.size() + 1, &utf8str[0], sz, NULL,
+                      NULL);
+  return utf8str;
+}
+
+std::string utf8str_to_current_cp(std::string_view sv) {
+  std::wstring wstr = cp_to_wstr(sv, CP_UTF8);
+  return wstr_to_cp(wstr, CP_ACP);
+}
 #else
 static_assert(false, UnSupportedOS);
 #endif
 
-std::string get_exe_dir() {
-  return (getexepath().parent_path() /= CONFIGDIR).string();
+std::filesystem::path get_exe_dir() {
+  return (getexepath().parent_path() /= CONFIGDIR);
 }
 
-std::string get_home_cfg_dir() {
+std::filesystem::path get_home_cfg_dir() {
   std::string dir;
 
 #ifdef __linux__
@@ -83,16 +113,34 @@ std::string get_home_cfg_dir() {
   dir += home;
   dir += "/.config/";
   dir += CONFIGDIR;
-  return dir;
+  return std::filesystem::path{dir};
 }
 
-std::string get_config_dir() {
+std::filesystem::path get_config_dir() {
   if (auto home_dir = get_home_cfg_dir(); !home_dir.empty()) {
     return home_dir;
   }
   return get_exe_dir();
 }
 
-std::string get_db_path() { return (get_config_dir() += '/') += DBFILE; }
+std::filesystem::path get_db_path() {
+  return (get_config_dir() += '/') += DBFILE;
+}
+
+std::filesystem::path utf8str_to_path(std::string_view sv) {
+#ifdef _WIN32
+  return std::filesystem::path(cp_to_wstr(sv, CP_UTF8));
+#else
+  return std::filesystem::path(sv);
+#endif
+}
+
+std::string path_to_utf8str(const std::filesystem::path &path) {
+#ifdef _WIN32
+  return wstr_to_cp(path.wstring(), CP_UTF8);
+#else
+  return path.string();
+#endif
+}
 
 }  // namespace filemod

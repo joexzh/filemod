@@ -10,14 +10,14 @@ class DBTest : public PathHelper {
  protected:
   int64_t insert_mod1(int64_t tar_id) {
     return _db.insert_mod_w_files(
-        tar_id, _mod1_dir, static_cast<int>(filemod::ModStatus::Uninstalled),
-        _mod1_files);
+        tar_id, _mod1_rel_dir,
+        static_cast<int>(filemod::ModStatus::Uninstalled), _mod1_rel_files);
   }
 
   int64_t insert_mod2(int64_t tar_id) {
     return _db.insert_mod_w_files(
-        tar_id, _mod2_dir, static_cast<int>(filemod::ModStatus::Uninstalled),
-        _mod2_files);
+        tar_id, _mod2_rel_dir,
+        static_cast<int>(filemod::ModStatus::Uninstalled), _mod2_rel_files);
   }
 
   filemod::DB _db{_db_path.string()};
@@ -81,7 +81,7 @@ TEST_F(DBTest, query_mod) {
   EXPECT_LT(0, ret.data.tar_id);
   EXPECT_EQ(tar_id, ret.data.tar_id);
   EXPECT_EQ(mod_id, ret.data.id);
-  EXPECT_EQ(_mod1_dir, ret.data.dir);
+  EXPECT_EQ(_mod1_rel_dir, ret.data.dir);
   EXPECT_EQ(ret.data.status, filemod::ModStatus::Uninstalled);
 }
 
@@ -95,9 +95,9 @@ TEST_F(DBTest, query_mods_n_files) {
   EXPECT_NE(0, mod.id);
   EXPECT_EQ(mod_id, mod.id);
   EXPECT_EQ(tar_id, mod.tar_id);
-  EXPECT_EQ(_mod1_dir, mod.dir);
+  EXPECT_EQ(_mod1_rel_dir, mod.dir);
   EXPECT_EQ(filemod::ModStatus::Uninstalled, mod.status);
-  EXPECT_EQ(_mod1_files.size(), mod.files.size());
+  EXPECT_EQ(_mod1_rel_files.size(), mod.files.size());
 }
 
 TEST_F(DBTest, query_targets_mods) {
@@ -115,7 +115,7 @@ TEST_F(DBTest, query_targets_mods) {
   auto &mod = tar.ModDtos[0];
   EXPECT_LT(0, mod.id);
   EXPECT_EQ(mod_id, mod.id);
-  EXPECT_EQ(_mod1_dir, mod.dir);
+  EXPECT_EQ(_mod1_rel_dir, mod.dir);
   EXPECT_EQ(filemod::ModStatus::Uninstalled, mod.status);
 }
 
@@ -128,19 +128,19 @@ TEST_F(DBTest, query_mods_by_target) {
   auto &mod = mods[0];
   EXPECT_LT(0, mod.id);
   EXPECT_EQ(mod_id, mod.id);
-  EXPECT_EQ(_mod1_dir, mod.dir);
+  EXPECT_EQ(_mod1_rel_dir, mod.dir);
   EXPECT_EQ(filemod::ModStatus::Uninstalled, mod.status);
 }
 
 TEST_F(DBTest, query_mod_by_targetid_dir) {
   auto tar_id = _db.insert_target(_game1_dir.string());
   auto mod_id = insert_mod1(tar_id);
-  auto ret = _db.query_mod_by_targetid_dir(tar_id, _mod1_dir);
+  auto ret = _db.query_mod_by_targetid_dir(tar_id, _mod1_rel_dir);
 
   EXPECT_TRUE(ret.success);
   EXPECT_LT(0, ret.data.id);
   EXPECT_EQ(mod_id, ret.data.id);
-  EXPECT_EQ(_mod1_dir, ret.data.dir);
+  EXPECT_EQ(_mod1_rel_dir, ret.data.dir);
   EXPECT_EQ(filemod::ModStatus::Uninstalled, ret.data.status);
 }
 
@@ -148,7 +148,7 @@ TEST_F(DBTest, query_mods_contain_files) {
   auto tar_id = _db.insert_target(_game1_dir.string());
   auto mod1_id = insert_mod1(tar_id);
   insert_mod2(tar_id);
-  auto mods = _db.query_mods_contain_files(_mod1_files);
+  auto mods = _db.query_mods_contain_files(_mod1_rel_files);
 
   ASSERT_EQ(1, mods.size());
   auto &mod = mods[0];

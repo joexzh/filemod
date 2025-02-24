@@ -5,7 +5,9 @@
 #pragma once
 
 #include <cstring>
+#include <filesystem>
 #include <string>
+#include <string_view>
 
 namespace filemod {
 struct result_base {
@@ -23,13 +25,13 @@ const char DBFILE[] = "filemod.db";
 const char FILEMOD[] = "filemod";
 const char CONFIGDIR[] = "filemod_cfg";
 
-std::string get_exe_dir();
+std::filesystem::path get_exe_dir();
 
-std::string get_home_cfg_dir();
+std::filesystem::path get_home_cfg_dir();
 
-std::string get_config_dir();
+std::filesystem::path get_config_dir();
 
-std::string get_db_path();
+std::filesystem::path get_db_path();
 
 constexpr size_t length_s(const char *str) noexcept {
   if (nullptr == str || 0 == *str) {
@@ -43,4 +45,16 @@ constexpr size_t length_s(const char *str) noexcept {
   //        return sum;
   return strlen(str);
 }
+
+std::filesystem::path utf8str_to_path(std::string_view sv);
+
+std::string path_to_utf8str(const std::filesystem::path &path);
+
+#ifdef _WIN32
+// convert utf8 string to current system code page
+std::string utf8str_to_current_cp(std::string_view sv);
+#else
+#define utf8str_to_current_cp(str) str
+#endif
+
 }  // namespace filemod

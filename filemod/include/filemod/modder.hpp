@@ -14,7 +14,8 @@ namespace filemod {
 
 class modder {
  public:
-  explicit modder(const std::string &cfg_dir, const std::string &db_path);
+  explicit modder(const std::filesystem::path &cfg_dir,
+                  const std::filesystem::path &db_path);
 
   modder(const modder &filemod) = delete;
   modder &operator=(const modder &filemod) = delete;
@@ -24,16 +25,16 @@ class modder {
 
   ~modder() = default;
 
-  result<int64_t> add_target(const std::string &tar_rel);
+  result<int64_t> add_target(const std::filesystem::path &tar_rel);
 
-  result<int64_t> add_mod(int64_t tar_id, const std::string &mod_rel);
+  result<int64_t> add_mod(int64_t tar_id, const std::filesystem::path &mod_rel);
 
   result_base install_mods(const std::vector<int64_t> &mod_ids);
 
   result_base install_from_target_id(int64_t tar_id);
 
   result<int64_t> install_from_mod_src(int64_t tar_id,
-                                       const std::string &mod_rel);
+                                       const std::filesystem::path &mod_rel);
 
   result_base uninstall_mods(const std::vector<int64_t> &mod_ids);
 
