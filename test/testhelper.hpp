@@ -23,7 +23,7 @@ class PathHelper : public testing::Test {
 
   const std::string _mod1_rel_dir{"mod1_dir"};
   std::vector<std::string> _mod1_rel_files{
-      (char *)u8"mod1", (char *)u8"mod1/资产", (char *)u8"mod1/资产/a.so"};
+      (char*)u8"mod1", (char*)u8"mod1/资产", (char*)u8"mod1/资产/a.so"};
   const std::string _mod2_rel_dir{"mod2_dir"};
   const std::vector<std::string> _mod2_rel_files{"mod2", "mod2/asset",
                                                  "mod2/asset/a.so"};
@@ -51,7 +51,7 @@ class FSTest : public PathHelper {
 
   filemod::FS create_fs() { return filemod::FS{_cfg_dir}; }
 
-  void create_mod1_files(const std::filesystem::path &base,
+  void create_mod1_files(const std::filesystem::path& base,
                          bool include_file = true) {
     std::filesystem::create_directories(base);
 

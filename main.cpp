@@ -127,7 +127,7 @@ static inline int run(int argc, char **argv) {
   // inside callbacks dir is utf8 encoded
 
   add->callback([&]() {
-    auto modder = filemod::create_modder();
+    filemod::modder modder;
     if (is_set(tar_id) && is_set(dir)) {  // add mod
       move_to_retbase(modder.add_mod(tar_id, filemod::utf8str_to_path(dir)),
                       ret);
@@ -137,7 +137,7 @@ static inline int run(int argc, char **argv) {
   });
 
   rmv->callback([&]() {
-    auto modder = filemod::create_modder();
+    filemod::modder modder;
     if (is_set(mod_ids)) {  // remove mods
       ret = modder.remove_mods(mod_ids);
     } else if (is_set(tar_id)) {  // remove target
@@ -146,7 +146,7 @@ static inline int run(int argc, char **argv) {
   });
 
   ins->callback([&]() {
-    auto modder = filemod::create_modder();
+    filemod::modder modder;
     if (is_set(mod_ids)) {  // install mods
       ret = modder.install_mods(mod_ids);
     } else if (is_set(tar_id) &&
@@ -160,7 +160,7 @@ static inline int run(int argc, char **argv) {
   });
 
   uns->callback([&]() {
-    auto modder = filemod::create_modder();
+    filemod::modder modder;
     if (is_set(mod_ids)) {  // uninstall mods
       ret = modder.uninstall_mods(mod_ids);
     } else if (is_set(tar_id)) {  // uninstall mod from target id
@@ -169,7 +169,7 @@ static inline int run(int argc, char **argv) {
   });
 
   lst->callback([&]() {
-    auto modder = filemod::create_modder();
+    filemod::modder modder;
     if (is_set(mod_ids)) {  // list mods
       ret.msg = modder.list_mods(mod_ids);
     } else {  // list targets
