@@ -11,9 +11,6 @@
 #ifdef __linux__
 #elif _WIN32
 #include <Windows.h>
-#include <errhandlingapi.h>
-#include <libloaderapi.h>
-#include <winerror.h>
 #else
 static_assert(false, filemod::UnSupportedOS);
 #endif
@@ -27,51 +24,31 @@ static inline std::filesystem::path getexepath() {
 #elif _WIN32
 
 // Create a string with last error message
-static std::string WinErrToStr(DWORD error) {
-  if (error) {
-    LPVOID lpMsgBuf;
-    DWORD bufLen = FormatMessage(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-            FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR)&lpMsgBuf, 0, NULL);
+static std::basic_string<TCHAR> WinErrToStr(DWORD ec) {
+  std::basic_string<TCHAR> err_str;
+  if (ec) {
+    LPSTR lpMsgBuf;
+    DWORD bufLen = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                                     FORMAT_MESSAGE_FROM_SYSTEM |
+                                     FORMAT_MESSAGE_IGNORE_INSERTS,
+                                 NULL, ec, 0, (LPTSTR)&lpMsgBuf, 0, NULL);
+    // bufLen exclude null terminator, but the buffer will receive it
     if (bufLen) {
-      LPCSTR lpMsgStr = (LPCSTR)lpMsgBuf;
-      std::string result(lpMsgStr, lpMsgStr + bufLen);
+      err_str.reserve(bufLen);
+      err_str.assign(lpMsgBuf);
 
       LocalFree(lpMsgBuf);
-
-      return result;
+      return err_str;
     }
   }
-  return std::string();
-}
-
-static inline std::filesystem::path getexepath() {
-  TCHAR path[MAX_PATH];
-  DWORD length = GetModuleFileName(NULL, path, MAX_PATH);
-  auto err = GetLastError();
-  if (err == ERROR_SUCCESS) {
-    return std::filesystem::path{path};
-  }
-  throw std::runtime_error(WinErrToStr(err));
-}
-
-// convert string of code page %cp to wstring
-static std::wstring cp_to_wstr(std::string_view sv, uint64_t cp) {
-  int sz = MultiByteToWideChar(cp, 0, sv.data(), sv.size() + 1, NULL, 0);
-  if (0 == sz) {
-    throw std::runtime_error("MultiByteToWideChar error");
-  }
-  std::wstring wstr(sz - 1, L'\0');
-  MultiByteToWideChar(cp, 0, sv.data(), sv.size() + 1, &wstr[0], sz);
-  return wstr;
+  return err_str;
 }
 
 // convert wstring (UTF-16) to string of code page %cp
-static std::string wstr_to_cp(std::wstring_view wsv, uint64_t cp) {
+static std::string wstr_to_cp(std::wstring_view wsv, UINT cp) {
   int sz = WideCharToMultiByte(cp, 0, wsv.data(), wsv.size() + 1, NULL, 0, NULL,
                                NULL);
+  // sz include null terminator
   if (0 == sz) {
     throw std::runtime_error("WideCharToMultiByte error");
   }
@@ -79,6 +56,33 @@ static std::string wstr_to_cp(std::wstring_view wsv, uint64_t cp) {
   WideCharToMultiByte(cp, 0, wsv.data(), wsv.size() + 1, &utf8str[0], sz, NULL,
                       NULL);
   return utf8str;
+}
+
+static inline std::filesystem::path getexepath() {
+  TCHAR buf[MAX_PATH];
+  DWORD length = GetModuleFileName(NULL, buf, MAX_PATH);
+  // length include null terminator
+  auto ec = GetLastError();
+  if (length != 0 && ec == ERROR_SUCCESS) {
+    return std::filesystem::path{buf};
+  }
+#ifdef UNICODE
+  throw std::runtime_error(wstr_to_cp(WinErrToStr(ec)));
+#else
+  throw std::runtime_error(WinErrToStr(ec));
+#endif
+}
+
+// convert string of code page %cp to wstring
+static std::wstring cp_to_wstr(std::string_view sv, UINT cp) {
+  int sz = MultiByteToWideChar(cp, 0, sv.data(), sv.size() + 1, NULL, 0);
+  // sz include null terminator
+  if (0 == sz) {
+    throw std::runtime_error("MultiByteToWideChar error");
+  }
+  std::wstring wstr(sz - 1, L'\0');
+  MultiByteToWideChar(cp, 0, sv.data(), sv.size() + 1, &wstr[0], sz);
+  return wstr;
 }
 
 std::string utf8str_to_current_cp(std::string_view sv) {
