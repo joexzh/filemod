@@ -85,6 +85,15 @@ std::string utf8str_to_current_cp(std::string_view sv) {
   std::wstring wstr = cp_to_wstr(sv, CP_UTF8);
   return wstr_to_cp(wstr, CP_ACP);
 }
+
+std::filesystem::path utf8str_to_path(std::string_view sv) {
+  return std::filesystem::path(cp_to_wstr(sv, CP_UTF8));
+}
+
+std::string path_to_utf8str(const std::filesystem::path &path) {
+  return wstr_to_cp(path.wstring(), CP_UTF8);
+}
+
 #else
 static_assert(false, UnSupportedOS);
 #endif
@@ -125,22 +134,6 @@ std::filesystem::path get_config_dir() {
 
 std::filesystem::path get_db_path() {
   return (get_config_dir() += '/') += DBFILE;
-}
-
-std::filesystem::path utf8str_to_path(std::string_view sv) {
-#ifdef _WIN32
-  return std::filesystem::path(cp_to_wstr(sv, CP_UTF8));
-#else
-  return std::filesystem::path(sv);
-#endif
-}
-
-std::string path_to_utf8str(const std::filesystem::path &path) {
-#ifdef _WIN32
-  return wstr_to_cp(path.wstring(), CP_UTF8);
-#else
-  return path.string();
-#endif
 }
 
 }  // namespace filemod
