@@ -10,10 +10,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 add_compile_definitions(FILEMOD_VERSION=${FILEMOD_VERSION})
 
 if (MSVC)
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
-    add_compile_definitions(_DISABLE_VECTOR_ANNOTATION)
-    add_compile_definitions(_DISABLE_STRING_ANNOTATION) # workaround https://github.com/actions/runner-images/issues/7739#issuecomment-1596775652
-
     add_compile_options(/W4)
     add_compile_options($<$<CONFIG:Debug>:/fsanitize=address>)
     add_link_options($<$<CONFIG:Debug>:/fsanitize=address>)
@@ -26,7 +22,7 @@ else()
     add_link_options($<$<CONFIG:Debug>:-fsanitize=address>)
 endif()
 
-find_package(CLI11 CONFIG REQUIRED)
+find_package(Boost REQUIRED COMPONENTS program_options)
 
 if (NOT TARGET filemod)
     add_subdirectory(filemod)
@@ -38,7 +34,7 @@ add_subdirectory(test)
 add_executable(${PROJECT_NAME} main.cpp)
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME filemod)
 target_link_libraries(${PROJECT_NAME} 
-    PRIVATE filemod CLI11::CLI11)
+    PRIVATE filemod Boost::program_options)
 
 install(TARGETS ${PROJECT_NAME})
 if (WIN32)
