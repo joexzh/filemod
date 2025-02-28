@@ -129,11 +129,11 @@ TEST_F(FilemodTest, remove_mods) {
   EXPECT_TRUE(std::filesystem::is_empty(_game1_dir));
 }
 
-TEST_F(FilemodTest, remove_from_target_id) {
+TEST_F(FilemodTest, remove_target) {
   auto tar_ret = _modder.add_target(_game1_dir.string());
   auto mod_ret =
       _modder.install_from_mod_src(tar_ret.data, _mod1_src_dir.string());
-  auto ret = _modder.remove_from_target_id(tar_ret.data);
+  auto ret = _modder.remove_target(tar_ret.data);
 
   EXPECT_TRUE(ret.success);
 

@@ -11,22 +11,36 @@
 
 namespace filemod {
 
+static void validate_dir_exist(const std::filesystem::path &dir) {
+  if (!std::filesystem::is_directory(dir)) {
+    throw std::runtime_error((std::string{"dir not exist"} += ": ") +=
+                             dir.string());
+  }
+}
+
+static void validate_dir_not_exist(const std::filesystem::path &dir) {
+  if (std::filesystem::is_directory(dir)) {
+    throw std::runtime_error((std::string{"dir already exist"} += ": ") +=
+                             dir.string());
+  }
+}
+
 static void cross_filesystem_rename(const std::filesystem::path &src,
                                     const std::filesystem::path &dest) {
-  std::error_code err_code;
-  std::filesystem::rename(src, dest, err_code);
+  std::error_code ec;
+  std::filesystem::rename(src, dest, ec);
 
-  if (!err_code) {
+  if (!ec) {
     return;
   }
 
-  if (err_code.value() == static_cast<int>(std::errc::cross_device_link)) {
+  if (ec.value() == static_cast<int>(std::errc::cross_device_link)) {
     // cannot rename cross device, do copy and remove instead
     std::filesystem::copy(src, dest);
     std::filesystem::remove(src);
   } else {
     // doesn't handle other errors
-    throw std::runtime_error(err_code.message());
+    throw std::runtime_error(ec.message());
   }
 }
 
@@ -103,6 +117,10 @@ std::vector<std::filesystem::path> FS::add_mod(
     int64_t tar_id, const std::filesystem::path &mod_src) {
   auto cfg_m = cfg_mod(
       tar_id, std::filesystem::relative(mod_src, mod_src.parent_path()));
+
+  validate_dir_exist(cfg_m.parent_path());
+  validate_dir_not_exist(cfg_m);
+
   create_directory_w(cfg_m);
 
   std::vector<std::filesystem::path> rels;
@@ -194,8 +212,10 @@ void FS::uninstall_mod_files(
 
   for (auto &rel : rel_sorted) {
     auto src = src_dir / rel;
-    if (std::filesystem::exists(src)) {
-      if (std::filesystem::is_directory(src)) {
+
+    auto status = std::filesystem::status(src);
+    if (std::filesystem::exists(status)) {
+      if (std::filesystem::is_directory(status)) {
         del_dirs.push_back(src);
       } else {
         auto dest = dest_dir / rel;
@@ -218,6 +238,10 @@ void FS::move_file(const std::filesystem::path &src,
 }
 
 void FS::remove_mod(const std::filesystem::path &cfg_m) {
+  if (!std::filesystem::exists(cfg_m)) {
+    return;
+  }
+
   auto dest_dir = tmp_dir() /= *-- --cfg_m.end() / *--cfg_m.end();
   std::filesystem::create_directories(dest_dir);
   std::vector<std::filesystem::path> del_dirs;

@@ -46,13 +46,14 @@ class modder {
 
   result_base remove_mods(const std::vector<int64_t>& mod_ids);
 
-  result_base remove_from_target_id(int64_t tar_id);
+  result_base remove_target(int64_t tar_id);
 
-  std::vector<ModDto> query_mods(const std::vector<int64_t>& mod_ids) {
+  inline std::vector<ModDto> query_mods(const std::vector<int64_t>& mod_ids) {
     return _db.query_mods_n_files(mod_ids);
   }
 
-  std::vector<TargetDto> query_targets(const std::vector<int64_t>& tar_ids) {
+  inline std::vector<TargetDto> query_targets(
+      const std::vector<int64_t>& tar_ids) {
     return _db.query_targets_mods(tar_ids);
   }
 
@@ -65,7 +66,7 @@ class modder {
   DB _db;  // ORDER DEPENDENCY
 
   template <typename Func>
-  void tx_wrapper(result_base& ret, Func func);
+  void tx_wrapper(Func func);
 
   result_base install_mod(int64_t mod_id);
 

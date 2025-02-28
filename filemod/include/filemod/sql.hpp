@@ -64,6 +64,7 @@ class DB {
 
   result<TargetDto> query_target_by_dir(const std::string &dir);
 
+  // Return target id if succeeded, otherwise 0.
   int64_t insert_target(const std::string &dir);
 
   int delete_target(int64_t id);

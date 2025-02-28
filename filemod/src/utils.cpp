@@ -22,7 +22,6 @@ static inline std::filesystem::path getexepath() {
   return std::filesystem::canonical("/proc/self/exe");
 }
 #elif _WIN32
-
 // Create a string with last error message
 static std::basic_string<TCHAR> WinErrToStr(DWORD ec) {
   std::basic_string<TCHAR> err_str;
@@ -100,7 +99,7 @@ std::string path_to_utf8str(const std::filesystem::path &path) {
 
 #else
 static_assert(false, UnSupportedOS);
-#endif
+#endif  // __linux__
 
 std::filesystem::path get_exe_dir() {
   return (getexepath().parent_path() /= CONFIGDIR);

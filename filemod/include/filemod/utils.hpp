@@ -11,7 +11,7 @@
 
 namespace filemod {
 struct result_base {
-  bool success = false;
+  bool success;
   std::string msg;
 };
 
@@ -47,16 +47,13 @@ constexpr size_t length_s(const char *str) noexcept {
 }
 
 #ifdef _WIN32
-
 std::filesystem::path utf8str_to_path(std::string_view sv);
 
 std::string path_to_utf8str(const std::filesystem::path &path);
 
 // convert utf8 string to current system code page
 std::string utf8str_to_current_cp(std::string_view sv);
-
 #else
-
 inline std::filesystem::path utf8str_to_path(std::string_view sv) {
   return std::filesystem::path(sv);
 }
@@ -66,7 +63,6 @@ inline std::string path_to_utf8str(const std::filesystem::path &path) {
 }
 
 #define utf8str_to_current_cp(str) str
-
 #endif
 
 }  // namespace filemod

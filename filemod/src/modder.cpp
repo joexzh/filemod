@@ -13,11 +13,27 @@
 #include "utils.hpp"
 
 namespace filemod {
-static const char* const err_tar_not_exist = "ERROR: target not exist";
-static const char* const err_mod_not_exist = "ERROR: mod not exist";
+static const char* const err_tar_not_exist = "error: target not exist";
+static const char* const err_mod_not_exist = "error: mod not exist";
+constexpr char err_not_dir[] = "error: directory not exist";
+constexpr char err_missing_file[] = "error: missing file";
 
-static inline std::vector<ModDto> find_conflict_mods(
-    std::filesystem::path& cfg_m, ModDto& mod, DB& db) {
+static void set_succeed(result_base& ret) { ret.msg = "succeed"; }
+
+static bool check_directory(result_base& ret,
+                            const std::filesystem::path& path) {
+  if (!std::filesystem::is_directory(path)) {
+    ret.msg += err_not_dir;
+    ret.msg += ": ";
+    ret.msg += path.string();
+    ret.success = false;
+    return false;
+  }
+  return true;
+}
+
+static std::vector<ModDto> find_conflict_mods(std::filesystem::path& cfg_m,
+                                              ModDto& mod, DB& db) {
   // filter out dirs
   std::vector<std::string> no_dirs;
   for (const auto& file : mod.files) {
@@ -40,12 +56,11 @@ static inline std::vector<ModDto> find_conflict_mods(
 }
 
 template <typename Func>
-void modder::tx_wrapper(result_base& ret, Func func) {
-  ret.success = true;
+void modder::tx_wrapper(Func func) {
   _fs.begin();
   auto dbtx = _db.begin();
 
-  func();
+  auto& ret = func();
   if (!ret.success) {
     return;
   }
@@ -58,19 +73,25 @@ modder::modder() : modder(get_config_dir(), get_db_path()) {}
 
 result<int64_t> modder::add_target(const std::filesystem::path& tar_rel) {
   result<int64_t> ret;
+  ret.success = true;
 
-  tx_wrapper(ret, [&]() {
+  if (!check_directory(ret, tar_rel)) {
+    return ret;
+  }
+
+  tx_wrapper([&]() -> auto& {
     auto tar_dir = std::filesystem::absolute(tar_rel);
     auto utf8_tar_dir = path_to_utf8str(tar_dir);
 
     if (auto tar_ret = _db.query_target_by_dir(utf8_tar_dir); tar_ret.success) {
       ret.data = tar_ret.data.id;
       // if target exists, do nothing
-      return;
+      return ret;
     }
 
     ret.data = _db.insert_target(utf8_tar_dir);
     _fs.create_target(ret.data);
+    return ret;
   });
 
   return ret;
@@ -79,12 +100,17 @@ result<int64_t> modder::add_target(const std::filesystem::path& tar_rel) {
 result<int64_t> modder::add_mod(int64_t tar_id,
                                 const std::filesystem::path& mod_rel) {
   result<int64_t> ret;
+  ret.success = true;
 
-  tx_wrapper(ret, [&]() {
+  if (!check_directory(ret, mod_rel)) {
+    return ret;
+  }
+
+  tx_wrapper([&]() -> auto& {
     if (!_db.query_target(tar_id).success) {
       ret.success = false;
       ret.msg = err_tar_not_exist;
-      return;
+      return ret;
     }
     auto mod_src = std::filesystem::absolute(mod_rel);
     auto mod_dir = std::filesystem::relative(mod_src, mod_src.parent_path());
@@ -94,7 +120,7 @@ result<int64_t> modder::add_mod(int64_t tar_id,
         mod_ret.success) {
       // if mod exists, do nothing
       ret.data = mod_ret.data.id;
-      return;
+      return ret;
     }
 
     auto files = _fs.add_mod(tar_id, mod_src);
@@ -108,30 +134,44 @@ result<int64_t> modder::add_mod(int64_t tar_id,
     ret.data = _db.insert_mod_w_files(
         tar_id, utf8_mod_dir, static_cast<int64_t>(ModStatus::Uninstalled),
         utf8_file_paths);
+    return ret;
   });
 
   return ret;
 }
 
 result_base modder::install_mod(int64_t mod_id) {
-  result_base ret;
+  result_base ret{.success = true};
 
-  tx_wrapper(ret, [&]() {
+  tx_wrapper([&]() -> auto& {
     auto mods = _db.query_mods_n_files(std::vector<int64_t>{mod_id});
     if (mods.empty()) {
       ret.success = false;
       ret.msg = err_mod_not_exist;
-      return;
+      return ret;
     }
 
     auto& mod = mods[0];
     if (ModStatus::Installed == mod.status) {
       // if already installed, do nothing
-      return;
+      return ret;
+    }
+
+    auto cfg_m = _fs.cfg_mod(mod.tar_id, utf8str_to_path(mod.dir));
+
+    // check if missing files
+    for (auto& file_str : mod.files) {
+      if (auto path = cfg_m / utf8str_to_path(file_str);
+          !std::filesystem::exists(path)) {
+        ret.success = false;
+        ret.msg = err_missing_file;
+        ret.msg += ": ";
+        ret.msg += path.string();
+        return ret;
+      }
     }
 
     // check if conflict with other installed mods
-    auto cfg_m = _fs.cfg_mod(mod.tar_id, utf8str_to_path(mod.dir));
     if (auto conflicts = find_conflict_mods(cfg_m, mod, _db);
         !conflicts.empty()) {
       ret.success = false;
@@ -140,7 +180,7 @@ result_base modder::install_mod(int64_t mod_id) {
         ret.msg += std::to_string(conflict.id);
         ret.msg += " ";
       }
-      return;
+      return ret;
     }
 
     auto tar_ret = _db.query_target(mod.tar_id);
@@ -149,7 +189,12 @@ result_base modder::install_mod(int64_t mod_id) {
       ret.msg = err_tar_not_exist;
       ret.msg += ": ";
       ret.msg += std::to_string(mod.tar_id);
-      return;
+      return ret;
+    }
+
+    // check target dir exists
+    if (!check_directory(ret, tar_ret.data.dir)) {
+      return ret;
     }
 
     auto baks = _fs.install_mod(cfg_m, utf8str_to_path(tar_ret.data.dir));
@@ -161,36 +206,39 @@ result_base modder::install_mod(int64_t mod_id) {
     }
 
     _db.install_mod(mod.id, utf8_baks);
+    return ret;
   });
 
   return ret;
 }
 
 result_base modder::install_mods(const std::vector<int64_t>& mod_ids) {
-  result_base ret;
+  result_base ret{.success = true};
 
-  tx_wrapper(ret, [&]() {
+  tx_wrapper([&]() -> auto& {
     for (const auto& mod_id : mod_ids) {
       if (auto _ret = install_mod(mod_id); !ret.success) {
         ret.success = false;
         ret.msg = std::move(_ret.msg);
-        return;
+        return ret;
       }
     }
+    set_succeed(ret);
+    return ret;
   });
 
   return ret;
 }
 
 result_base modder::install_from_target_id(int64_t tar_id) {
-  result_base ret;
+  result_base ret{.success = true};
 
-  tx_wrapper(ret, [&]() {
+  tx_wrapper([&]() -> auto& {
     auto tars = _db.query_targets_mods(std::vector<int64_t>{tar_id});
     if (tars.empty()) {
       ret.success = false;
       ret.msg = err_tar_not_exist;
-      return;
+      return ret;
     }
 
     auto& tar = tars[0];
@@ -199,10 +247,13 @@ result_base modder::install_from_target_id(int64_t tar_id) {
         if (auto _ret = install_mod(mod.id); !_ret.success) {
           ret.success = false;
           ret.msg = std::move(_ret.msg);
-          return;
+          return ret;
         }
       }
     }
+
+    set_succeed(ret);
+    return ret;
   });
 
   return ret;
@@ -211,12 +262,13 @@ result_base modder::install_from_target_id(int64_t tar_id) {
 result<int64_t> modder::install_from_mod_src(
     int64_t tar_id, const std::filesystem::path& mod_rel) {
   result<int64_t> ret;
+  ret.success = true;
 
-  tx_wrapper(ret, [&]() {
+  tx_wrapper([&]() -> auto& {
     if (auto add_ret = add_mod(tar_id, mod_rel); !add_ret.success) {
       ret.success = false;
       ret.msg = std::move(add_ret.msg);
-      return;
+      return ret;
     } else {
       ret.data = add_ret.data;
     }
@@ -225,8 +277,9 @@ result<int64_t> modder::install_from_mod_src(
     if (!ins_ret.success) {
       ret.success = false;
       ret.msg = std::move(ins_ret.msg);
-      return;
     }
+
+    return ret;
   });
 
   return ret;
@@ -234,13 +287,14 @@ result<int64_t> modder::install_from_mod_src(
 
 result<ModDto> modder::uninstall_mod(int64_t mod_id) {
   result<ModDto> ret;
+  ret.success = true;
 
-  tx_wrapper(ret, [&]() {
+  tx_wrapper([&]() -> auto& {
     auto mods = _db.query_mods_n_files(std::vector<int64_t>{mod_id});
     if (mods.empty()) {
       ret.success = false;
       ret.msg = err_mod_not_exist;
-      return;
+      return ret;
     }
 
     auto& mod = mods[0];
@@ -250,13 +304,13 @@ result<ModDto> modder::uninstall_mod(int64_t mod_id) {
 
     if (ModStatus::Uninstalled == mod.status) {
       // not considered error, just do nothing
-      return;
+      return ret;
     }
     auto tar_ret = _db.query_target(mod.tar_id);
     if (!tar_ret.success) {
       ret.success = false;
       ret.msg = err_tar_not_exist;
-      return;
+      return ret;
     }
 
     _db.uninstall_mod(mod_id);
@@ -277,35 +331,39 @@ result<ModDto> modder::uninstall_mod(int64_t mod_id) {
                       utf8str_to_path(tar_ret.data.dir),
                       make_paths_from_strs(mod.files),
                       make_paths_from_strs(mod.bak_files));
+    return ret;
   });
 
   return ret;
 }
 
 result_base modder::uninstall_mods(const std::vector<int64_t>& mod_ids) {
-  result_base ret;
-  tx_wrapper(ret, [&]() {
+  result_base ret{.success = true};
+  tx_wrapper([&]() -> auto& {
     for (auto mod_id : mod_ids) {
       auto _ret = uninstall_mod(mod_id);
       if (!_ret.success) {
         ret.success = false;
         ret.msg = std::move(_ret.msg);
-        return;
+        return ret;
       }
     }
+    set_succeed(ret);
+    return ret;
   });
   return ret;
 }
 
 result_base modder::uninstall_from_target_id(int64_t tar_id) {
-  result_base ret;
-  tx_wrapper(ret, [&]() {
+  result_base ret{.success = true};
+  tx_wrapper([&]() -> auto& {
     auto tars = _db.query_targets_mods(std::vector<int64_t>{tar_id});
     if (tars.empty()) {
       ret.success = false;
       ret.msg = err_tar_not_exist;
-      return;
+      return ret;
     }
+
     auto& tar = tars[0];
     for (auto& mod : tar.ModDtos) {
       // filter installed mods only
@@ -314,57 +372,65 @@ result_base modder::uninstall_from_target_id(int64_t tar_id) {
         if (!_ret.success) {
           ret.success = false;
           ret.msg = std::move(_ret.msg);
-          return;
+          return ret;
         }
       }
     }
+
+    set_succeed(ret);
+    return ret;
   });
   return ret;
 }
 
 result_base modder::remove_mod(int64_t mod_id) {
-  result_base ret;
+  result_base ret{.success = true};
 
-  tx_wrapper(ret, [&]() {
+  tx_wrapper([&]() -> auto& {
     auto _ret = uninstall_mod(mod_id);
     if (!_ret.success) {
       ret.success = false;
       ret.msg = std::move(_ret.msg);
-      return;
+      return ret;
     }
+
     _db.delete_mod(mod_id);
     _fs.remove_mod(
         _fs.cfg_mod(_ret.data.tar_id, utf8str_to_path(_ret.data.dir)));
+
+    return ret;
   });
 
   return ret;
 }
 
 result_base modder::remove_mods(const std::vector<int64_t>& mod_ids) {
-  result_base ret;
+  result_base ret{.success = true};
 
-  tx_wrapper(ret, [&]() {
+  tx_wrapper([&]() -> auto& {
     for (auto mod_id : mod_ids) {
       auto _ret = remove_mod(mod_id);
       if (!_ret.success) {
         ret.success = false;
         ret.msg = std::move(_ret.msg);
-        return;
+        return ret;
       }
     }
+    set_succeed(ret);
+    return ret;
   });
 
   return ret;
 }
 
-result_base modder::remove_from_target_id(int64_t tar_id) {
-  result_base ret;
+result_base modder::remove_target(int64_t tar_id) {
+  result_base ret{.success = true};
 
-  tx_wrapper(ret, [&]() {
+  tx_wrapper([&]() -> auto& {
     auto tars = _db.query_targets_mods({tar_id});
     if (tars.empty()) {
       // if not exists, do nothing
-      return;
+      return ret;
     }
 
     auto& tar = tars[0];
@@ -373,11 +439,13 @@ result_base modder::remove_from_target_id(int64_t tar_id) {
       if (!_ret.success) {
         ret.success = false;
         ret.msg = std::move(_ret.msg);
-        return;
+        return ret;
       }
     }
     _db.delete_target(tar_id);
     _fs.remove_target(tar_id);
+    set_succeed(ret);
+    return ret;
   });
 
   return ret;
