@@ -29,8 +29,9 @@ if (TARGET_TYPE STREQUAL "SHARED_LIBRARY")
     install(TARGETS ${PROJECT_NAME}
         PUBLIC_HEADER DESTINATION include/filemod
     )
-else()
-    target_compile_definitions(${PROJECT_NAME} PUBLIC FILEMOD_EXPORTS)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC FILEMOD_DLL 
+                                               PRIVATE FILEMOD_EXPORTS
+    )
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE SQLiteCpp)

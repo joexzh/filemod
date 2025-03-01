@@ -9,20 +9,40 @@
 #include <string>
 #include <string_view>
 
-// define export macro
-#ifdef _WIN32
-#ifdef FILEMOD_EXPORTS
-#define FILEMOD_API __declspec(dllexport)
+// Generic helper definitions for shared library support
+#if defined _WIN32 || defined __CYGWIN__
+#define FILEMOD_HELPER_DLL_IMPORT __declspec(dllimport)
+#define FILEMOD_HELPER_DLL_EXPORT __declspec(dllexport)
+#define FILEMOD_HELPER_DLL_LOCAL
 #else
-#define FILEMOD_API __declspec(dllimport)
+#if __GNUC__ >= 4
+#define FILEMOD_HELPER_DLL_IMPORT __attribute__((visibility("default")))
+#define FILEMOD_HELPER_DLL_EXPORT __attribute__((visibility("default")))
+#define FILEMOD_HELPER_DLL_LOCAL __attribute__((visibility("hidden")))
+#else
+#define FILEMOD_HELPER_DLL_IMPORT
+#define FILEMOD_HELPER_DLL_EXPORT
+#define FILEMOD_HELPER_DLL_LOCAL
 #endif
+#endif
+
+// Now we use the generic helper definitions above to define FILEMOD_API and
+// FILEMOD_LOCAL. FILEMOD_API is used for the public API symbols. It either DLL
+// imports or DLL exports (or does nothing for static build) FILEMOD_LOCAL is
+// used for non-api symbols.
+
+#ifdef FILEMOD_DLL          // defined if FILEMOD is compiled as a DLL
+#ifdef FILEMOD_DLL_EXPORTS  // defined if we are building the FILEMOD DLL
+                            // (instead of using it)
+#define FILEMOD_API FILEMOD_HELPER_DLL_EXPORT
 #else
-#ifdef FILEMOD_EXPORTS
-#define FILEMOD_API __attribute__((visibility("default")))
-#else
+#define FILEMOD_API FILEMOD_HELPER_DLL_IMPORT
+#endif  // FILEMOD_DLL_EXPORTS
+#define FILEMOD_LOCAL FILEMOD_HELPER_DLL_LOCAL
+#else  // FILEMOD_DLL is not defined: this means FILEMOD is a static lib.
 #define FILEMOD_API
-#endif
-#endif  // _WIN32
+#define FILEMOD_LOCAL
+#endif  // FILEMOD_DLL
 
 namespace filemod {
 struct result_base {
