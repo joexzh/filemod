@@ -320,32 +320,29 @@ result<ModDto> modder::_uninstall_mod(int64_t mod_id) {
       return ret;
     }
 
-    // TODO
-    auto tar_ret = _db.query_target(mod.tar_id);
-    if (!tar_ret.success) {
-      ret.success = false;
-      ret.msg = err_tar_not_exist;
-      return ret;
-    }
-
     _db.uninstall_mod(mod_id);
 
-    auto make_paths_from_strs =
-        [](std::vector<std::string>& v) -> std::vector<std::filesystem::path> {
-      std::sort(v.begin(), v.end(),
-                [](auto& s1, auto& s2) { return s1.size() < s2.size(); });
-      std::vector<std::filesystem::path> paths;
-      paths.reserve(v.size());
-      for (auto& str : v) {
-        paths.push_back(utf8str_to_path(str));
-      }
-      return paths;
-    };
+    auto tar_ret = _db.query_target(mod.tar_id);
+    // if tar_ret.success == false, that means we hava a dingling mod so don't
+    // need to uninstall anything in filesystem.
+    if (tar_ret.success == true) {
+      auto make_paths_from_strs = [](std::vector<std::string>& v)
+          -> std::vector<std::filesystem::path> {
+        std::sort(v.begin(), v.end(),
+                  [](auto& s1, auto& s2) { return s1.size() < s2.size(); });
+        std::vector<std::filesystem::path> paths;
+        paths.reserve(v.size());
+        for (auto& str : v) {
+          paths.push_back(utf8str_to_path(str));
+        }
+        return paths;
+      };
 
-    _fs.uninstall_mod(_fs.get_cfg_mod(mod.tar_id, utf8str_to_path(mod.dir)),
-                      utf8str_to_path(tar_ret.data.dir),
-                      make_paths_from_strs(mod.files),
-                      make_paths_from_strs(mod.bak_files));
+      _fs.uninstall_mod(_fs.get_cfg_mod(mod.tar_id, utf8str_to_path(mod.dir)),
+                        utf8str_to_path(tar_ret.data.dir),
+                        make_paths_from_strs(mod.files),
+                        make_paths_from_strs(mod.bak_files));
+    }
     return ret;
   });
 
@@ -402,16 +399,16 @@ result_base modder::_remove_mod(int64_t mod_id) {
   result_base ret{.success = true};
 
   _tx_wrapper([&]() -> auto& {
-    auto _ret = _uninstall_mod(mod_id);
-    if (!_ret.success) {
+    auto uninst_mod_ret = _uninstall_mod(mod_id);
+    if (!uninst_mod_ret.success) {
       ret.success = false;
-      ret.msg = std::move(_ret.msg);
+      ret.msg = std::move(uninst_mod_ret.msg);
       return ret;
     }
 
     _db.delete_mod(mod_id);
-    _fs.remove_mod(
-        _fs.get_cfg_mod(_ret.data.tar_id, utf8str_to_path(_ret.data.dir)));
+    _fs.remove_mod(_fs.get_cfg_mod(uninst_mod_ret.data.tar_id,
+                                   utf8str_to_path(uninst_mod_ret.data.dir)));
 
     return ret;
   });
