@@ -94,7 +94,7 @@ static void parse_install(filemod::result_base &ret, std::ostringstream &oss,
   if (vm.count("help")) {
     oss << desc;
   } else if (is_set(mdir) && is_set(id)) {  // install from mod source dir
-    move_to_retbase(md.install_from_mod_src(id, mdir), ret);
+    move_to_retbase(md.install_from_mod_dir(id, mdir), ret);
   } else if (is_set(id)) {  // install all mods of a target
     ret = md.install_from_target_id(id);
   } else if (is_set(ids)) {  // install multiple mods

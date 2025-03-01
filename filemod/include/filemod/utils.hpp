@@ -9,6 +9,21 @@
 #include <string>
 #include <string_view>
 
+// define export macro
+#ifdef _WIN32
+#ifdef FILEMOD_EXPORTS
+#define FILEMOD_API __declspec(dllexport)
+#else
+#define FILEMOD_API __declspec(dllimport)
+#endif
+#else
+#ifdef FILEMOD_EXPORTS
+#define FILEMOD_API __attribute__((visibility("default")))
+#else
+#define FILEMOD_API
+#endif
+#endif  // _WIN32
+
 namespace filemod {
 struct result_base {
   bool success;

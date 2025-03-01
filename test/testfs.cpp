@@ -40,7 +40,7 @@ TEST_F(FSTest, add_mod) {
   auto files = fs.add_mod(_tar_id, _mod1_src_dir);
 
   auto it = std::filesystem::recursive_directory_iterator(
-      fs.cfg_mod(_tar_id, _mod1_rel_dir));
+      fs.get_cfg_mod(_tar_id, _mod1_rel_dir));
   EXPECT_EQ(_mod1_rel_files.size(), files.size());
   EXPECT_EQ(_mod1_rel_files.size(), std::distance(begin(it), end(it)));
 }
@@ -59,7 +59,7 @@ TEST_F(FSTest, add_mod_rollback) {
 TEST_F(FSTest, install_mod) {
   auto fs = create_fs();
   fs.create_target(_tar_id);
-  auto src = fs.cfg_mod(_tar_id, _mod1_rel_dir);
+  auto src = fs.get_cfg_mod(_tar_id, _mod1_rel_dir);
   create_mod1_files(src, true);
   fs.install_mod(src, _game1_dir);
 
@@ -72,7 +72,7 @@ TEST_F(FSTest, install_mod_rollback) {
   {
     auto fs = create_fs();
     fs.create_target(_tar_id);
-    auto src = fs.cfg_mod(_tar_id, _mod1_rel_dir);
+    auto src = fs.get_cfg_mod(_tar_id, _mod1_rel_dir);
     create_mod1_files(src, true);
     fs.begin();
     fs.install_mod(src, _game1_dir);
@@ -84,7 +84,7 @@ TEST_F(FSTest, install_mod_rollback) {
 TEST_F(FSTest, install_mod_w_backup) {
   auto fs = create_fs();
   fs.create_target(_tar_id);
-  auto src = fs.cfg_mod(_tar_id, _mod1_rel_dir);
+  auto src = fs.get_cfg_mod(_tar_id, _mod1_rel_dir);
   create_mod1_files(src, true);
   create_mod1_files(_game1_dir, true);
   auto baks = fs.install_mod(src, _game1_dir);
@@ -92,7 +92,7 @@ TEST_F(FSTest, install_mod_w_backup) {
 
   auto gdi = std::filesystem::recursive_directory_iterator(_game1_dir);
   auto bdi = std::filesystem::recursive_directory_iterator(
-      filemod::FS::backup_dir(fs.cfg_tar(_tar_id)));
+      filemod::FS::get_bak_dir(fs.get_cfg_tar(_tar_id)));
 
   EXPECT_EQ(_mod1_rel_files.size(), std::distance(begin(gdi), end(gdi)));
   EXPECT_EQ(_mod1_rel_files.size(), std::distance(begin(bdi), end(bdi)));
@@ -102,7 +102,7 @@ TEST_F(FSTest, install_mod_w_backup_rollback) {
   {
     auto fs = create_fs();
     fs.create_target(_tar_id);
-    auto src = fs.cfg_mod(_tar_id, _mod1_rel_dir);
+    auto src = fs.get_cfg_mod(_tar_id, _mod1_rel_dir);
     create_mod1_files(src, true);
     create_mod1_files(_game1_dir, true);
     fs.begin();
@@ -110,7 +110,7 @@ TEST_F(FSTest, install_mod_w_backup_rollback) {
   }
 
   auto gdi = std::filesystem::recursive_directory_iterator(_game1_dir);
-  auto bak_dir = filemod::FS::backup_dir(_cfg_dir / std::to_string(_tar_id));
+  auto bak_dir = filemod::FS::get_bak_dir(_cfg_dir / std::to_string(_tar_id));
 
   EXPECT_EQ(_mod1_rel_files.size(), std::distance(begin(gdi), end(gdi)));
   EXPECT_TRUE(!std::filesystem::exists(bak_dir) || bak_dir.empty());
@@ -119,7 +119,7 @@ TEST_F(FSTest, install_mod_w_backup_rollback) {
 TEST_F(FSTest, uninstall_mod) {
   auto fs = create_fs();
   fs.create_target(_tar_id);
-  auto cfg_m = fs.cfg_mod(_tar_id, _mod1_rel_dir);
+  auto cfg_m = fs.get_cfg_mod(_tar_id, _mod1_rel_dir);
   create_mod1_files(cfg_m, true);
   fs.install_mod(cfg_m, _game1_dir);
   auto gdi = std::filesystem::recursive_directory_iterator(_game1_dir);
@@ -135,7 +135,7 @@ TEST_F(FSTest, uninstall_mod_rollback) {
   {
     auto fs = create_fs();
     fs.create_target(_tar_id);
-    auto cfg_m = fs.cfg_mod(_tar_id, _mod1_rel_dir);
+    auto cfg_m = fs.get_cfg_mod(_tar_id, _mod1_rel_dir);
     create_mod1_files(cfg_m, true);
     fs.install_mod(cfg_m, _game1_dir);
     fs.begin();
@@ -150,7 +150,7 @@ TEST_F(FSTest, uninstall_mod_rollback) {
 TEST_F(FSTest, uninstall_mod_restore_backup) {
   auto fs = create_fs();
   fs.create_target(_tar_id);
-  auto cfg_m = fs.cfg_mod(_tar_id, _mod1_rel_dir);
+  auto cfg_m = fs.get_cfg_mod(_tar_id, _mod1_rel_dir);
   create_mod1_files(cfg_m, true);
   create_mod1_files(_game1_dir, true);
   auto baks = fs.install_mod(cfg_m, _game1_dir);
@@ -165,7 +165,7 @@ TEST_F(FSTest, uninstall_mod_restore_backup_rollback) {
   {
     auto fs = create_fs();
     fs.create_target(_tar_id);
-    auto cfg_m = fs.cfg_mod(_tar_id, _mod1_rel_dir);
+    auto cfg_m = fs.get_cfg_mod(_tar_id, _mod1_rel_dir);
     create_mod1_files(cfg_m, true);
     create_mod1_files(_game1_dir, true);
     auto baks = fs.install_mod(cfg_m, _game1_dir);
@@ -181,7 +181,7 @@ TEST_F(FSTest, uninstall_mod_restore_backup_rollback) {
 TEST_F(FSTest, remove_mod) {
   auto fs = create_fs();
   fs.create_target(_tar_id);
-  auto cfg_m = fs.cfg_mod(_tar_id, _mod1_rel_dir);
+  auto cfg_m = fs.get_cfg_mod(_tar_id, _mod1_rel_dir);
   create_mod1_files(cfg_m, true);
   fs.remove_mod(cfg_m);
 
@@ -193,7 +193,7 @@ TEST_F(FSTest, remove_mod_rollback) {
   {
     auto fs = create_fs();
     fs.create_target(_tar_id);
-    cfg_m = fs.cfg_mod(_tar_id, _mod1_rel_dir);
+    cfg_m = fs.get_cfg_mod(_tar_id, _mod1_rel_dir);
     create_mod1_files(cfg_m, true);
     fs.begin();
     fs.remove_mod(cfg_m);
@@ -209,7 +209,7 @@ TEST_F(FSTest, remove_target) {
   fs.create_target(_tar_id);
   fs.remove_target(_tar_id);
 
-  EXPECT_FALSE(std::filesystem::exists(fs.cfg_tar(_tar_id)));
+  EXPECT_FALSE(std::filesystem::exists(fs.get_cfg_tar(_tar_id)));
 }
 
 TEST_F(FSTest, remove_target_rollback) {
@@ -219,7 +219,7 @@ TEST_F(FSTest, remove_target_rollback) {
     fs.create_target(_tar_id);
     fs.begin();
     fs.remove_target(_tar_id);
-    cfg_tar = fs.cfg_tar(_tar_id);
+    cfg_tar = fs.get_cfg_tar(_tar_id);
   }
 
   EXPECT_TRUE(std::filesystem::exists(cfg_tar));
