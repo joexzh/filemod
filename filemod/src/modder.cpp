@@ -71,6 +71,7 @@ void modder::_tx_wrapper(Func func) {
 }
 
 modder::modder() : modder(get_config_dir(), get_db_path()) {}
+modder::~modder() = default;
 
 modder::modder(const std::filesystem::path& cfg_dir,
                const std::filesystem::path& db_path)

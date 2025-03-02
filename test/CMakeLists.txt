@@ -1,7 +1,7 @@
 project(filemod_test)
 
 if (NOT TARGET filemod)
-    add_subdirectory(../filemod)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../filemod)
 endif()
 
 find_package(GTest CONFIG REQUIRED)

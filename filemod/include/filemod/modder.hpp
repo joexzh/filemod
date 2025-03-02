@@ -27,7 +27,7 @@ class modder {
   modder& operator=(const modder& filemod) = delete;
   modder(modder&& filemod) = delete;
   modder& operator=(modder&& filemod) = delete;
-  FILEMOD_API ~modder() = default;
+  FILEMOD_API ~modder();
 
   // Similar to default constructor modder(), but the filemod_cfg directory
   // is replaced by full path of %cfg_dir, filemod.db is replaced by full path

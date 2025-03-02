@@ -30,7 +30,7 @@ if (TARGET_TYPE STREQUAL "SHARED_LIBRARY")
         PUBLIC_HEADER DESTINATION include/filemod
     )
     target_compile_definitions(${PROJECT_NAME} PUBLIC FILEMOD_DLL 
-                                               PRIVATE FILEMOD_EXPORTS
+                                               PRIVATE FILEMOD_DLL_EXPORTS
     )
 endif()
 
