@@ -49,26 +49,25 @@ static void parse_error(const po::options_description &desc,
 
 static void parse_add(filemod::result_base &ret, std::ostringstream &oss,
                       po::basic_parsed_options<char> &parsed,
-                      po::variables_map &vm, std::string &tdir,
-                      std::string &mdir, int64_t &id) {
+                      po::variables_map &vm, std::string &dir, int64_t &id) {
   po::options_description desc(
       "add target or mod\n"
       "Usage: filemod add --tdir <target_dir>\n"
       "       filemod add -t <target_id> --mdir <mod_dir>\n"
       "Options");
-  desc.add_options()("tdir", po::value<std::string>(&tdir), "target directory")(
+  desc.add_options()("tdir", po::value<std::string>(&dir), "target directory")(
       "tid,t", po::value<int64_t>(&id), "target id")(
-      "mdir", po::value<std::string>(&mdir), "mod source files directory")(
+      "mdir", po::value<std::string>(&dir), "mod source files directory")(
       "help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
 
   if (vm.count("help")) {
     oss << desc;
-  } else if (is_set(tdir)) {  // add target
-    move_to_retbase(md.add_target(tdir), ret);
-  } else if (is_set(mdir) && is_set(id)) {  // add mod to existing target
-    move_to_retbase(md.add_mod(id, mdir), ret);
+  } else if (is_set(dir) && is_set(id)) {  // add mod to existing target
+    move_to_retbase(md.add_mod(id, dir), ret);
+  } else if (is_set(dir)) {  // add target
+    move_to_retbase(md.add_target(dir), ret);
   } else {
     parse_error(desc, oss, ret);
   }
@@ -76,7 +75,7 @@ static void parse_add(filemod::result_base &ret, std::ostringstream &oss,
 
 static void parse_install(filemod::result_base &ret, std::ostringstream &oss,
                           po::basic_parsed_options<char> &parsed,
-                          po::variables_map &vm, std::string &mdir, int64_t &id,
+                          po::variables_map &vm, std::string &dir, int64_t &id,
                           std::vector<int64_t> &ids) {
   po::options_description desc(
       "install mod(s)\n"
@@ -85,7 +84,7 @@ static void parse_install(filemod::result_base &ret, std::ostringstream &oss,
       "       filemod install -m <mod_id1>...\n"
       "Options");
   desc.add_options()("tid,t", po::value<int64_t>(&id), "target id")(
-      "mdir", po::value<std::string>(&mdir), "mod source directory")(
+      "mdir", po::value<std::string>(&dir), "mod source directory")(
       "mid,m", po::value<std::vector<int64_t>>(&ids)->multitoken(), "mod ids")(
       "help,h", "");
   parse_subcmd(desc, parsed, vm);
@@ -93,8 +92,8 @@ static void parse_install(filemod::result_base &ret, std::ostringstream &oss,
 
   if (vm.count("help")) {
     oss << desc;
-  } else if (is_set(mdir) && is_set(id)) {  // install from mod source dir
-    move_to_retbase(md.install_from_mod_dir(id, mdir), ret);
+  } else if (is_set(dir) && is_set(id)) {  // install from mod source dir
+    move_to_retbase(md.install_from_mod_dir(id, dir), ret);
   } else if (is_set(id)) {  // install all mods of a target
     ret = md.install_from_target_id(id);
   } else if (is_set(ids)) {  // install multiple mods
@@ -214,14 +213,13 @@ int parse(int argc, char *argv[]) {
     auto cmd = vm["command"].as<std::string>();
 
     int64_t id = std::numeric_limits<int64_t>::min();
-    std::string tdir;
-    std::string mdir;
+    std::string dir;
     std::vector<int64_t> ids;
 
     if ("add" == cmd) {
-      parse_add(ret, oss, parsed, vm, tdir, mdir, id);
+      parse_add(ret, oss, parsed, vm, dir, id);
     } else if ("install" == cmd) {
-      parse_install(ret, oss, parsed, vm, mdir, id, ids);
+      parse_install(ret, oss, parsed, vm, dir, id, ids);
     } else if ("uninstall" == cmd) {
       parse_uninstall(ret, oss, parsed, vm, id, ids);
     } else if ("remove" == cmd) {
