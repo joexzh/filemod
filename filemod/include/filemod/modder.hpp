@@ -17,7 +17,7 @@ class modder {
   // This has a side effect:
   // 1. create a filemod_cfg directory which contains the managed target and mod
   // files.
-  // 2. create a filemod.db file under filemod_cfg which is a sqlite database
+  // 2. create a filemod.db file under filemod_cfg which is a SQLite database
   // file.
   //
   // If env $HOME directory is available, filemod_cfg is created under it,
@@ -66,7 +66,7 @@ class modder {
   FILEMOD_API result_base uninstall_mods(const std::vector<int64_t>& mod_ids);
 
   // Uninstall all mods of a target.
-  // Equivalent to multiple calls to unisntall_mods but in single transaction.
+  // Equivalent to multiple calls to uninstall_mods but in single transaction.
   FILEMOD_API result_base uninstall_from_target_id(int64_t tar_id);
 
   // Delete mods from %cfg_dir and database. Will perform uninstall_mods first.
@@ -84,7 +84,7 @@ class modder {
       const std::vector<int64_t>& tar_ids);
 
   // Display mod(s) information, including mod id, mod name (which is the same
-  // as its direcotry name under %cfg_dir/<target_id>), installing status, mod
+  // as its directory name under %cfg_dir/<target_id>), installing status, mod
   // files and backup files.
   FILEMOD_API std::string list_mods(const std::vector<int64_t>& mod_ids);
 

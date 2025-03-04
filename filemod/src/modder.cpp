@@ -324,7 +324,7 @@ result<ModDto> modder::_uninstall_mod(int64_t mod_id) {
     _db.uninstall_mod(mod_id);
 
     auto tar_ret = _db.query_target(mod.tar_id);
-    // if tar_ret.success == false, that means we hava a dingling mod so don't
+    // if tar_ret.success == false, that means we have a dangling mod so don't
     // need to uninstall anything in filesystem.
     if (tar_ret.success == true) {
       auto make_paths_from_strs = [](std::vector<std::string>& v)

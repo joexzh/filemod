@@ -53,7 +53,7 @@ class FS {
     return (get_tmp_dir() /= tar_id) /= UNINSTALLED;
   }
 
-  // Begin fs transaction. Use RAII to rollback chagnes if missing the
+  // Begin fs transaction. Use RAII to rollback changes if missing the
   // corresponding commit() call.
   void begin() noexcept { ++_counter; };
 
@@ -80,7 +80,7 @@ class FS {
 
   // Create symlinks from cfg_mod to tar_dir.
   //
-  // May fail deal to no privilidge permission on Windows.
+  // May fail deal to no privileged permission on Windows.
   //
   // Returns relative backup files.
   std::vector<std::filesystem::path> install_mod(
