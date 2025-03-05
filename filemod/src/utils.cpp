@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <memory>
 
 #ifdef __linux__
 #elif _WIN32
@@ -33,10 +34,10 @@ static std::basic_string<TCHAR> WinErrToStr(DWORD ec) {
                                  NULL, ec, 0, (LPTSTR)&lpMsgBuf, 0, NULL);
     // bufLen exclude null terminator, but the buffer will receive it
     if (bufLen) {
+      auto uniq_buf = std::unique_ptr<TCHAR, void (*)(LPSTR)>(
+          lpMsgBuf, [](LPSTR ptr) { LocalFree(ptr); });
       err_str.reserve(bufLen);
-      err_str.assign(lpMsgBuf);
-
-      LocalFree(lpMsgBuf);
+      err_str.assign(uniq_buf.get());
       return err_str;
     }
   }
