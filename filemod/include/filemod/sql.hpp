@@ -5,6 +5,7 @@
 #pragma once
 
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -16,13 +17,20 @@ enum class ModStatus {
   Installed = 1,
 };
 
+struct shorter_file_str {
+  constexpr bool operator()(const std::string &s1,
+                            const std::string &s2) const {
+    return s1.size() < s2.size() || s1 < s2;
+  }
+};
+
 struct [[nodiscard]] ModDto {
   int64_t id;
   int64_t tar_id;
   std::string dir;
   ModStatus status;
-  std::vector<std::string> files;
-  std::vector<std::string> bak_files;
+  std::set<std::string, shorter_file_str> files;
+  std::set<std::string, shorter_file_str> bak_files;
 };
 
 struct [[nodiscard]] TargetDto {

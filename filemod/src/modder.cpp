@@ -4,8 +4,8 @@
 
 #include "modder.hpp"
 
-#include <algorithm>
 #include <filesystem>
+#include <set>
 #include <string>
 
 #include "fs.hpp"
@@ -327,14 +327,11 @@ result<ModDto> modder::_uninstall_mod(int64_t mod_id) {
     // if tar_ret.success == false, that means we have a dangling mod so don't
     // need to uninstall anything in filesystem.
     if (tar_ret.success == true) {
-      auto make_paths_from_strs = [](std::vector<std::string>& v)
-          -> std::vector<std::filesystem::path> {
-        std::sort(v.begin(), v.end(),
-                  [](auto& s1, auto& s2) { return s1.size() < s2.size(); });
+      auto make_paths_from_strs = [](auto& file_strs) {
         std::vector<std::filesystem::path> paths;
-        paths.reserve(v.size());
-        for (auto& str : v) {
-          paths.push_back(utf8str_to_path(str));
+        paths.reserve(file_strs.size());
+        for (auto& file_str : file_strs) {
+          paths.push_back(utf8str_to_path(file_str));
         }
         return paths;
       };
@@ -488,12 +485,13 @@ TARGET ID 111 DIR '/a/b/c'
 */
 static const char MARGIN[] = "    ";
 
-static inline void _list_files(const std::vector<std::string>& files,
-                               std::string_view& margin, std::string& ret) {
-  for (auto& file : files) {
+static void _list_files(
+    const std::set<std::string, shorter_file_str>& file_strs,
+    std::string_view& margin, std::string& ret) {
+  for (auto& file_str : file_strs) {
     ret += margin;
     ret += '\'';
-    ret += file;
+    ret += file_str;
     ret += '\'';
     ret += '\n';
   }

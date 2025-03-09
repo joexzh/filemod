@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <cassert>
 #include <memory>
-#include <set>
+#include <unordered_set>
 
 #include "utils.hpp"
 
@@ -73,7 +73,7 @@ static const char QUERY_MODS_FILES_BACKUPS[] =
     "join mod_files f on m.id=f.mod_id left join backup_files b on "
     "m.id=b.mod_id";
 
-static inline std::string buildstr_query_targets_mods(size_t size) {
+static std::string buildstr_query_targets_mods(size_t size) {
   std::string str{QUERY_TARGET_MODS};
   if (size) {
     str += " where t.id in (";
@@ -86,7 +86,7 @@ static inline std::string buildstr_query_targets_mods(size_t size) {
   return str;
 }
 
-static inline std::string bufildstr_query_mods_n_files(size_t size) {
+static std::string bufildstr_query_mods_n_files(size_t size) {
   std::string str{QUERY_MODS_FILES_BACKUPS};
   if (size) {
     str += " where m.id in (";
@@ -99,7 +99,7 @@ static inline std::string bufildstr_query_mods_n_files(size_t size) {
   return str;
 }
 
-static inline std::string buildstr_insert_mod_files(size_t size) {
+static std::string buildstr_insert_mod_files(size_t size) {
   std::string str{INSERT_MOD_FILES};
   for (size_t i = 0; i < size - 1; ++i) {
     str += ",(?,?)";
@@ -107,7 +107,7 @@ static inline std::string buildstr_insert_mod_files(size_t size) {
   return str;
 }
 
-static inline std::string buildstr_insert_backup_files(size_t size) {
+static std::string buildstr_insert_backup_files(size_t size) {
   std::string str{INSERT_BACKUP_FILES};
   for (size_t i = 0; i < size - 1; ++i) {
     str += ",(?,?)";
@@ -115,7 +115,7 @@ static inline std::string buildstr_insert_backup_files(size_t size) {
   return str;
 }
 
-static inline std::string buildstr_query_mods_contain_files(size_t size) {
+static std::string buildstr_query_mods_contain_files(size_t size) {
   std::string str{QUERY_MODS_CONTAIN_FILES};
   for (size_t i = 0; i < size - 1; ++i) {
     str += ",?";
@@ -124,15 +124,29 @@ static inline std::string buildstr_query_mods_contain_files(size_t size) {
   return str;
 }
 
-static inline ModDto mod_from_stmt(SQLite::Statement &stmt) {
-  auto id = stmt.getColumn(0).getInt();
-  auto target_id = stmt.getColumn(1).getInt();
+static ModDto mod_from_stmt(int64_t id, SQLite::Statement &stmt) {
+  auto target_id = stmt.getColumn(1).getInt64();
   auto dir = stmt.getColumn(2).getString();
   auto status = static_cast<ModStatus>(stmt.getColumn(3).getInt());
-  return ModDto{id, target_id, dir, status};
+  return ModDto{.id = id, .tar_id = target_id, .dir = dir, .status = status};
 }
 
-static inline void init_db(SQLite::Database &db) {
+static ModDto mod_from_stmt(SQLite::Statement &stmt) {
+  auto id = stmt.getColumn(0).getInt64();
+  return mod_from_stmt(id, stmt);
+}
+
+static void push_uniq_mod(std::vector<ModDto> &mods,
+                          std::unordered_set<int64_t> &id_set,
+                          SQLite::Statement &stmt) {
+  int64_t id = stmt.getColumn(0).getInt64();
+  if (auto [_, inserted] = id_set.insert(id); inserted) {
+    // if first meet, create one
+    mods.push_back(mod_from_stmt(id, stmt));
+  }
+}
+
+static void init_db(SQLite::Database &db) {
   if (!db.tableExists("target")) {
     db.exec(CREATE_T_TARGET);
     db.exec(CREATE_T_MOD);
@@ -182,20 +196,20 @@ std::vector<TargetDto> DB::query_targets_mods(const std::vector<int64_t> &ids) {
   }
 
   std::vector<TargetDto> tars;
-  std::set<int> id_set;
+  std::unordered_set<int64_t> id_set;
 
   while (stmt.executeStep()) {  // the result is ordered by target.id, mod.id
-    int id = stmt.getColumn(0).getInt();
+    int64_t id = stmt.getColumn(0).getInt64();
 
-    if (auto [_, yes] = id_set.insert(id); yes) {  // if first meet, create one
+    if (auto [_, inserted] = id_set.insert(id); inserted) {
+      // if first meet, create one
       tars.push_back({.id = id, .dir = stmt.getColumn(1).getString()});
     }
-    assert(!tars.empty());
     auto &tar = tars.back();
 
     if (!stmt.getColumn(2).isNull()) {
       tar.ModDtos.push_back(
-          {.id = stmt.getColumn(2).getInt(),
+          {.id = stmt.getColumn(2).getInt64(),
            .dir = stmt.getColumn(3).getString(),
            .status = static_cast<ModStatus>(stmt.getColumn(4).getInt())});
     }
@@ -211,34 +225,20 @@ std::vector<ModDto> DB::query_mods_n_files(const std::vector<int64_t> &ids) {
   }
 
   std::vector<ModDto> mods;
-  std::set<int> id_set;
-  std::set<std::string> file_set;
-  std::set<std::string> bak_set;
+  std::unordered_set<int64_t> id_set;
 
   while (stmt.executeStep()) {  // the result is ordered by mod.id
-    int id = stmt.getColumn(0).getInt();
-    if (auto [_, yes] = id_set.insert(id); yes) {  // if first meet, create one
-      mods.push_back(
-          {.id = id,
-           .tar_id = stmt.getColumn(1).getInt(),
-           .dir = stmt.getColumn(2).getString(),
-           .status = static_cast<ModStatus>(stmt.getColumn(3).getInt())});
-    }
-    assert(!mods.empty());
+    push_uniq_mod(mods, id_set, stmt);
     auto &mod = mods.back();
 
-    auto push_files = [&](int i, auto &s, auto &v) {
+    auto insert_files = [&](int i, auto &s) {
       if (!stmt.getColumn(i).isNull()) {
-        if (auto [it, yes] = s.insert(stmt.getColumn(i).getString()); yes) {
-          v.push_back(*it);
-        }
+        s.insert(stmt.getColumn(i).getString());
       }
     };
 
-    // get mod_files
-    push_files(4, file_set, mod.files);
-    // get backup_files
-    push_files(5, bak_set, mod.bak_files);
+    insert_files(4, mod.files);
+    insert_files(5, mod.bak_files);
   }
 
   return mods;
@@ -247,29 +247,25 @@ std::vector<ModDto> DB::query_mods_n_files(const std::vector<int64_t> &ids) {
 result<TargetDto> DB::query_target(int64_t id) {
   SQLite::Statement stmt{_dr->db, QUERY_TARGET};
   stmt.bind(1, id);
+  result<TargetDto> ret{{.success = false}};
   if (stmt.executeStep()) {
-    return result<TargetDto>{{true, ""},
-                             TargetDto{
-                                 .id = stmt.getColumn(0).getInt(),
-                                 .dir = stmt.getColumn(1).getString(),
-                             }};
+    ret.success = true;
+    ret.data = {.id = stmt.getColumn(0).getInt64(),
+                .dir = stmt.getColumn(1).getString()};
   }
-
-  return {{false, ""}};
+  return ret;
 }
 
 result<TargetDto> DB::query_target_by_dir(const std::string &dir) {
   SQLite::Statement stmt{_dr->db, QUERY_TARGET_BY_DIR};
   stmt.bind(1, dir);
+  result<TargetDto> ret{{.success = false}};
   if (stmt.executeStep()) {
-    return result<TargetDto>{{true, ""},
-                             TargetDto{
-                                 .id = stmt.getColumn(0).getInt(),
-                                 .dir = stmt.getColumn(1).getString(),
-                             }};
+    ret.success = true;
+    ret.data = {.id = stmt.getColumn(0).getInt64(),
+                .dir = stmt.getColumn(1).getString()};
   }
-
-  return {{false, ""}};
+  return ret;
 }
 
 std::vector<ModDto> DB::query_mods_by_target(int64_t tar_id) {
@@ -286,16 +282,18 @@ result<ModDto> DB::query_mod_by_targetid_dir(int64_t tar_id,
                                              const std::string &dir) {
   SQLite::Statement stmt{_dr->db, QUERY_MOD_BY_TARGEDID_DIR};
   stmt.bind(1, tar_id);
-  stmt.bind(2, dir);
+  stmt.bindNoCopy(2, dir);
+  result<ModDto> ret{{.success = false}};
   if (stmt.executeStep()) {
-    return {{true, ""}, mod_from_stmt(stmt)};
+    ret.success = true;
+    ret.data = mod_from_stmt(stmt);
   }
-  return {{false, ""}};
+  return ret;
 }
 
 int64_t DB::insert_target(const std::string &dir) {
   SQLite::Statement stmt{_dr->db, INSERT_TARGET};
-  stmt.bind(1, dir);
+  stmt.bindNoCopy(1, dir);
   if (stmt.exec()) {
     return _dr->db.getLastInsertRowid();
   }
@@ -330,16 +328,18 @@ result_base DB::delete_target_all(int64_t id) {
 result<ModDto> DB::query_mod(int64_t id) {
   SQLite::Statement stmt{_dr->db, QUERY_MOD};
   stmt.bind(1, id);
+  result<ModDto> ret{{.success = false}};
   if (stmt.executeStep()) {
-    return {{true, ""}, mod_from_stmt(stmt)};
+    ret.success = true;
+    ret.data = mod_from_stmt(stmt);
   }
-  return {{false, ""}};
+  return ret;
 }
 
 int64_t DB::insert_mod(int64_t tar_id, const std::string &dir, int status) {
   SQLite::Statement stmt{_dr->db, INSERT_MOD};
   stmt.bind(1, tar_id);
-  stmt.bind(2, dir);
+  stmt.bindNoCopy(2, dir);
   stmt.bind(3, status);
   if (stmt.exec()) {
     return _dr->db.getLastInsertRowid();
@@ -373,11 +373,10 @@ int DB::delete_mod(int64_t id) {
 
   SQLite::Statement stmt{_dr->db, DELETE_MOD};
   stmt.bind(1, id);
-  int rowid = stmt.exec();
+  int cnt = stmt.exec();
 
   tx.release();
-
-  return rowid;
+  return cnt;
 }
 
 std::vector<ModDto> DB::query_mods_contain_files(
@@ -391,20 +390,12 @@ std::vector<ModDto> DB::query_mods_contain_files(
   SQLite::Statement stmt{_dr->db,
                          buildstr_query_mods_contain_files(files.size())};
   for (size_t i = 0; i < files.size(); ++i) {
-    stmt.bind(i + 1, files[i]);
+    stmt.bindNoCopy(i + 1, files[i]);
   }
 
-  std::set<int> id_set;
+  std::unordered_set<int64_t> id_set;
   while (stmt.executeStep()) {
-    int id = stmt.getColumn(0).getInt();
-
-    if (auto [_, yes] = id_set.insert(id); yes) {  // if first meet, create one
-      mods.push_back(
-          {.id = id,
-           .tar_id = stmt.getColumn(1).getInt(),
-           .dir = stmt.getColumn(2).getString(),
-           .status = static_cast<ModStatus>(stmt.getColumn(3).getInt())});
-    }
+    push_uniq_mod(mods, id_set, stmt);
   }
 
   return mods;
@@ -430,7 +421,7 @@ int DB::insert_mod_files(int64_t mod_id,
   int i = 0;
   for (const auto &dir : files) {
     stmt.bind(++i, mod_id);
-    stmt.bind(++i, dir);
+    stmt.bindNoCopy(++i, dir);
   }
 
   return stmt.exec();
@@ -461,9 +452,9 @@ int DB::insert_backup_files(int64_t mod_id,
   SQLite::Statement stmt{_dr->db,
                          buildstr_insert_backup_files(bak_files.size())};
   int i = 0;
-  for (const auto &dir : bak_files) {
+  for (const auto &bak_file : bak_files) {
     stmt.bind(++i, mod_id);
-    stmt.bind(++i, dir);
+    stmt.bindNoCopy(++i, bak_file);
   }
   return stmt.exec();
 }
