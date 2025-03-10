@@ -7,11 +7,12 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
-#include <memory>
 
 #ifdef __linux__
 #elif _WIN32
 #include <Windows.h>
+
+#include <memory>
 #else
 static_assert(false, filemod::UnSupportedOS);
 #endif
