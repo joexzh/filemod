@@ -163,7 +163,7 @@ TEST_F(DBTest, install_mod) {
   ASSERT_EQ(1, mods.size());
   auto &mod = mods[0];
   EXPECT_EQ(filemod::ModStatus::Installed, mod.status);
-  EXPECT_EQ(2, mod.bak_files.size());
+  EXPECT_EQ(_baks.size(), mod.bak_files.size());
 }
 
 TEST_F(DBTest, uninstall_mod) {

@@ -19,8 +19,12 @@ enum class ModStatus {
 
 struct shorter_file_str {
   constexpr bool operator()(const std::string &s1,
-                            const std::string &s2) const {
-    return s1.size() < s2.size() || s1 < s2;
+                            const std::string &s2) const noexcept {
+    if (s1.size() == s2.size()) {
+      return s1 < s2;
+    } else {
+      return s1.size() < s2.size();
+    }
   }
 };
 

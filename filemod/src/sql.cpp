@@ -9,7 +9,6 @@
 #include <SQLiteCpp/Statement.h>
 
 #include <algorithm>
-#include <cassert>
 #include <memory>
 #include <unordered_set>
 
