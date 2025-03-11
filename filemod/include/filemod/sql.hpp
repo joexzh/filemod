@@ -5,7 +5,6 @@
 #pragma once
 
 #include <memory>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -17,24 +16,13 @@ enum class ModStatus {
   Installed = 1,
 };
 
-struct shorter_file_str {
-  constexpr bool operator()(const std::string &s1,
-                            const std::string &s2) const noexcept {
-    if (s1.size() == s2.size()) {
-      return s1 < s2;
-    } else {
-      return s1.size() < s2.size();
-    }
-  }
-};
-
 struct [[nodiscard]] ModDto {
   int64_t id;
   int64_t tar_id;
   std::string dir;
   ModStatus status;
-  std::set<std::string, shorter_file_str> files;
-  std::set<std::string, shorter_file_str> bak_files;
+  std::vector<std::string> files;
+  std::vector<std::string> bak_files;
 };
 
 struct [[nodiscard]] TargetDto {
@@ -65,7 +53,7 @@ class DB {
 
   std::vector<TargetDto> query_targets_mods(const std::vector<int64_t> &ids);
 
-  std::vector<ModDto> query_mods_n_files(const std::vector<int64_t> &ids);
+  std::vector<ModDto> query_mods_w_files(const std::vector<int64_t> &ids);
 
   std::vector<ModDto> query_mods_by_target(int64_t tar_id);
 
@@ -103,10 +91,6 @@ class DB {
   int64_t insert_mod(int64_t tar_id, const std::string &dir, int status);
 
   int update_mod_status(int64_t id, int status);
-
-  std::vector<std::string> query_mod_files(int64_t mod_id);
-
-  std::vector<std::string> query_backup_files(int64_t mod_id);
 
   int insert_mod_files(int64_t mod_id, const std::vector<std::string> &files);
 

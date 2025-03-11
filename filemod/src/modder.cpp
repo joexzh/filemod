@@ -151,7 +151,7 @@ result_base modder::_install_mod(int64_t mod_id) {
   result_base ret{.success = true};
 
   _tx_wrapper([&]() -> auto& {
-    auto mods = _db.query_mods_n_files(std::vector<int64_t>{mod_id});
+    auto mods = _db.query_mods_w_files(std::vector<int64_t>{mod_id});
     if (mods.empty()) {
       ret.success = false;
       ret.msg = err_mod_not_exist;
@@ -300,7 +300,7 @@ result<ModDto> modder::_uninstall_mod(int64_t mod_id) {
   ret.success = true;
 
   _tx_wrapper([&]() -> auto& {
-    auto mods = _db.query_mods_n_files(std::vector<int64_t>{mod_id});
+    auto mods = _db.query_mods_w_files(std::vector<int64_t>{mod_id});
     if (mods.empty()) {
       ret.success = false;
       ret.msg = err_mod_not_exist;
@@ -462,7 +462,7 @@ result_base modder::remove_target(int64_t tar_id) {
 }
 
 std::vector<ModDto> modder::query_mods(const std::vector<int64_t>& mod_ids) {
-  return _db.query_mods_n_files(mod_ids);
+  return _db.query_mods_w_files(mod_ids);
 }
 
 std::vector<TargetDto> modder::query_targets(
@@ -485,9 +485,8 @@ TARGET ID 111 DIR '/a/b/c'
 */
 static const char MARGIN[] = "    ";
 
-static void _list_files(
-    const std::set<std::string, shorter_file_str>& file_strs,
-    std::string_view& margin, std::string& ret) {
+static void _list_files(const std::vector<std::string>& file_strs,
+                        std::string_view& margin, std::string& ret) {
   for (auto& file_str : file_strs) {
     ret += margin;
     ret += '\'';

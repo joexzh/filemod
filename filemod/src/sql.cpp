@@ -9,8 +9,10 @@
 #include <SQLiteCpp/Statement.h>
 
 #include <algorithm>
+#include <cassert>
 #include <memory>
 #include <unordered_set>
+#include <utility>
 
 #include "utils.hpp"
 
@@ -39,7 +41,7 @@ static const char QUERY_TARGET_BY_DIR[] = "select * from target where dir=?";
 static const char INSERT_TARGET[] = "insert into target (dir) values (?)";
 static const char DELETE_TARGET[] = "delete from target where id=?";
 
-static const char QUERY_MOD[] = "select * from mod where id=?";
+static const char QUERY_MODS[] = "select * from mod";
 static const char QUERY_MODS_BY_TARGEDID[] =
     "select * from mod where target_id=?";
 static const char QUERY_MOD_BY_TARGEDID_DIR[] =
@@ -50,29 +52,25 @@ static const char DELETE_MOD[] = "delete from mod where id=?";
 static const char UPDATE_MOD_STATUS[] = "update mod set status=? where id=?";
 
 static const char QUERY_MODS_CONTAIN_FILES[] =
-    "select m.id, m.target_id, m.dir, m.status from mod m inner join mod_files "
-    "mf on m.id = mf.mod_id where mf.dir in (?";
-static const char QUERY_MOD_FILES[] =
-    "select dir from mod_files where mod_id = ?";
+    "select m.id, m.target_id, m.dir, m.status from mod_files mf inner join "
+    "mod m on m.id = mf.mod_id";
 static const char INSERT_MOD_FILES[] = "insert into mod_files values (?,?)";
 static const char DELETE_MOD_FILES[] = "delete from mod_files where mod_id=?";
 
-static const char QUERY_BACKUP_FILES[] =
-    "select dir from backup_files where mod_id = ?";
 static const char INSERT_BACKUP_FILES[] =
     "insert into backup_files values (?,?)";
 static const char DELETE_BACKUP_FILES[] =
     "delete from backup_files where mod_id=?";
 
+static const char QUERY_MOD_FILES[] = "select mod_id, dir from mod_files";
+static const char QUERY_MOD_BACKUP_FILES[] =
+    "select mod_id, dir from backup_files";
+
 static const char QUERY_TARGET_MODS[] =
     "select t.id, t.dir, m.id, m.dir, m.status from target t left join mod m "
     "on t.id = m.target_id";
-static const char QUERY_MODS_FILES_BACKUPS[] =
-    "select m.id, m.target_id, m.dir, m.status, f.dir, b.dir from mod m left "
-    "join mod_files f on m.id=f.mod_id left join backup_files b on "
-    "m.id=b.mod_id";
 
-static std::string buildstr_query_targets_mods(size_t size) {
+static constexpr std::string buildstr_query_targets_mods(size_t size) {
   std::string str{QUERY_TARGET_MODS};
   if (size) {
     str += " where t.id in (";
@@ -85,20 +83,34 @@ static std::string buildstr_query_targets_mods(size_t size) {
   return str;
 }
 
-static std::string bufildstr_query_mods_n_files(size_t size) {
-  std::string str{QUERY_MODS_FILES_BACKUPS};
-  if (size) {
-    str += " where m.id in (";
-    for (size_t i = 0; i < size - 1; ++i) {
+static constexpr std::string buildstr_query_mods(size_t sz) {
+  std::string str{QUERY_MODS};
+  if (sz) {
+    str += " where mod.id in (";
+    for (size_t i = 0; i < sz - 1; ++i) {
       str += "?,";
     }
     str += "?)";
   }
-  str += " order by m.id";
+  str += " order by mod.id";
   return str;
 }
 
-static std::string buildstr_insert_mod_files(size_t size) {
+static constexpr std::string buildstr_query_mod_files(const char *base,
+                                                      size_t sz) {
+  std::string str{base};
+  if (sz) {
+    str += " where mod_id in (";
+    for (size_t i = 0; i < sz - 1; ++i) {
+      str += "?,";
+    }
+    str += "?)";
+  }
+  str += " order by mod_id";
+  return str;
+}
+
+static constexpr std::string buildstr_insert_mod_files(size_t size) {
   std::string str{INSERT_MOD_FILES};
   for (size_t i = 0; i < size - 1; ++i) {
     str += ",(?,?)";
@@ -106,7 +118,7 @@ static std::string buildstr_insert_mod_files(size_t size) {
   return str;
 }
 
-static std::string buildstr_insert_backup_files(size_t size) {
+static constexpr std::string buildstr_insert_backup_files(size_t size) {
   std::string str{INSERT_BACKUP_FILES};
   for (size_t i = 0; i < size - 1; ++i) {
     str += ",(?,?)";
@@ -114,12 +126,15 @@ static std::string buildstr_insert_backup_files(size_t size) {
   return str;
 }
 
-static std::string buildstr_query_mods_contain_files(size_t size) {
+static constexpr std::string buildstr_query_mods_contain_files(size_t size) {
   std::string str{QUERY_MODS_CONTAIN_FILES};
-  for (size_t i = 0; i < size - 1; ++i) {
-    str += ",?";
+  if (size) {
+    str += " where mf.dir in (";
+    for (size_t i = 0; i < size - 1; ++i) {
+      str += "?,";
+    }
+    str += "?)";
   }
-  str += ")";
   return str;
 }
 
@@ -217,29 +232,84 @@ std::vector<TargetDto> DB::query_targets_mods(const std::vector<int64_t> &ids) {
   return tars;
 }
 
-std::vector<ModDto> DB::query_mods_n_files(const std::vector<int64_t> &ids) {
-  SQLite::Statement stmt{_dr->db, bufildstr_query_mods_n_files(ids.size())};
+[[nodiscard]] static std::vector<std::pair<int64_t, std::string>>
+query_mod_files(SQLite::Database &db, const std::vector<int64_t> &ids,
+                const char *buildstr) {
+  SQLite::Statement stmt{db, buildstr};
   for (size_t i = 0; i < ids.size(); ++i) {
     stmt.bind(i + 1, ids[i]);
   }
 
-  std::vector<ModDto> mods;
-  std::unordered_set<int64_t> id_set;
+  std::vector<std::pair<int64_t, std::string>> ret;
+  while (stmt.executeStep()) {  // ordered by mod_id
+    ret.emplace_back(stmt.getColumn(0).getInt64(), stmt.getColumn(1).getText());
+  }
+  return ret;
+}
 
-  while (stmt.executeStep()) {  // the result is ordered by mod.id
-    push_uniq_mod(mods, id_set, stmt);
-    auto &mod = mods.back();
+using get_mod_file_ref = std::vector<std::string> &(*)(ModDto &);
 
-    auto insert_files = [&](int i, auto &s) {
-      if (!stmt.getColumn(i).isNull()) {
-        s.insert(stmt.getColumn(i).getString());
+// This function assumes mods, mod_files are ordered by mod_id,
+// and mods.size() >= unique mod_ids in mod_files.
+static void push_files_to_mods(
+    std::vector<std::pair<int64_t, std::string>> &&mod_files,
+    std::vector<ModDto> &mods, get_mod_file_ref get_ref) {
+  for (size_t lower_bound = 0, upper_bound = 1, mod_index = 0;
+       lower_bound < mod_files.size(); lower_bound = upper_bound++) {
+    int64_t mod_id = mod_files[lower_bound].first;
+
+    // calculate range in mod_files with the same mod_id
+    for (; upper_bound < mod_files.size(); ++upper_bound) {
+      if (mod_files[upper_bound].first != mod_id) {
+        break;
       }
-    };
+    }
+    // range is [lower_bound, upper_bound)
 
-    insert_files(4, mod.files);
-    insert_files(5, mod.bak_files);
+    // get mod file container reference, caller specify, either mod.files or
+    // mod.bak_files
+    while (mods[mod_index].id < mod_id) {
+      ++mod_index;
+    }
+    assert(mods[mod_index].id == mod_id);
+    auto &cont_ref = get_ref(mods[mod_index]);
+    cont_ref.reserve(cont_ref.size() + upper_bound - lower_bound);
+
+    // push files to mod
+    for (size_t i = lower_bound; i < upper_bound; ++i) {
+      cont_ref.push_back(std::move(mod_files[i].second));
+    }
+  }
+}
+
+std::vector<ModDto> DB::query_mods_w_files(const std::vector<int64_t> &ids) {
+  SQLite::Savepoint tx{_dr->db, FILEMOD};
+
+  // get mods
+  std::vector<ModDto> mods;
+  SQLite::Statement stmt{_dr->db, buildstr_query_mods(ids.size())};
+  for (size_t i = 0; i < ids.size(); ++i) {
+    stmt.bind(i + 1, ids[i]);
+  }
+  while (stmt.executeStep()) {  // ordered by mod.id
+    mods.push_back(mod_from_stmt(stmt));
   }
 
+  // get mod_files
+  auto mod_files = query_mod_files(
+      _dr->db, ids,
+      buildstr_query_mod_files(QUERY_MOD_FILES, ids.size()).c_str());
+  push_files_to_mods(std::move(mod_files), mods,
+                     [](ModDto &mod) -> auto & { return mod.files; });
+
+  // get backup_files
+  auto bak_files = query_mod_files(
+      _dr->db, ids,
+      buildstr_query_mod_files(QUERY_MOD_BACKUP_FILES, ids.size()).c_str());
+  push_files_to_mods(std::move(bak_files), mods,
+                     [](ModDto &mod) -> auto & { return mod.bak_files; });
+
+  tx.release();
   return mods;
 }
 
@@ -325,7 +395,7 @@ result_base DB::delete_target_all(int64_t id) {
 }
 
 result<ModDto> DB::query_mod(int64_t id) {
-  SQLite::Statement stmt{_dr->db, QUERY_MOD};
+  SQLite::Statement stmt{_dr->db, buildstr_query_mods(1)};
   stmt.bind(1, id);
   result<ModDto> ret{{.success = false}};
   if (stmt.executeStep()) {
@@ -400,16 +470,6 @@ std::vector<ModDto> DB::query_mods_contain_files(
   return mods;
 }
 
-std::vector<std::string> DB::query_mod_files(int64_t mod_id) {
-  SQLite::Statement stmt{_dr->db, QUERY_MOD_FILES};
-  stmt.bind(1, mod_id);
-  std::vector<std::string> files;
-  if (stmt.executeStep()) {
-    files.push_back(stmt.getColumn(0).getString());
-  }
-  return files;
-}
-
 int DB::insert_mod_files(int64_t mod_id,
                          const std::vector<std::string> &files) {
   if (files.empty()) {
@@ -430,16 +490,6 @@ int DB::delete_mod_files(int64_t mod_id) {
   SQLite::Statement stmt{_dr->db, DELETE_MOD_FILES};
   stmt.bind(1, mod_id);
   return stmt.exec();
-}
-
-std::vector<std::string> DB::query_backup_files(int64_t mod_id) {
-  SQLite::Statement stmt{_dr->db, QUERY_BACKUP_FILES};
-  stmt.bind(1, mod_id);
-  std::vector<std::string> files;
-  if (stmt.executeStep()) {
-    files.push_back(stmt.getColumn(0).getString());
-  }
-  return files;
 }
 
 int DB::insert_backup_files(int64_t mod_id,
