@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "utils.hpp"
+#include "filemod/utils.hpp"
 
 namespace filemod {
 enum class ModStatus {

@@ -8,16 +8,16 @@ find_package(GTest CONFIG REQUIRED)
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 include(GoogleTest)
 
-set(Sources
-    testfs.cpp
-    testmodder.cpp
-    testsql.cpp
-
-    testhelper.hpp
+add_executable(${PROJECT_NAME})
+target_sources(${PROJECT_NAME}
+    PRIVATE FILE_SET HEADERS
+        BASE_DIRS .
+        FILES testhelper.hpp
+    PRIVATE
+        testfs.cpp
+        testmodder.cpp
+        testsql.cpp
 )
-
-add_executable(${PROJECT_NAME} ${Sources})
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(${PROJECT_NAME} GTest::gtest_main filemod)
+target_link_libraries(${PROJECT_NAME} PRIVATE GTest::gtest_main filemod)
 
 gtest_discover_tests(${PROJECT_NAME})

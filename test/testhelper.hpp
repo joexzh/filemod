@@ -15,7 +15,7 @@
 #include "filemod/fs.hpp"
 #include "filemod/utils.hpp"
 
-static std::vector<std::filesystem::path> strs_to_paths(
+inline std::vector<std::filesystem::path> strs_to_paths(
     const std::vector<std::string>& strs) {
   std::vector<std::filesystem::path> paths;
   paths.reserve(strs.size());
@@ -32,9 +32,9 @@ struct mod_obj {
 
   mod_obj(std::string&& dir_rel_str, std::vector<std::string>&& rel_strs,
           std::vector<std::filesystem::file_type>&& file_types)
-      : dir_rel_str{std::move(dir_rel_str)},
-        file_rel_strs{std::move(rel_strs)},
-        file_types{std::move(file_types)} {}
+      : file_rel_strs{std::move(rel_strs)},
+        file_types{std::move(file_types)},
+        dir_rel_str{std::move(dir_rel_str)} {}
 
   std::vector<std::filesystem::path> file_rels() const {
     return strs_to_paths(file_rel_strs);
@@ -104,7 +104,8 @@ class FSTest : public PathHelper {
 
   filemod::FS create_fs() { return filemod::FS{_cfg_dir}; }
 
-  void create_mod_files(const std::filesystem::path& base, const mod_obj& obj) {
+  static void create_mod_files(const std::filesystem::path& base,
+                               const mod_obj& obj) {
     std::filesystem::create_directories(base);
 
     for (size_t i = 0; i < obj.file_rel_strs.size(); ++i) {

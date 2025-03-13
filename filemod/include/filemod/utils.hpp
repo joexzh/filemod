@@ -93,6 +93,10 @@ inline std::filesystem::path utf8str_to_path(std::string_view sv) {
   return std::filesystem::path(sv);
 }
 
+inline std::filesystem::path utf8str_to_path(std::string &&str) {
+  return std::filesystem::path(std::move(str));
+}
+
 inline std::string path_to_utf8str(const std::filesystem::path &path) {
   return path.string();
 }

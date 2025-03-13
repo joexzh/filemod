@@ -2,15 +2,14 @@
 // Created by Joe Tse on 11/26/23.
 //
 
-#include "modder.hpp"
+#include "filemod/modder.hpp"
 
 #include <filesystem>
-#include <set>
 #include <string>
 
-#include "fs.hpp"
-#include "sql.hpp"
-#include "utils.hpp"
+#include "filemod/fs.hpp"
+#include "filemod/sql.hpp"
+#include "filemod/utils.hpp"
 
 namespace filemod {
 static const char* const err_tar_not_exist = "error: target not exist";
@@ -25,15 +24,15 @@ static bool check_directory(result_base& ret,
   if (!std::filesystem::is_directory(path)) {
     ret.msg += err_not_dir;
     ret.msg += ": ";
-    ret.msg += path.string();
+    ret.msg += path_to_utf8str(path);
     ret.success = false;
     return false;
   }
   return true;
 }
 
-static std::vector<ModDto> find_conflict_mods(std::filesystem::path& cfg_mod,
-                                              ModDto& mod, DB& db) {
+static std::vector<ModDto> find_conflict_mods(
+    const std::filesystem::path& cfg_mod, const ModDto& mod, DB& db) {
   // filter out dirs
   std::vector<std::string> mod_files_str;
   for (const auto& mod_file_str : mod.files) {
@@ -173,7 +172,7 @@ result_base modder::_install_mod(int64_t mod_id) {
         ret.success = false;
         ret.msg = err_missing_file;
         ret.msg += ": ";
-        ret.msg += cfg_mod_file.string();
+        ret.msg += path_to_utf8str(cfg_mod_file);
         return ret;
       }
     }
@@ -199,7 +198,7 @@ result_base modder::_install_mod(int64_t mod_id) {
       return ret;
     }
 
-    auto tar_dir = utf8str_to_path(tar_ret.data.dir);
+    auto tar_dir = utf8str_to_path(std::move(tar_ret.data.dir));
 
     // check target dir exists
     if (!check_directory(ret, tar_dir)) {
@@ -331,15 +330,15 @@ result<ModDto> modder::_uninstall_mod(int64_t mod_id) {
         std::vector<std::filesystem::path> paths;
         paths.reserve(file_strs.size());
         for (auto& file_str : file_strs) {
-          paths.push_back(utf8str_to_path(file_str));
+          paths.push_back(utf8str_to_path(std::move(file_str)));
         }
         return paths;
       };
 
-      _fs.uninstall_mod(_fs.get_cfg_mod(mod.tar_id, utf8str_to_path(mod.dir)),
-                        utf8str_to_path(tar_ret.data.dir),
-                        make_paths_from_strs(mod.files),
-                        make_paths_from_strs(mod.bak_files));
+      _fs.uninstall_mod(
+          _fs.get_cfg_mod(mod.tar_id, utf8str_to_path(std::move(mod.dir))),
+          utf8str_to_path(std::move(tar_ret.data.dir)),
+          make_paths_from_strs(mod.files), make_paths_from_strs(mod.bak_files));
     }
     return ret;
   });
@@ -405,8 +404,9 @@ result_base modder::_remove_mod(int64_t mod_id) {
     }
 
     _db.delete_mod(mod_id);
-    _fs.remove_mod(_fs.get_cfg_mod(uninst_mod_ret.data.tar_id,
-                                   utf8str_to_path(uninst_mod_ret.data.dir)));
+    _fs.remove_mod(
+        _fs.get_cfg_mod(uninst_mod_ret.data.tar_id,
+                        utf8str_to_path(std::move(uninst_mod_ret.data.dir))));
 
     return ret;
   });

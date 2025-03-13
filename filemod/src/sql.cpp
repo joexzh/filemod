@@ -2,7 +2,7 @@
 // Created by Joe Tse on 11/28/23.
 //
 
-#include "sql.hpp"
+#include "filemod/sql.hpp"
 
 #include <SQLiteCpp/Database.h>
 #include <SQLiteCpp/Savepoint.h>
@@ -14,7 +14,7 @@
 #include <unordered_set>
 #include <utility>
 
-#include "utils.hpp"
+#include "filemod/utils.hpp"
 
 namespace filemod {
 
