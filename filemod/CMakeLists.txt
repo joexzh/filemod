@@ -4,7 +4,10 @@ project(filemod)
 find_package(SQLiteCpp CONFIG REQUIRED)
 
 add_library(${PROJECT_NAME})
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${PROJECT_NAME}0")
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    VERSION ${FILEMOD_VERSION}
+    OUTPUT_NAME "${PROJECT_NAME}0"
+)
 target_sources(${PROJECT_NAME}
     PUBLIC FILE_SET HEADERS
         BASE_DIRS include
@@ -27,7 +30,10 @@ if (TARGET_TYPE STREQUAL "SHARED_LIBRARY")
         PUBLIC FILEMOD_DLL
         PRIVATE FILEMOD_DLL_EXPORTS
     )
+endif()
 
+option(${PROJECT_NAME}_INSTALL "filemod: install headers, libs, cmake config files" ON)
+if (${PROJECT_NAME}_INSTALL)
     install(
         TARGETS ${PROJECT_NAME}
         EXPORT ${PROJECT_NAME}Targets
@@ -38,8 +44,21 @@ if (TARGET_TYPE STREQUAL "SHARED_LIBRARY")
         DESTINATION share/cmake/${PROJECT_NAME}
         NAMESPACE ${PROJECT_NAME}::
     )
+    include(CMakePackageConfigHelpers)
+    write_basic_package_version_file(
+        cmake/${PROJECT_NAME}ConfigVersion.cmake
+        VERSION ${FILEMOD_VERSION}
+        COMPATIBILITY SameMajorVersion
+    )
+    configure_package_config_file(
+        cmake/${PROJECT_NAME}Config.cmake.in
+        cmake/${PROJECT_NAME}Config.cmake
+        INSTALL_DESTINATION share/cmake/${PROJECT_NAME}
+    )
     install(
-        FILES cmake/${PROJECT_NAME}Config.cmake
+        FILES
+            "${CMAKE_CURRENT_BINARY_DIR}/cmake/${PROJECT_NAME}ConfigVersion.cmake"
+            "${CMAKE_CURRENT_BINARY_DIR}/cmake/${PROJECT_NAME}Config.cmake"
         DESTINATION share/cmake/${PROJECT_NAME}
     )
 endif()

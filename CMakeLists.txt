@@ -24,6 +24,7 @@ endif()
 
 find_package(Boost REQUIRED COMPONENTS program_options)
 
+set(filemod_INSTALL OFF)
 if (NOT TARGET filemod)
     add_subdirectory(filemod)
 endif()
@@ -32,7 +33,10 @@ enable_testing()
 add_subdirectory(test)
 
 add_executable(${PROJECT_NAME} main.cpp)
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME filemod)
+set_target_properties(${PROJECT_NAME} PROPERTIES 
+    VERSION ${FILEMOD_VERSION}    
+    OUTPUT_NAME filemod
+)
 target_link_libraries(${PROJECT_NAME} 
     PRIVATE filemod Boost::program_options)
 
