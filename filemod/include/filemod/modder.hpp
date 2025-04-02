@@ -14,82 +14,251 @@ namespace filemod {
 
 class modder {
  public:
-  // This has a side effect:
-  // 1. create a filemod_cfg directory which contains the managed target and mod
-  // files.
-  // 2. create a filemod.db file under filemod_cfg which is a SQLite database
-  // file.
-  //
-  // If env $HOME directory is available, filemod_cfg is created under it,
-  // otherwise created alongside the executable program.
+  /**
+   * @brief Create a modder to add, remove, install or uninstall targets and
+   * mods.
+   *
+   * Side effect:
+   *
+   * 1. create a directory @c filemod_cfg as a config directory that contains
+   * the managed target and mod files, reuse it if exists.
+   *
+   * 2. create a file @c filemod.db under @c filemod_cfg as a SQLite database,
+   * reuse it if exists.
+   *
+   * If env $HOME directory is available, @c filemod_cfg is created under it,
+   * otherwise created alongside the executable program.
+   *
+   * @return modder instance
+   * @exception std::exception if fail to create @c filemod_cfg or @c
+   * filemod.db, or cannot recognize existing ones as directory and SQLite
+   * database file.
+   */
   FILEMOD_API modder();
+
   modder(const modder& filemod) = delete;
   modder& operator=(const modder& filemod) = delete;
   modder(modder&& filemod) = delete;
   modder& operator=(modder&& filemod) = delete;
+
   FILEMOD_API ~modder();
 
-  // Similar to default constructor modder(), but the filemod_cfg directory
-  // is replaced by full path of %cfg_dir, filemod.db is replaced by full path
-  // of %db_path.
+  /**
+   * @brief Create a modder to add, remove, install or uninstall targets and
+   * mods.
+   *
+   * Similar to default constructor modder(), but config directory is replaced
+   * by @c cfg_dir, database file is replaced by @c db_path.
+   *
+   * @param cfg_dir full path of config directory
+   * @param db_path full path of database file
+   * @return modder instance
+   * @exception std::exception if fail to create @c cfg_dir or @c db_path, or
+   * cannot recognize existing ones as directory and SQLite database file.
+   */
   FILEMOD_API explicit modder(const std::filesystem::path& cfg_dir,
                               const std::filesystem::path& db_path);
 
-  // Add the tar_dir as managed target, returns the new target id.
-  // If tar_dir already managed, returns the existing target id.
-  //
-  // Error if tar_dir not exists.
+  /**
+   * @brief Add target to managed config.
+   *
+   * @param tar_dir_raw target directory, can be full path or relative path of
+   * current working directory
+   * @return result.success == true with data as target id if added new target,
+   * or matched an existing target relates @c tar_dir_raw.
+   * @return result.success == false if @c tar_dir_raw does not exist.
+   * @exception std::exception if unknown runtime error occurs.
+   */
   FILEMOD_API result<int64_t> add_target(
       const std::filesystem::path& tar_dir_raw);
 
-  // Add mod_dir to a managed target, returns the new mod id.
-  // If mod_dir already been added, returns the existing mod id.
-  //
-  // Error if mod_dir or target not exists.
+  /**
+   * @brief add mod to managed config.
+   *
+   * Runs as a transaction that does not leave an intermediate state.
+   *
+   * @param tar_id relating target id
+   * @param mod_dir_raw existing original mod directory
+   * @attention mod uniqueness is determined by its related target id and mod
+   * directory name (final component of the path)
+   * @return result.success == true w/ mod id as data if successfully
+   * added or matched an existing one.
+   * @return result.success == false w/ error message if target or
+   * directory @c mod_dir_raw does not exist.
+   * @exception std::exception if unknown runtime error occurs.
+   */
   FILEMOD_API result<int64_t> add_mod(int64_t tar_id,
                                       const std::filesystem::path& mod_dir_raw);
 
-  // Install mods to target directory.
-  // Error if mods not exist, mod files missing or target not exists.
+  /**
+   * @brief Install mods.
+   *
+   * Runs as a transaction that does not leave an intermediate state. Mods
+   * already installed are ignored. If any unmanaged files in target directory
+   * are covered by mod files, they will be backed up. If any managed files are
+   * covered, which means conflict with other installed mods, the same applies
+   * to mods between @c mod_ids, then the function fails.
+   *
+   * @param mod_ids ids of mods to be installed
+   * @return result.success == true if successfully installed.
+   * @return result.success == false w/ error message if one or more mods
+   * do not exist.
+   * @return result.success == false w/ error message if mods are
+   * conflict.
+   * @return result.success == false w/ error message if mod files in
+   * config directory do not match database records, which means the reported
+   * mod(s) are lack of integrity that user should remove and re-add them.
+   * @exception std::exception if unknown runtime error occurs.
+   */
   FILEMOD_API result_base install_mods(const std::vector<int64_t>& mod_ids);
 
-  // Install all mods from a target. Equivalent to multiple calls to
-  // install_mods but in single transaction.
+  /**
+   * @brief Install all mods relate to a target.
+   *
+   * Equivalent to @c install_mods with all @c mod_ids relate to the target.
+   *
+   * @param tar_id id of target which related mods to be installed
+   * @return result.success == true if successfully installed.
+   * @return result.success == false w/ error message if target does not
+   * exist.
+   * @return result.success == false w/ error message if one or more mods
+   * do not exist.
+   * @return result.success == false w/ error message if mods are
+   * conflict.
+   * @return result.success == false w/ error message if mod files in
+   * config directory do not match database records, which means the reported
+   * mod(s) are lack of integrity that user should remove and re-add them.
+   * @exception std::exception if unknown runtime error occurs.
+   */
   FILEMOD_API result_base install_from_target_id(int64_t tar_id);
 
-  // Install a new mod from mod_dir to target dir.
-  // Equivalent to add_mod + install_mods but in single transaction.
+  /**
+   * @brief Install a new non-managed mod by its @c mod_dir_raw.
+   *
+   * Equivalent to call @c add_mod and then @c install_mods but in a single
+   * transaction.
+   *
+   * @param tar_id relating target id
+   * @param mod_dir_raw existing original mod directory
+   * @return result.success == true w/ mod_id if successfully added or
+   * matched an existing one.
+   * @return result.success == false w/ error message if target of @c
+   * tar_id or @c mod_dir_raw does not exist.
+   * @return result.success == false w/ error message if mods are
+   * conflict.
+   * @exception std::exception if unknown runtime error occurs.
+   */
   FILEMOD_API result<int64_t> install_from_mod_dir(
       int64_t tar_id, const std::filesystem::path& mod_dir_raw);
 
-  // Uninstall mods from their target directory.
+  /**
+   * @brief Uninstall mods.
+   *
+   * Runs as a transaction that does not leave an intermediate state. Mods
+   * already uninstalled are ignored. Restore any files that are previously
+   * backup up.
+   *
+   * @param mod_ids ids of mod to be uninstalled
+   * @return result.success == true if successfully uninstalled.
+   * @return result.success == false w/ error message if one or more mods
+   * do not exist
+   * @exception std::exception if unknown runtime error occurs.
+   */
   FILEMOD_API result_base uninstall_mods(const std::vector<int64_t>& mod_ids);
 
-  // Uninstall all mods of a target.
-  // Equivalent to multiple calls to uninstall_mods but in single transaction.
+  /**
+   * @brief Uninstall all mods of a target.
+   *
+   * Equivalent to @c uninstall_mods with all @c mod_ids relate to the target.
+   *
+   * @param tar_id id of a target
+   * @return result.success == true if successfully uninstalled.
+   * @return result.success == false w/ error message if target does not
+   * exist.
+   * @return result.success == false w/ error message if one or more mods
+   * do not exist
+   * @exception std::exception if unknown runtime error occurs.
+   */
   FILEMOD_API result_base uninstall_from_target_id(int64_t tar_id);
 
-  // Delete mods from %cfg_dir and database. Will perform uninstall_mods first.
+  /**
+   * @brief Uninstall and delete mods in config directory.
+   *
+   * Runs as a transaction that does not leave an intermediate state.
+   *
+   * @param mod_ids ids of mods to be removed
+   * @return result.success == true if successfully removed.
+   * @return result.success == false w/ error message if one or more mods
+   * do not exist
+   * @exception std::exception if unknown runtime error occurs.
+   */
   FILEMOD_API result_base remove_mods(const std::vector<int64_t>& mod_ids);
 
-  // Delete targets from %cfg_dir and database. Will perform remove_mods first.
+  /**
+   * @brief Uninstall mods relate to the target, and delete these mods and the
+   * target in config directory.
+   *
+   * Runs as a transaction that does not leave an intermediate state.
+   *
+   * @param tar_id id of target to be removed
+   * @return result.success == true if successfully removed
+   * @return result.success == false w/ error message if target does not
+   * exist.
+   * @return result.success == false w/ error message if one or more mods
+   * do not exist
+   * @exception std::exception if unknown runtime error occurs.
+   */
   FILEMOD_API result_base remove_target(int64_t tar_id);
 
-  // Helper function to query mods from database.
+  /**
+   * @brief Query mods from database with all verbose information.
+   *
+   * @param mod_ids ids of mods
+   * @return mods information from database.
+   */
   FILEMOD_API std::vector<ModDto> query_mods(
       const std::vector<int64_t>& mod_ids);
 
-  // Helper function to query target from database.
+  /**
+   * @brief Query targets from database with basic mod information.
+   * @param tar_ids ids of targets
+   * @return targets information in database.
+   */
   FILEMOD_API std::vector<TargetDto> query_targets(
       const std::vector<int64_t>& tar_ids);
 
-  // Display mod(s) information, including mod id, mod name (which is the same
-  // as its directory name under %cfg_dir/<target_id>), installing status, mod
-  // files and backup files.
+  /**
+   * @brief Formatted mod(s) information from database.
+   * @param mod_ids ids of mods
+   * @return format:
+   * @code{.unparsed}
+   * MOD_ID 222 DIR e/f/g STATUS installed
+   *     MOD_FILES
+   *         'a/b/c'
+   *         'e/f/g'
+   *         'r/g/c'
+   *         'a'
+   *     BACKUP_FILES
+   *         'xxx'
+   * MOD_ID 333 DIR 'x/y/z' STATUS not_installed
+   *     MOD_FILES
+   *     BACKUP_FILES
+   * ...
+   * @endcode
+   */
   FILEMOD_API std::string list_mods(const std::vector<int64_t>& mod_ids);
 
-  // Display target(s) information, including target id, target directory, mods'
-  // id, mods' name and mods' installing status.
+  /**
+   * @brief Formatted target(s) information from database.
+   * @param tar_ids ids of targets
+   * @return format:
+   * @code{.unparsed}
+   * TARGET_ID 111 DIR '/a/b/c'
+   *     MOD_ID 222 DIR 'e/f/g' STATUS installed
+   *     MOD_ID 333 DIR 'x/y/z' STATUS not_installed
+   * ...
+   * @endcode
+   */
   FILEMOD_API std::string list_targets(const std::vector<int64_t>& tar_ids);
 
  private:

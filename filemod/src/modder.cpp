@@ -439,7 +439,8 @@ result_base modder::remove_target(int64_t tar_id) {
   _tx_wrapper([&]() -> auto& {
     auto tars = _db.query_targets_mods({tar_id});
     if (tars.empty()) {
-      // if not exists, do nothing
+      ret.success = false;
+      ret.msg = err_tar_not_exist;
       return ret;
     }
 
@@ -470,19 +471,6 @@ std::vector<TargetDto> modder::query_targets(
   return _db.query_targets_mods(tar_ids);
 }
 
-/*
-format:
-
-TARGET ID 111 DIR '/a/b/c'
-    MOD ID 222 DIR e/f/g STATUS installed
-        MOD FILES
-            'a/b/c'
-            'e/f/g'
-            'r/g/c'
-            'a'
-        BACKUP FILES
-            'xxx'
-*/
 static const char MARGIN[] = "    ";
 
 static void _list_files(const std::vector<std::string>& file_strs,
@@ -512,19 +500,19 @@ static std::string _list_mods(const std::vector<ModDto>& mods,
 
   for (auto& mod : mods) {
     ret += margin1;
-    ret += "MOD ID ";
+    ret += "MOD_ID ";
     ret += std::to_string(mod.id);
     ret += " DIR '";
     ret += mod.dir;
     ret += "' STATUS ";
-    ret += mod.status == ModStatus::Installed ? "installed" : "not installed";
+    ret += mod.status == ModStatus::Installed ? "installed" : "not_installed";
     ret += '\n';
     if (verbose) {
       ret += margin2;
-      ret += "MOD FILES\n";
+      ret += "MOD_FILES\n";
       _list_files(mod.files, margin3, ret);
       ret += margin2;
-      ret += "BACKUP FILES\n";
+      ret += "BACKUP_FILES\n";
       _list_files(mod.bak_files, margin3, ret);
     }
   }
@@ -541,7 +529,7 @@ std::string modder::list_targets(const std::vector<int64_t>& tar_ids) {
 
   auto tars = query_targets(tar_ids);
   for (auto& tar : tars) {
-    ret += "TARGET ID ";
+    ret += "TARGET_ID ";
     ret += std::to_string(tar.id);
     ret += " DIR '";
     ret += tar.dir;
