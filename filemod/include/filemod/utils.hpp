@@ -9,6 +9,7 @@
 #include <string>
 #include <string_view>
 
+// https://gcc.gnu.org/wiki/Visibility
 // Generic helper definitions for shared library support
 #if defined _WIN32 || defined __CYGWIN__
 #define FILEMOD_HELPER_DLL_IMPORT __declspec(dllimport)
@@ -43,6 +44,7 @@
 #define FILEMOD_API
 #define FILEMOD_LOCAL
 #endif  // FILEMOD_DLL
+// https://gcc.gnu.org/wiki/Visibility
 
 namespace filemod {
 struct result_base {
