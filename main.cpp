@@ -237,7 +237,7 @@ int parse(int argc, char *argv[]) {
 #define STRINGIFY_IMPL(x) #x
     ret.msg = STRINGIFY(FILEMOD_VERSION);
 #else
-    ret.msg = "no version information"
+    ret.msg = "no version information";
 #endif
   } else {
     parse_error(global_desc, oss, ret);
