@@ -21,6 +21,8 @@ target_sources(${PROJECT_NAME}
         src/fs.cpp
         src/sql.cpp
         src/utils.cpp
+        $<$<PLATFORM_ID:Windows>:src/win32/utils.cpp>
+        $<$<OR:$<PLATFORM_ID:Linux>,$<PLATFORM_ID:Darwin>>:src/linux/utils.cpp>
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE SQLiteCpp)
 

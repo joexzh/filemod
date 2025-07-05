@@ -83,27 +83,13 @@ constexpr size_t length_s(const char *str) noexcept {
   return strlen(str);
 }
 
-#ifdef _WIN32
 std::filesystem::path utf8str_to_path(std::string_view sv);
+
+std::filesystem::path utf8str_to_path(std::string &&str);
 
 std::string path_to_utf8str(const std::filesystem::path &path);
 
 // convert utf8 string to current system code page
 std::string utf8str_to_current_cp(std::string_view sv);
-#else
-inline std::filesystem::path utf8str_to_path(std::string_view sv) {
-  return std::filesystem::path(sv);
-}
-
-inline std::filesystem::path utf8str_to_path(std::string &&str) {
-  return std::filesystem::path(std::move(str));
-}
-
-inline std::string path_to_utf8str(const std::filesystem::path &path) {
-  return path.string();
-}
-
-#define utf8str_to_current_cp(str) str
-#endif
 
 }  // namespace filemod
