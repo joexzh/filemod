@@ -316,7 +316,7 @@ result<ModDto> modder::uninstall_mod_(int64_t mod_id) {
     }
 
     ret.data = std::move(mods[0]);
-    const auto& mod = ret.data;
+    auto& mod = ret.data;
 
     if (ModStatus::Uninstalled == mod.status) {
       // not considered error, just do nothing
@@ -399,7 +399,7 @@ result_base modder::remove_mod_(int64_t mod_id) {
       return ret;
     }
 
-    const auto& unin_mod = unin_ret.data;
+    auto& unin_mod = unin_ret.data;
     m_db.delete_mod(mod_id);
     m_fs.remove_mod(m_fs.get_cfg_mod(unin_mod.tar_id,
                                      utf8str_to_path(std::move(unin_mod.dir))));

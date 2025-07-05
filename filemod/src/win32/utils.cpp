@@ -54,11 +54,8 @@ std::filesystem::path getexepath() {
   if (length != 0 && ec == ERROR_SUCCESS) {
     return std::filesystem::path{buf};
   }
-#ifdef UNICODE
-  throw std::runtime_error(wstr_to_cp(WinErrToStr(ec)));
-#else
+
   throw std::runtime_error(WinErrToStr(ec));
-#endif
 }
 
 // convert string of code page %cp to wstring
@@ -74,20 +71,36 @@ static std::wstring cp_to_wstr(std::string_view sv, UINT cp) {
 }
 
 std::string utf8str_to_current_cp(std::string_view sv) {
+#ifdef UNICODE
+  return {sv};
+#else
   std::wstring wstr = cp_to_wstr(sv, CP_UTF8);
   return wstr_to_cp(wstr, CP_ACP);
+#endif
 }
 
 std::filesystem::path utf8str_to_path(std::string_view sv) {
+#ifdef UNICODE
+  return {sv};
+#else
   return std::filesystem::path(cp_to_wstr(sv, CP_UTF8));
+#endif
 }
 
 std::filesystem::path utf8str_to_path(std::string &&str) {
+#ifdef UNICODE
+  return {std::move(str)};
+#else
   return utf8str_to_path(str);
+#endif
 }
 
 std::string path_to_utf8str(const std::filesystem::path &path) {
+#ifdef UNICODE
+  return path.string();
+#else
   return wstr_to_cp(path.wstring(), CP_UTF8);
+#endif
 }
 
 }  // namespace filemod
