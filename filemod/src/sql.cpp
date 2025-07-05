@@ -180,18 +180,18 @@ struct DB::sp_wrap::impl {
   SQLite::Savepoint sp;
 };
 
-DB::sp_wrap::sp_wrap(std::unique_ptr<impl> &&impl) : impl_{std::move(impl)} {}
+DB::sp_wrap::sp_wrap(std::unique_ptr<impl> &&impl) : m_impl{std::move(impl)} {}
 
 DB::sp_wrap::~sp_wrap() = default;
 
-void DB::sp_wrap::release() { impl_->sp.release(); }
+void DB::sp_wrap::release() { m_impl->sp.release(); }
 
-void DB::sp_wrap::rollback() { impl_->sp.rollback(); }
+void DB::sp_wrap::rollback() { m_impl->sp.rollback(); }
 
 DB::DB(const std::string &path)
-    : _dr{std::make_unique<db_wrap>(SQLite::Database(
+    : m_dr{std::make_unique<db_wrap>(SQLite::Database(
           path, SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE))} {
-  init_db(_dr->db);
+  init_db(m_dr->db);
 }
 
 DB::~DB() = default;
@@ -200,11 +200,11 @@ DB::sp_wrap DB::begin() {
   // can't use std::unique_make due to lack of move constructor in
   // SQLite::Savepoint
   return sp_wrap(std::unique_ptr<sp_wrap::impl>{
-      new sp_wrap::impl{.sp = SQLite::Savepoint{_dr->db, FILEMOD}}});
+      new sp_wrap::impl{.sp = SQLite::Savepoint{m_dr->db, FILEMOD}}});
 }
 
 std::vector<TargetDto> DB::query_targets_mods(const std::vector<int64_t> &ids) {
-  SQLite::Statement stmt{_dr->db, buildstr_query_targets_mods(ids.size())};
+  SQLite::Statement stmt{m_dr->db, buildstr_query_targets_mods(ids.size())};
   for (size_t i = 0; i < ids.size(); ++i) {
     stmt.bind(i + 1, ids[i]);
   }
@@ -283,11 +283,11 @@ static void push_files_to_mods(
 }
 
 std::vector<ModDto> DB::query_mods_w_files(const std::vector<int64_t> &ids) {
-  SQLite::Savepoint tx{_dr->db, FILEMOD};
+  SQLite::Savepoint tx{m_dr->db, FILEMOD};
 
   // get mods
   std::vector<ModDto> mods;
-  SQLite::Statement stmt{_dr->db, buildstr_query_mods(ids.size())};
+  SQLite::Statement stmt{m_dr->db, buildstr_query_mods(ids.size())};
   for (size_t i = 0; i < ids.size(); ++i) {
     stmt.bind(i + 1, ids[i]);
   }
@@ -297,14 +297,14 @@ std::vector<ModDto> DB::query_mods_w_files(const std::vector<int64_t> &ids) {
 
   // get mod_files
   auto mod_files = query_mod_files(
-      _dr->db, ids,
+      m_dr->db, ids,
       buildstr_query_mod_files(QUERY_MOD_FILES, ids.size()).c_str());
   push_files_to_mods(std::move(mod_files), mods,
                      [](ModDto &mod) -> auto & { return mod.files; });
 
   // get backup_files
   auto bak_files = query_mod_files(
-      _dr->db, ids,
+      m_dr->db, ids,
       buildstr_query_mod_files(QUERY_MOD_BACKUP_FILES, ids.size()).c_str());
   push_files_to_mods(std::move(bak_files), mods,
                      [](ModDto &mod) -> auto & { return mod.bak_files; });
@@ -314,7 +314,7 @@ std::vector<ModDto> DB::query_mods_w_files(const std::vector<int64_t> &ids) {
 }
 
 result<TargetDto> DB::query_target(int64_t id) {
-  SQLite::Statement stmt{_dr->db, QUERY_TARGET};
+  SQLite::Statement stmt{m_dr->db, QUERY_TARGET};
   stmt.bind(1, id);
   result<TargetDto> ret{{.success = false}};
   if (stmt.executeStep()) {
@@ -326,7 +326,7 @@ result<TargetDto> DB::query_target(int64_t id) {
 }
 
 result<TargetDto> DB::query_target_by_dir(const std::string &dir) {
-  SQLite::Statement stmt{_dr->db, QUERY_TARGET_BY_DIR};
+  SQLite::Statement stmt{m_dr->db, QUERY_TARGET_BY_DIR};
   stmt.bind(1, dir);
   result<TargetDto> ret{{.success = false}};
   if (stmt.executeStep()) {
@@ -338,7 +338,7 @@ result<TargetDto> DB::query_target_by_dir(const std::string &dir) {
 }
 
 std::vector<ModDto> DB::query_mods_by_target(int64_t tar_id) {
-  SQLite::Statement stmt{_dr->db, QUERY_MODS_BY_TARGEDID};
+  SQLite::Statement stmt{m_dr->db, QUERY_MODS_BY_TARGEDID};
   stmt.bind(1, tar_id);
   std::vector<ModDto> dtos;
   while (stmt.executeStep()) {
@@ -349,7 +349,7 @@ std::vector<ModDto> DB::query_mods_by_target(int64_t tar_id) {
 
 result<ModDto> DB::query_mod_by_targetid_dir(int64_t tar_id,
                                              const std::string &dir) {
-  SQLite::Statement stmt{_dr->db, QUERY_MOD_BY_TARGEDID_DIR};
+  SQLite::Statement stmt{m_dr->db, QUERY_MOD_BY_TARGEDID_DIR};
   stmt.bind(1, tar_id);
   stmt.bindNoCopy(2, dir);
   result<ModDto> ret{{.success = false}};
@@ -361,22 +361,22 @@ result<ModDto> DB::query_mod_by_targetid_dir(int64_t tar_id,
 }
 
 int64_t DB::insert_target(const std::string &dir) {
-  SQLite::Statement stmt{_dr->db, INSERT_TARGET};
+  SQLite::Statement stmt{m_dr->db, INSERT_TARGET};
   stmt.bindNoCopy(1, dir);
   if (stmt.exec()) {
-    return _dr->db.getLastInsertRowid();
+    return m_dr->db.getLastInsertRowid();
   }
   return 0;
 }
 
 int DB::delete_target(int64_t id) {
-  SQLite::Statement stmt{_dr->db, DELETE_TARGET};
+  SQLite::Statement stmt{m_dr->db, DELETE_TARGET};
   stmt.bind(1, id);
   return stmt.exec();
 }
 
 result_base DB::delete_target_all(int64_t id) {
-  SQLite::Savepoint tx{_dr->db, FILEMOD};
+  SQLite::Savepoint tx{m_dr->db, FILEMOD};
   auto mods = query_mods_by_target(id);
   if (std::any_of(mods.begin(), mods.end(), [](const auto &mod) {
         return mod.status == ModStatus::Installed;
@@ -395,7 +395,7 @@ result_base DB::delete_target_all(int64_t id) {
 }
 
 result<ModDto> DB::query_mod(int64_t id) {
-  SQLite::Statement stmt{_dr->db, buildstr_query_mods(1)};
+  SQLite::Statement stmt{m_dr->db, buildstr_query_mods(1)};
   stmt.bind(1, id);
   result<ModDto> ret{{.success = false}};
   if (stmt.executeStep()) {
@@ -405,13 +405,13 @@ result<ModDto> DB::query_mod(int64_t id) {
   return ret;
 }
 
-int64_t DB::insert_mod(int64_t tar_id, const std::string &dir, int status) {
-  SQLite::Statement stmt{_dr->db, INSERT_MOD};
+int64_t DB::insert_mod_(int64_t tar_id, const std::string &dir, int status) {
+  SQLite::Statement stmt{m_dr->db, INSERT_MOD};
   stmt.bind(1, tar_id);
   stmt.bindNoCopy(2, dir);
   stmt.bind(3, status);
   if (stmt.exec()) {
-    return _dr->db.getLastInsertRowid();
+    return m_dr->db.getLastInsertRowid();
   }
   return 0;
 }
@@ -419,28 +419,28 @@ int64_t DB::insert_mod(int64_t tar_id, const std::string &dir, int status) {
 int64_t DB::insert_mod_w_files(int64_t tar_id, const std::string &dir,
                                int status,
                                const std::vector<std::string> &files) {
-  SQLite::Savepoint tx{_dr->db, FILEMOD};
-  int64_t mod_id = insert_mod(tar_id, dir, status);
+  SQLite::Savepoint tx{m_dr->db, FILEMOD};
+  int64_t mod_id = insert_mod_(tar_id, dir, status);
   if (mod_id) {
-    insert_mod_files(mod_id, files);
+    insert_mod_files_(mod_id, files);
   }
   tx.release();
   return mod_id;
 }
 
-int DB::update_mod_status(int64_t mod_id, int status) {
-  SQLite::Statement stmt{_dr->db, UPDATE_MOD_STATUS};
+int DB::update_mod_status_(int64_t mod_id, int status) {
+  SQLite::Statement stmt{m_dr->db, UPDATE_MOD_STATUS};
   stmt.bind(1, status);
   stmt.bind(2, mod_id);
   return stmt.exec();
 }
 
 int DB::delete_mod(int64_t id) {
-  SQLite::Savepoint tx{_dr->db, FILEMOD};
+  SQLite::Savepoint tx{m_dr->db, FILEMOD};
 
-  delete_mod_files(id);
+  delete_mod_files_(id);
 
-  SQLite::Statement stmt{_dr->db, DELETE_MOD};
+  SQLite::Statement stmt{m_dr->db, DELETE_MOD};
   stmt.bind(1, id);
   int cnt = stmt.exec();
 
@@ -456,7 +456,7 @@ std::vector<ModDto> DB::query_mods_contain_files(
     return mods;
   }
 
-  SQLite::Statement stmt{_dr->db,
+  SQLite::Statement stmt{m_dr->db,
                          buildstr_query_mods_contain_files(files.size())};
   for (size_t i = 0; i < files.size(); ++i) {
     stmt.bindNoCopy(i + 1, files[i]);
@@ -470,13 +470,13 @@ std::vector<ModDto> DB::query_mods_contain_files(
   return mods;
 }
 
-int DB::insert_mod_files(int64_t mod_id,
-                         const std::vector<std::string> &files) {
+int DB::insert_mod_files_(int64_t mod_id,
+                          const std::vector<std::string> &files) {
   if (files.empty()) {
     return 0;
   }
 
-  SQLite::Statement stmt{_dr->db, buildstr_insert_mod_files(files.size())};
+  SQLite::Statement stmt{m_dr->db, buildstr_insert_mod_files(files.size())};
   int i = 0;
   for (const auto &dir : files) {
     stmt.bind(++i, mod_id);
@@ -486,19 +486,19 @@ int DB::insert_mod_files(int64_t mod_id,
   return stmt.exec();
 }
 
-int DB::delete_mod_files(int64_t mod_id) {
-  SQLite::Statement stmt{_dr->db, DELETE_MOD_FILES};
+int DB::delete_mod_files_(int64_t mod_id) {
+  SQLite::Statement stmt{m_dr->db, DELETE_MOD_FILES};
   stmt.bind(1, mod_id);
   return stmt.exec();
 }
 
-int DB::insert_backup_files(int64_t mod_id,
-                            const std::vector<std::string> &bak_files) {
+int DB::insert_backup_files_(int64_t mod_id,
+                             const std::vector<std::string> &bak_files) {
   if (bak_files.empty()) {
     return 0;
   }
 
-  SQLite::Statement stmt{_dr->db,
+  SQLite::Statement stmt{m_dr->db,
                          buildstr_insert_backup_files(bak_files.size())};
   int i = 0;
   for (const auto &bak_file : bak_files) {
@@ -508,23 +508,23 @@ int DB::insert_backup_files(int64_t mod_id,
   return stmt.exec();
 }
 
-int DB::delete_backup_files(int64_t mod_id) {
-  SQLite::Statement stmt{_dr->db, DELETE_BACKUP_FILES};
+int DB::delete_backup_files_(int64_t mod_id) {
+  SQLite::Statement stmt{m_dr->db, DELETE_BACKUP_FILES};
   stmt.bind(1, mod_id);
   return stmt.exec();
 }
 
 void DB::install_mod(int64_t id, const std::vector<std::string> &backup_files) {
-  SQLite::Savepoint tx{_dr->db, FILEMOD};
-  update_mod_status(id, static_cast<int>(ModStatus::Installed));
-  insert_backup_files(id, backup_files);
+  SQLite::Savepoint tx{m_dr->db, FILEMOD};
+  update_mod_status_(id, static_cast<int>(ModStatus::Installed));
+  insert_backup_files_(id, backup_files);
   tx.release();
 }
 
 void DB::uninstall_mod(int64_t id) {
-  SQLite::Savepoint tx(_dr->db, FILEMOD);
-  update_mod_status(id, static_cast<int>(ModStatus::Uninstalled));
-  delete_backup_files(id);
+  SQLite::Savepoint tx(m_dr->db, FILEMOD);
+  update_mod_status_(id, static_cast<int>(ModStatus::Uninstalled));
+  delete_backup_files_(id);
   tx.release();
 }
 }  // namespace filemod

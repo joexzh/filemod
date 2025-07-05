@@ -55,16 +55,16 @@ class FS {
 
   // Begin fs transaction. Use RAII to rollback changes if missing the
   // corresponding commit() call.
-  void begin() noexcept { ++_counter; };
+  void begin() noexcept { ++m_counter; };
 
   // commit() matches the begin() call.
-  void commit() noexcept { --_counter; };
+  void commit() noexcept { --m_counter; };
 
   // Rollback all changes. Called by FS::~FS(), no need to manually call it.
   void rollback();
 
   // The directory that stores the managed target and mod files.
-  const std::filesystem::path &cfg_dir() const noexcept { return _cfg_dir; }
+  const std::filesystem::path &cfg_dir() const noexcept { return m_cfg_dir; }
 
   // Create a directory which path is %cfg_dir/<target_id>
   void create_target(int64_t tar_id);
@@ -102,7 +102,7 @@ class FS {
   void remove_target(int64_t tar_id);
 
   std::filesystem::path get_cfg_tar(int64_t tar_id) {
-    return _cfg_dir / std::to_string(tar_id);
+    return m_cfg_dir / std::to_string(tar_id);
   }
 
   std::filesystem::path get_cfg_mod(int64_t tar_id,
@@ -111,54 +111,55 @@ class FS {
   }
 
  private:
-  const std::filesystem::path _cfg_dir;
-  std::vector<file_status> _log;
-  int _counter = 0;
+  int m_counter = 0;
+  std::vector<file_status> m_log;
+  const std::filesystem::path m_cfg_dir;
 
-  void log_create(const std::filesystem::path &dest_path) {
-    if (_counter) {
-      _log.emplace_back(std::filesystem::path(), dest_path, action::create);
+  void log_create_(const std::filesystem::path &dest_path) {
+    if (m_counter) {
+      m_log.emplace_back(std::filesystem::path(), dest_path, action::create);
     }
   }
 
-  void log_move(const std::filesystem::path &src_path,
-                const std::filesystem::path &dest_path) {
-    if (_counter) {
-      _log.emplace_back(src_path, dest_path, action::move);
+  void log_move_(const std::filesystem::path &src_path,
+                 const std::filesystem::path &dest_path) {
+    if (m_counter) {
+      m_log.emplace_back(src_path, dest_path, action::move);
     }
   }
 
-  void log_copy(const std::filesystem::path &dest_path) {
-    if (_counter) {
-      _log.emplace_back(std::filesystem::path(), dest_path, action::copy);
+  void log_copy_(const std::filesystem::path &dest_path) {
+    if (m_counter) {
+      m_log.emplace_back(std::filesystem::path(), dest_path, action::copy);
     }
   }
 
-  void log_del(const std::filesystem::path &dest_path) {
-    if (_counter) {
-      _log.emplace_back(std::filesystem::path(), dest_path, action::del);
+  void log_del_(const std::filesystem::path &dest_path) {
+    if (m_counter) {
+      m_log.emplace_back(std::filesystem::path(), dest_path, action::del);
     }
   }
 
-  void create_directory_w(const std::filesystem::path &dir) {
+  void create_directory_(const std::filesystem::path &dir) {
     if (std::filesystem::create_directory(dir)) {
-      log_create(dir);
+      log_create_(dir);
     }
   }
 
-  void move_file(const std::filesystem::path &src_file,
-                 const std::filesystem::path &dest_file,
-                 const std::filesystem::path &dest_dir);
+  void move_file_(const std::filesystem::path &src_file,
+                  const std::filesystem::path &dest_file,
+                  const std::filesystem::path &dest_dir);
 
   // Returns relative backup files
-  std::vector<std::filesystem::path> backup_files(
+  std::vector<std::filesystem::path> backup_files_(
       const std::filesystem::path &cfg_mod,
       const std::filesystem::path &tar_dir,
       const std::vector<std::filesystem::path> &tar_files);
 
-  void delete_empty_dirs(const std::vector<std::filesystem::path> &sorted_dirs);
+  void delete_empty_dirs_(
+      const std::vector<std::filesystem::path> &sorted_dirs);
 
-  void uninstall_mod_files(
+  void uninstall_mod_files_(
       const std::filesystem::path &src_dir,
       const std::filesystem::path &dest_dir,
       const std::vector<std::filesystem::path> &sorted_file_rels);

@@ -86,20 +86,21 @@ class DB {
   void uninstall_mod(int64_t id);
 
  private:
-  std::unique_ptr<db_wrap> _dr;
+  // db wrapper
+  std::unique_ptr<db_wrap> m_dr;
 
-  int64_t insert_mod(int64_t tar_id, const std::string &dir, int status);
+  int64_t insert_mod_(int64_t tar_id, const std::string &dir, int status);
 
-  int update_mod_status(int64_t id, int status);
+  int update_mod_status_(int64_t id, int status);
 
-  int insert_mod_files(int64_t mod_id, const std::vector<std::string> &files);
+  int insert_mod_files_(int64_t mod_id, const std::vector<std::string> &files);
 
-  int delete_mod_files(int64_t mod_id);
+  int delete_mod_files_(int64_t mod_id);
 
-  int insert_backup_files(int64_t mod_id,
-                          const std::vector<std::string> &bak_files);
+  int insert_backup_files_(int64_t mod_id,
+                           const std::vector<std::string> &bak_files);
 
-  int delete_backup_files(int64_t mod_id);
+  int delete_backup_files_(int64_t mod_id);
 };
 
 class DB::sp_wrap {
@@ -110,7 +111,7 @@ class DB::sp_wrap {
 
  private:
   struct impl;
-  std::unique_ptr<impl> impl_;
+  std::unique_ptr<impl> m_impl;
 
   explicit sp_wrap(std::unique_ptr<impl> &&impl);
 
