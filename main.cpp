@@ -232,13 +232,7 @@ int parse(int argc, char *argv[]) {
   } else if (vm.count("help")) {
     oss << global_desc;
   } else if (vm.count("version")) {
-#ifdef FILEMOD_VERSION
-#define STRINGIFY(x) STRINGIFY_IMPL(x)
-#define STRINGIFY_IMPL(x) #x
     ret.msg = STRINGIFY(FILEMOD_VERSION);
-#else
-    ret.msg = "no version information";
-#endif
   } else {
     parse_error(global_desc, oss, ret);
   }

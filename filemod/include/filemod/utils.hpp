@@ -46,6 +46,9 @@
 #endif  // FILEMOD_DLL
 // https://gcc.gnu.org/wiki/Visibility
 
+#define STRINGIFY_HELPER(x) #x
+#define STRINGIFY(x) STRINGIFY_HELPER(x)
+
 namespace filemod {
 struct result_base {
   bool success;
