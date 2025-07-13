@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.25)
 project(filemod)
 
-find_package(SQLiteCpp CONFIG REQUIRED)
+find_package(SQLiteCpp REQUIRED)
 
 add_library(${PROJECT_NAME})
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${FILEMOD_VERSION}
-    OUTPUT_NAME "${PROJECT_NAME}0"
+    OUTPUT_NAME ${PROJECT_NAME}
 )
 target_sources(${PROJECT_NAME}
     PUBLIC FILE_SET HEADERS
@@ -32,35 +32,54 @@ if (TARGET_TYPE STREQUAL "SHARED_LIBRARY")
         PUBLIC FILEMOD_DLL
         PRIVATE FILEMOD_DLL_EXPORTS
     )
+    install(TARGETS ${PROJECT_NAME})
 endif()
 
-option(${PROJECT_NAME}_INSTALL "filemod: install headers, libs, cmake config files" ON)
+option(${PROJECT_NAME}_INSTALL "install headers, cmake config files" OFF)
 if (${PROJECT_NAME}_INSTALL)
-    install(
-        TARGETS ${PROJECT_NAME}
-        EXPORT ${PROJECT_NAME}Targets
+    include(GNUInstallDirs)
+    install(TARGETS ${PROJECT_NAME}
+        EXPORT ${PROJECT_NAME}-targets
+        RUNTIME_DEPENDENCY_SET dep
         FILE_SET HEADERS
     )
+    if (WIN32)
+        install(RUNTIME_DEPENDENCY_SET dep)
+    endif()
     install(
-        EXPORT ${PROJECT_NAME}Targets
+        EXPORT ${PROJECT_NAME}-targets
         DESTINATION share/cmake/${PROJECT_NAME}
         NAMESPACE ${PROJECT_NAME}::
     )
     include(CMakePackageConfigHelpers)
     write_basic_package_version_file(
-        cmake/${PROJECT_NAME}ConfigVersion.cmake
+        cmake/${PROJECT_NAME}-config-version.cmake
         VERSION ${FILEMOD_VERSION}
         COMPATIBILITY SameMajorVersion
     )
     configure_package_config_file(
-        cmake/${PROJECT_NAME}Config.cmake.in
-        cmake/${PROJECT_NAME}Config.cmake
+        cmake/${PROJECT_NAME}-config.cmake.in
+        cmake/${PROJECT_NAME}-config.cmake
         INSTALL_DESTINATION share/cmake/${PROJECT_NAME}
     )
     install(
         FILES
-            "${CMAKE_CURRENT_BINARY_DIR}/cmake/${PROJECT_NAME}ConfigVersion.cmake"
-            "${CMAKE_CURRENT_BINARY_DIR}/cmake/${PROJECT_NAME}Config.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/cmake/${PROJECT_NAME}-config-version.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/cmake/${PROJECT_NAME}-config.cmake"
         DESTINATION share/cmake/${PROJECT_NAME}
     )
 endif()
+
+# test
+find_package(GTest REQUIRED)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+add_executable(${PROJECT_NAME}_test
+    test/testfs.cpp
+    test/testmodder.cpp
+    test/testsql.cpp
+)
+target_link_libraries(${PROJECT_NAME}_test PRIVATE GTest::gtest_main ${PROJECT_NAME})
+
+include(GoogleTest)
+gtest_discover_tests(${PROJECT_NAME}_test)

@@ -14,9 +14,11 @@ if (MSVC)
     add_compile_options($<$<CONFIG:Debug>:/fsanitize=address>)
     add_link_options($<$<CONFIG:Debug>:/fsanitize=address>)
 else()
-    add_compile_options(-fstrict-aliasing -Wstrict-aliasing -Wall)
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "14.0.0" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        add_compile_options(-Wnrvo)
+    add_compile_options(-fstrict-aliasing -Wstrict-aliasing -Wall -Wextra -Wpedantic)
+    include(CheckCompilerFlag)
+    check_compiler_flag(CXX -Wnrvo HAVE_WNRVO)
+    if (HAVE_WNRVO)
+        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wnrvo>)
     endif()
     add_compile_options($<$<CONFIG:Debug>:-fsanitize=address>)
     add_link_options($<$<CONFIG:Debug>:-fsanitize=address>)
@@ -24,20 +26,15 @@ endif()
 
 find_package(Boost REQUIRED COMPONENTS program_options)
 
-set(filemod_INSTALL OFF)
-if (NOT TARGET filemod)
-    add_subdirectory(filemod)
-endif()
-
 enable_testing()
-add_subdirectory(test)
+add_subdirectory(libfilemod)
 
 add_executable(${PROJECT_NAME} main.cpp)
-set_target_properties(${PROJECT_NAME} PROPERTIES 
-    VERSION ${FILEMOD_VERSION}    
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    VERSION ${FILEMOD_VERSION}
     OUTPUT_NAME filemod
 )
-target_link_libraries(${PROJECT_NAME} 
+target_link_libraries(${PROJECT_NAME}
     PRIVATE filemod Boost::program_options)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
@@ -45,14 +42,19 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     ARGS "$<TARGET_FILE:${PROJECT_NAME}>"
 )
 
-install(TARGETS ${PROJECT_NAME})
+install(TARGETS ${PROJECT_NAME}
+    RUNTIME_DEPENDENCY_SET dep
+)
 if (WIN32)
-    install(FILES
-        $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
-        DESTINATION bin
-    )
+install(RUNTIME_DEPENDENCY_SET dep)
 endif()
-#include(InstallRequiredSystemLibraries)
+#if (WIN32)
+#    install(FILES
+#        $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
+#        DESTINATION bin
+#    )
+#endif()
+include(InstallRequiredSystemLibraries)
 
 set(CPACK_PACKAGE_VENDOR "Joe Tse")
 set(CPACK_PACKAGE_CONTACT "Joe Tse <xiezhenhao@gmail.com>")

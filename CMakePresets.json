@@ -8,7 +8,7 @@
             "description": "Default build using Ninja generator",
             "generator": "Ninja",
             "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-            "binaryDir": "${sourceDir}/build/${presetName}",
+            "binaryDir": "${sourceDir}/build",
             "architecture": {
                 "value": "x64",
                 "strategy": "external"
@@ -54,7 +54,7 @@
     ],
     "packagePresets": [
         {
-            "name": "default",
+            "name": "exe",
             "configurePreset": "ninja-multi"
         }
     ],
@@ -93,7 +93,7 @@
                 },
                 {
                     "type": "package",
-                    "name": "default"
+                    "name": "exe"
                 }
             ]
         }

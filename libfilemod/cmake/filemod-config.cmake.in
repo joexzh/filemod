@@ -3,4 +3,4 @@
 include(CMakeFindDependencyMacro)
 find_dependency(SQLiteCpp REQUIRED)
 
-include("${CMAKE_CURRENT_LIST_DIR}/filemodTargets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/filemod-targets.cmake")
