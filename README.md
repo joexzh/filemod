@@ -1,6 +1,6 @@
 # filemod: a tool for managing replacement files
 
-filemod is a command line tool for managing replacement files, especially useful for managing game modding files. Currently supports Linux and Windows.
+filemod is a command line tool for managing replacement files, especially useful for replacing/restoring game modding files. Currently supports Linux and Windows.
 
 ## Features
 

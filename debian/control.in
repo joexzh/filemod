@@ -1,0 +1,11 @@
+Package: filemod
+Version: @version@
+Maintainer: Joe Tse <xiezhenhao@gmail.com>
+Architecture: amd64
+Section: misc
+Priority: optional
+Homepage: https://github.com/joexzh/filemod
+Depends: libsqlite3-0 (>= 3.34.1)
+Description: filemod command line tool
+ filemod is a command line tool for managing replacement files,
+ especially useful for replacing/restoring game modding files.

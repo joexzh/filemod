@@ -1,0 +1,5 @@
+[wrap-file]
+directory = boost-1.88.0
+source_url = https://github.com/boostorg/boost/releases/download/boost-1.88.0/boost-1.88.0-cmake.tar.gz
+source_filename = boost-1.88.0-cmake.tar.gz
+source_hash = dcea50f40ba1ecfc448fdf886c0165cf3e525fef2c9e3e080b9804e8117b9694
