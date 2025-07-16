@@ -1,0 +1,105 @@
+name: Release
+on:
+  push:
+    tags:
+      - "[0-9]+.*"
+
+jobs:
+  create_release:
+    name: Create Github Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: ${{ github.workspace }}/CHANGELOG.md
+          make_latest: true
+
+  release_window_package:
+    needs: create_release
+    runs-on: windows-latest
+    env:
+      BUILD_TYPE: Release
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: lukka/get-cmake@latest
+
+      - name: Setup a new (or from cache) vcpkg (and does not build any package)
+        uses: lukka/run-vcpkg@v11
+
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: CMake preset workflow (config, build, test and pack)
+        run: |
+          cmake --workflow --preset release-pack-wf
+
+      - name: Upload *.exe, *.zip
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{github.workspace}}/build/*.exe
+            ${{github.workspace}}/build/*.zip
+
+  release_linux_package:
+    needs: create_release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - run: |
+          apt update
+          apt install -y meson
+
+      - name: Meson compile static link, create .tar.gz
+        run: |
+          meson setup builddir --buildtype=release --default-library=static --prefix=/
+          cd builddir
+          meson compile
+          out_dir="filemod-${{ git.ref_name }}-x86_64-linux"
+          meson install --destdir="$out_dir" --tags strip,runtime --strip
+          tar -czf "$out_dir.tar.gz" "$out_dir"
+
+      - name: Upload *.tar.gz
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{github.workspace}}/builddir/*.tar.gz
+
+  release_deb_package:
+    needs: create_release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - run: |
+          apt update
+          apt install -y meson libsqlite3-dev
+
+      - name: Meson compile dynamic link, create .deb
+        run: |
+          meson setup builddir --buildtype=release --prefix=/usr
+          cd builddir
+          meson compile
+          out_dir="filemod_${{ git.ref_name }}_amd64"
+          meson install --destdir "$out_dir" --tags strip --strip
+          meson install --destdir "$out_dir" --tags runtime
+          mkdir "$out_dir/DEBIAN"
+          mv debian_control.out "$out_dir/DEBIAN/control"
+          dpkg-deb -b --root-owner-group "$out_dir"
+
+      - name: Upload *.deb
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{github.workspace}}/builddir/*.deb
