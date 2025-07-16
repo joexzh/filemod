@@ -1,5 +1,4 @@
-build
-builddir
+build*/
 bin
 out
 .idea
@@ -9,5 +8,7 @@ out
 CMakeUserPresets.json
 CMakeSettings.json
 compile_commands.json
-subprojects/*
-!subprojects/*.wrap
+subprojects/
+!subprojects/boost.wrap
+!subprojects/gtest.wrap
+!subprojects/sqlitecpp.wrap
