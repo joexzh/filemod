@@ -35,7 +35,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     OUTPUT_NAME filemod
 )
 target_link_libraries(${PROJECT_NAME}
-    PRIVATE filemod Boost::program_options)
+    PRIVATE libfilemod Boost::program_options)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND $<$<CONFIG:Release>:${CMAKE_STRIP}>
