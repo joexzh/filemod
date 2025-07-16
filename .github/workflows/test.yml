@@ -32,7 +32,7 @@ jobs:
       # Setup the build machine with the most recent versions of CMake and Ninja. Both are cached if not already: on subsequent runs both will be quickly restored from GitHub cache service.
       - uses: lukka/get-cmake@latest
 
-      - name: Setup anew (or from cache) vcpkg (and does not build any package)
+      - name: Setup a new (or from cache) vcpkg (and does not build any package)
         uses: lukka/run-vcpkg@v11 # Always specify the specific _version_ of the
                                   # action you need, `v11` in this case to stay up
                                   # to date with fixes on the v11 branch.
@@ -41,4 +41,4 @@ jobs:
 
       - name: CMake preset workflow (config, build and test)
         run: |
-          cmake --workflow --preset debug-workflow
+          cmake --workflow --preset release-test-wf

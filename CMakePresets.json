@@ -60,7 +60,7 @@
     ],
     "workflowPresets": [
         {
-            "name": "debug-workflow",
+            "name": "debug-wf",
             "steps": [
                 {
                     "type": "configure",
@@ -77,7 +77,24 @@
             ]
         },
         {
-            "name": "release-workflow",
+            "name": "release-test-wf",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "ninja-multi"
+                },
+                {
+                    "type": "build",
+                    "name": "release-build"
+                },
+                {
+                    "type": "test",
+                    "name": "release-test"
+                }
+            ]
+        },
+        {
+            "name": "release-pack-wf",
             "steps": [
                 {
                     "type": "configure",

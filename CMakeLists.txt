@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 set(FILEMOD_VERSION 0.0.2)
-project(filemod-cli VERSION ${FILEMOD_VERSION})
+project(filemod VERSION ${FILEMOD_VERSION})
 set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/static")
@@ -42,19 +42,10 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     ARGS "$<TARGET_FILE:${PROJECT_NAME}>"
 )
 
-install(TARGETS ${PROJECT_NAME}
-    RUNTIME_DEPENDENCY_SET dep
-)
+install(TARGETS ${PROJECT_NAME} RUNTIME LIBRARY)
 if (WIN32)
-install(RUNTIME_DEPENDENCY_SET dep)
+    install(FILES $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}> DESTINATION bin)
 endif()
-#if (WIN32)
-#    install(FILES
-#        $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
-#        DESTINATION bin
-#    )
-#endif()
-include(InstallRequiredSystemLibraries)
 
 set(CPACK_PACKAGE_VENDOR "Joe Tse")
 set(CPACK_PACKAGE_CONTACT "Joe Tse <xiezhenhao@gmail.com>")

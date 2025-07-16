@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 3.25)
-project(filemod)
+project(libfilemod)
+option(${PROJECT_NAME}_INSTALL_DEV "install bin, lib, headers and cmake config files" OFF)
+set(FILEMOD_NAME filemod)
 
 find_package(SQLiteCpp REQUIRED)
 
 add_library(${PROJECT_NAME})
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${FILEMOD_VERSION}
-    OUTPUT_NAME ${PROJECT_NAME}
+    OUTPUT_NAME ${FILEMOD_NAME}
 )
 target_sources(${PROJECT_NAME}
     PUBLIC FILE_SET HEADERS
@@ -32,41 +34,38 @@ if (TARGET_TYPE STREQUAL "SHARED_LIBRARY")
         PUBLIC FILEMOD_DLL
         PRIVATE FILEMOD_DLL_EXPORTS
     )
-    install(TARGETS ${PROJECT_NAME})
+    include(GNUInstallDirs)
+    install(TARGETS ${PROJECT_NAME} RUNTIME LIBRARY)
 endif()
 
-option(${PROJECT_NAME}_INSTALL "install headers, cmake config files" OFF)
-if (${PROJECT_NAME}_INSTALL)
+if (${PROJECT_NAME}_INSTALL_DEV)
     include(GNUInstallDirs)
     install(TARGETS ${PROJECT_NAME}
-        EXPORT ${PROJECT_NAME}-targets
-        RUNTIME_DEPENDENCY_SET dep
+        EXPORT ${FILEMOD_NAME}-targets
+        RUNTIME LIBRARY
         FILE_SET HEADERS
     )
-    if (WIN32)
-        install(RUNTIME_DEPENDENCY_SET dep)
-    endif()
     install(
-        EXPORT ${PROJECT_NAME}-targets
-        DESTINATION share/cmake/${PROJECT_NAME}
-        NAMESPACE ${PROJECT_NAME}::
+        EXPORT ${FILEMOD_NAME}-targets
+        DESTINATION share/cmake/${FILEMOD_NAME}
+        NAMESPACE ${FILEMOD_NAME}::
     )
     include(CMakePackageConfigHelpers)
     write_basic_package_version_file(
-        cmake/${PROJECT_NAME}-config-version.cmake
+        cmake/${FILEMOD_NAME}-config-version.cmake
         VERSION ${FILEMOD_VERSION}
         COMPATIBILITY SameMajorVersion
     )
     configure_package_config_file(
-        cmake/${PROJECT_NAME}-config.cmake.in
-        cmake/${PROJECT_NAME}-config.cmake
-        INSTALL_DESTINATION share/cmake/${PROJECT_NAME}
+        cmake/${FILEMOD_NAME}-config.cmake.in
+        cmake/${FILEMOD_NAME}-config.cmake
+        INSTALL_DESTINATION share/cmake/${FILEMOD_NAME}
     )
     install(
         FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/cmake/${PROJECT_NAME}-config-version.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/cmake/${PROJECT_NAME}-config.cmake"
-        DESTINATION share/cmake/${PROJECT_NAME}
+        "${CMAKE_CURRENT_BINARY_DIR}/cmake/${FILEMOD_NAME}-config-version.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/cmake/${FILEMOD_NAME}-config.cmake"
+        DESTINATION share/cmake/${FILEMOD_NAME}
     )
 endif()
 
