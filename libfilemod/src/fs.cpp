@@ -9,6 +9,8 @@
 #include <system_error>
 #include <utility>
 
+#include "filemod/utils.hpp"
+
 namespace filemod {
 
 static void validate_dir_exist(const std::filesystem::path &dir) {
@@ -74,8 +76,9 @@ inline static void visit_through_path(const std::filesystem::path &path_rel,
   }
 }
 
-file_status::file_status(std::filesystem::path src_path,
-                         std::filesystem::path dest_path, enum action action)
+change_record::change_record(std::filesystem::path src_path,
+                             std::filesystem::path dest_path,
+                             enum action action)
     : src_path{std::move(src_path)},
       dest_path{std::move(dest_path)},
       action{action} {}
@@ -118,9 +121,9 @@ void FS::create_target(int64_t tar_id) {
 }
 
 std::vector<std::filesystem::path> FS::add_mod(
-    int64_t tar_id, const std::filesystem::path &mod_dir) {
-  auto cfg_mod = get_cfg_mod(
-      tar_id, std::filesystem::relative(mod_dir, mod_dir.parent_path()));
+    int64_t tar_id, const std::string &mod_name,
+    const std::filesystem::path &mod_dir) {
+  auto cfg_mod = get_cfg_mod(tar_id, mod_name);
 
   validate_dir_exist(cfg_mod.parent_path());
   validate_dir_not_exist(cfg_mod);
@@ -202,14 +205,14 @@ void FS::uninstall_mod(
   std::filesystem::create_directories(tmp_uni_dir);
 
   // remove (move) symlinks and dirs
-  uninstall_mod_files_(tar_dir, tmp_uni_dir, sorted_mod_file_rels);
+  move_mod_files_(tar_dir, tmp_uni_dir, sorted_mod_file_rels);
 
   // restore backups
   auto bak_dir = get_bak_dir(cfg_mod.parent_path());
-  uninstall_mod_files_(bak_dir, tar_dir, sorted_bak_file_rels);
+  move_mod_files_(bak_dir, tar_dir, sorted_bak_file_rels);
 }
 
-void FS::uninstall_mod_files_(
+void FS::move_mod_files_(
     const std::filesystem::path &src_dir, const std::filesystem::path &dest_dir,
     const std::vector<std::filesystem::path> &sorted_file_rels) {
   std::vector<std::filesystem::path> sorted_dirs;

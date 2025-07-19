@@ -11,18 +11,19 @@ namespace filemod {
 
 const char BACKUP_DIR[] = "___filemod_backup";
 const char FILEMOD_TEMP_DIR[] = "joexie.filemod";
-const char UNINSTALLED[] = "___filemod_uninstalled";
+const char TMP_UNINSTALLED[] = "___filemod_uninstalled";
+const char TMP_EXTRACTED[] = "___extracted";
 
-enum class action : uint8_t {
+enum class action : unsigned char {
   create = 0,
   copy = 1 /* file only */,
   move = 2 /* file only */,
   del = 3 /* dir only */
 };
 
-struct file_status {
-  explicit file_status(std::filesystem::path src_path,
-                       std::filesystem::path dest_path, enum action action);
+struct change_record {
+  explicit change_record(std::filesystem::path src_path,
+                         std::filesystem::path dest_path, enum action action);
   std::filesystem::path src_path;
   std::filesystem::path dest_path;
   enum action action;
@@ -50,7 +51,7 @@ class FS {
 
   static std::filesystem::path get_uninst_dir(
       const std::filesystem::path &tar_id) {
-    return (get_tmp_dir() /= tar_id) /= UNINSTALLED;
+    return (get_tmp_dir() /= tar_id) /= TMP_UNINSTALLED;
   }
 
   // Begin fs transaction. Use RAII to rollback changes if missing the
@@ -69,14 +70,14 @@ class FS {
   // Create a directory which path is %cfg_dir/<target_id>
   void create_target(int64_t tar_id);
 
-  // Copy files in mod_dir to %cfg_dir/<target_id>/<mod_name>.
-  // <mod_name> will be the mod_dir directory name.
+  // Copy files from mod_dir to `cfg_dir/target_id/mod_name`.
   //
   // Return relative mod file paths.
   //
-  // Throws exception if %cfg_dir/<target_id> not exists, or mod_dir not exists
+  // Throws exception if `cfg_dir/target_id` not exists, or mod_dir not exists
   std::vector<std::filesystem::path> add_mod(
-      int64_t tar_id, const std::filesystem::path &mod_dir);
+      int64_t tar_id, const std::string &mod_name,
+      const std::filesystem::path &mod_dir);
 
   // Create symlinks from cfg_mod to tar_dir.
   //
@@ -112,7 +113,7 @@ class FS {
 
  private:
   int m_counter = 0;
-  std::vector<file_status> m_log;
+  std::vector<change_record> m_log;
   const std::filesystem::path m_cfg_dir;
 
   void log_create_(const std::filesystem::path &dest_path) {
@@ -159,7 +160,7 @@ class FS {
   void delete_empty_dirs_(
       const std::vector<std::filesystem::path> &sorted_dirs);
 
-  void uninstall_mod_files_(
+  void move_mod_files_(
       const std::filesystem::path &src_dir,
       const std::filesystem::path &dest_dir,
       const std::vector<std::filesystem::path> &sorted_file_rels);

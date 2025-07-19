@@ -72,10 +72,19 @@ static std::wstring cp_to_wstr(std::string_view sv, UINT cp) {
 
 std::string utf8str_to_current_cp(std::string_view sv) {
 #ifdef UNICODE
-  return {sv};
+  return std::string{sv};
 #else
   std::wstring wstr = cp_to_wstr(sv, CP_UTF8);
   return wstr_to_cp(wstr, CP_ACP);
+#endif
+}
+
+std::string current_cp_to_utf8str(std::string_view sv) {
+#ifdef UNICODE
+  return std::string{sv};
+#else
+  std::wstring wstr = cp_to_wstr(sv, CP_ACP);
+  return wstr_to_cp(wstr, CP_UTF8);
 #endif
 }
 

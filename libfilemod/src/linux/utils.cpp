@@ -29,4 +29,8 @@ std::string utf8str_to_current_cp(std::string_view sv) {
   return std::string{sv};
 }
 
+std::string current_cp_to_utf8str(std::string_view sv) {
+  return std::string{sv};
+}
+
 }  // namespace filemod

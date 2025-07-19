@@ -92,7 +92,10 @@ std::filesystem::path utf8str_to_path(std::string &&str);
 
 std::string path_to_utf8str(const std::filesystem::path &path);
 
-// convert utf8 string to current system code page
+// convert utf-8 string to current system (Windows) code page
 std::string utf8str_to_current_cp(std::string_view sv);
+
+// convert current system (Windows) code page to utf-8 string.
+std::string current_cp_to_utf8str(std::string_view sv);
 
 }  // namespace filemod

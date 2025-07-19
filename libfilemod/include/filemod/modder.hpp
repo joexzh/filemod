@@ -12,6 +12,9 @@
 
 namespace filemod {
 
+struct path_archive {};
+struct path_archive_or_dir {};
+
 class modder {
  public:
   /**
@@ -62,7 +65,7 @@ class modder {
    *
    * @param tar_dir_raw target directory, can be full path or relative path of
    * current working directory
-   * @return result.success == true w/ target id as result.data if added
+   * @return result.success == true w/ target id as `result.data` if added
    * successfully, or matched an existing target relates @c tar_dir_raw .
    * @return result.success == false if @c tar_dir_raw does not exist.
    * @exception std::exception if unknown runtime error occurs.
@@ -79,14 +82,39 @@ class modder {
    * @param mod_dir_raw existing original mod directory
    * @attention mod uniqueness is determined by its related target id and mod
    * directory name (final component of the path)
-   * @return result.success == true w/ mod id as result.data if successfully
+   * @return result.success == true w/ mod id as `result.data` if successfully
    * added or matched an existing one.
-   * @return result.success == false w/ error message as result.msg if target or
-   * directory @c mod_dir_raw does not exist.
+   * @return result.success == false w/ error message as `result.msg` if target
+   * or directory @c mod_dir_raw does not exist.
    * @exception std::exception if unknown runtime error occurs.
    */
   FILEMOD_API result<int64_t> add_mod(int64_t tar_id,
                                       const std::filesystem::path& mod_dir_raw);
+
+  /**
+   * Reference:\n
+   * @copydoc add_mod(int64_t,const std::filesystem::path&)
+   */
+  FILEMOD_API result<int64_t> add_mod(int64_t tar_id,
+                                      const std::string& mod_name,
+                                      const std::filesystem::path& mod_dir_raw);
+
+  /**
+   * Reference:\n
+   * @copydoc add_mod(int64_t,const std::filesystem::path&)
+   */
+  FILEMOD_API result<int64_t> add_mod(int64_t tar_id,
+                                      const std::string& mod_name,
+                                      const std::filesystem::path& path,
+                                      path_archive);
+
+  /**
+   * Reference:\n
+   * @copydoc add_mod(int64_t,const std::filesystem::path&)
+   */
+  FILEMOD_API result<int64_t> add_mod(int64_t tar_id,
+                                      const std::filesystem::path& path,
+                                      path_archive);
 
   /**
    * @brief Install mods.
@@ -99,7 +127,7 @@ class modder {
    *
    * @param mod_ids ids of mods to be installed
    * @return result.success == true if successfully installed.
-   * @return result.success == false w/ error message as result.msg if
+   * @return result.success == false w/ error message as `result.msg` if
    * 1. one or more mods do not exist, or
    * 2. mods are in conflict, or
    * 3. mod files in config directory do not match database records, which means
@@ -115,14 +143,14 @@ class modder {
    *
    * @param tar_id id of target which related mods to be installed
    * @return result.success == true if successfully installed.
-   * @return result.success == false w/ error message as result.msg if
+   * @return result.success == false w/ error message as `result.msg` if
    * 1. target does not exist, or
    * 2. mods are in conflict, or
    * 3. mod files in config directory do not match database records, which means
    * the mod(s) are lack of integrity that user should remove and re-add them.
    * @exception std::exception if unknown runtime error occurs.
    */
-  FILEMOD_API result_base install_from_target_id(int64_t tar_id);
+  FILEMOD_API result_base install_target(int64_t tar_id);
 
   /**
    * @brief Install a new non-managed mod by its @c mod_dir_raw.
@@ -132,15 +160,40 @@ class modder {
    *
    * @param tar_id relating target id
    * @param mod_dir_raw existing original mod directory
-   * @return result.success == true w/ mod_id as result.data if successfully
+   * @return result.success == true w/ mod_id as `result.data` if successfully
    * added or matched an existing one.
-   * @return result.success == false w/ error message as result.msg if
+   * @return result.success == false w/ error message as `result.msg` if
    * 1. target of @c tar_id or @c mod_dir_raw does not exist, or
    * 2. mods are in conflict.
    * @exception std::exception if unknown runtime error occurs.
    */
-  FILEMOD_API result<int64_t> install_from_mod_dir(
+  FILEMOD_API result<int64_t> install_path(
       int64_t tar_id, const std::filesystem::path& mod_dir_raw);
+
+  /**
+   * Reference:\n
+   * @copydoc install_from_mod_dir(int64_t,const std::filesystem::path&)
+   */
+  FILEMOD_API result<int64_t> install_path(
+      int64_t tar_id, const std::string& mod_name,
+      const std::filesystem::path& mod_dir_raw);
+
+  /**
+   * Reference:\n
+   * @copydoc install_from_mod_dir(int64_t,const std::filesystem::path&)
+   */
+  FILEMOD_API result<int64_t> install_path(int64_t tar_id,
+                                           const std::string& mod_name,
+                                           const std::filesystem::path& path,
+                                           path_archive);
+
+  /**
+   * Reference:\n
+   * @copydoc install_from_mod_dir(int64_t,const std::filesystem::path&)
+   */
+  FILEMOD_API result<int64_t> install_path(int64_t tar_id,
+                                           const std::filesystem::path& path,
+                                           path_archive);
 
   /**
    * @brief Uninstall mods.
@@ -151,7 +204,7 @@ class modder {
    *
    * @param mod_ids ids of mod to be uninstalled
    * @return result.success == true if successfully uninstalled.
-   * @return result.success == false w/ error message as result.msg if one or
+   * @return result.success == false w/ error message as `result.msg` if one or
    * more mods do not exist.
    * @exception std::exception if unknown runtime error occurs.
    */
@@ -164,12 +217,12 @@ class modder {
    *
    * @param tar_id id of a target
    * @return result.success == true if successfully uninstalled.
-   * @return result.success == false w/ error message as result.msg if
+   * @return result.success == false w/ error message as `result.msg` if
    * 1. target does not exist, or
    * 2. one or more mods do not exist.
    * @exception std::exception if unknown runtime error occurs.
    */
-  FILEMOD_API result_base uninstall_from_target_id(int64_t tar_id);
+  FILEMOD_API result_base uninstall_target(int64_t tar_id);
 
   /**
    * @brief Uninstall and delete mods in config directory.
@@ -178,7 +231,7 @@ class modder {
    *
    * @param mod_ids ids of mods to be removed
    * @return result.success == true if successfully removed.
-   * @return result.success == false w/ error message as result.msg if one or
+   * @return result.success == false w/ error message as `result.msg` if one or
    * more mods do not exist.
    * @exception std::exception if unknown runtime error occurs.
    */
@@ -192,7 +245,7 @@ class modder {
    *
    * @param tar_id id of target to be removed
    * @return result.success == true if successfully removed.
-   * @return result.success == false w/ error message as result.msg if target
+   * @return result.success == false w/ error message as `result.msg` if target
    * does not exist.
    * @exception std::exception if unknown runtime error occurs.
    */
@@ -255,6 +308,11 @@ class modder {
 
   template <typename Func>
   void tx_wrapper_(Func func);
+
+  template <typename AddMod>
+  result<int64_t> install_path_body_(AddMod& fn, int64_t tar_id,
+                                     const std::string& mod_name,
+                                     const std::filesystem::path& path);
 
   result_base install_mod_(int64_t mod_id);
 
