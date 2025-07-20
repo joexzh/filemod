@@ -93,9 +93,9 @@ static void parse_install(filemod::result_base &ret, std::ostringstream &oss,
   if (vm.count("help")) {
     oss << desc;
   } else if (is_set(dir) && is_set(id)) {  // install from mod source dir
-    move_to_retbase(md.install_from_mod_dir(id, dir), ret);
+    move_to_retbase(md.install_path(id, dir), ret);
   } else if (is_set(id)) {  // install all mods of a target
-    ret = md.install_from_target_id(id);
+    ret = md.install_target(id);
   } else if (is_set(ids)) {  // install multiple mods
     ret = md.install_mods(ids);
   } else {
@@ -121,7 +121,7 @@ static void parse_uninstall(filemod::result_base &ret, std::ostringstream &oss,
   if (vm.count("help")) {
     oss << desc;
   } else if (is_set(id)) {  // uninstall all mods of a target
-    ret = md.uninstall_from_target_id(id);
+    ret = md.uninstall_target(id);
   } else if (is_set(ids)) {  // uninstall multiple mods
     ret = md.uninstall_mods(ids);
   } else {
