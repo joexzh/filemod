@@ -5,13 +5,47 @@
 #include "filemod/fs.hpp"
 
 #include <filesystem>
+#include <ranges>
 #include <stdexcept>
 #include <system_error>
-#include <utility>
 
-#include "filemod/utils.hpp"
+#include "filemod/fs_utils.hpp"
 
 namespace filemod {
+
+void tx_scope::rollback() {
+  if (m_rollbacked) {
+    return;
+  }
+
+  for (auto &child : m_children) {
+    child.rollback();
+  }
+
+  for (const auto &rec : std::ranges::reverse_view(m_rec_man.chg_recs())) {
+    switch (rec.act) {
+      case fs_action::create:
+      case fs_action::cp:
+        std::filesystem::remove(rec.dest);
+        break;
+      case fs_action::mv:
+        std::filesystem::create_directories(rec.src.parent_path());
+        cross_filesystem_rename(rec.dest, rec.src);
+        break;
+      case fs_action::rm:
+        std::filesystem::create_directories(rec.dest);
+        break;
+    }
+  }
+
+  m_rollbacked = true;
+}
+
+void tx_scope::reset() {
+  m_children.clear();
+  m_rec_man.reset();
+  m_rollbacked = false;
+}
 
 static void validate_dir_exist(const std::filesystem::path &dir) {
   if (!std::filesystem::is_directory(dir)) {
@@ -24,25 +58,6 @@ static void validate_dir_not_exist(const std::filesystem::path &dir) {
   if (std::filesystem::is_directory(dir)) {
     throw std::runtime_error((std::string{"dir already exist"} += ": ") +=
                              dir.string());
-  }
-}
-
-static void cross_filesystem_rename(const std::filesystem::path &src_path,
-                                    const std::filesystem::path &dest_path) {
-  std::error_code ec;
-  std::filesystem::rename(src_path, dest_path, ec);
-
-  if (!ec) {
-    return;
-  }
-
-  if (ec.value() == static_cast<int>(std::errc::cross_device_link)) {
-    // cannot rename cross device, do copy and remove instead
-    std::filesystem::copy(src_path, dest_path);
-    std::filesystem::remove(src_path);
-  } else {
-    // doesn't handle other errors
-    throw std::runtime_error(ec.message());
   }
 }
 
@@ -76,43 +91,14 @@ inline static void visit_through_path(const std::filesystem::path &path_rel,
   }
 }
 
-change_record::change_record(std::filesystem::path src_path,
-                             std::filesystem::path dest_path,
-                             enum action action)
-    : src_path{std::move(src_path)},
-      dest_path{std::move(dest_path)},
-      action{action} {}
-
 FS::FS(const std::filesystem::path &cfg_dir) : m_cfg_dir(cfg_dir) {
   std::filesystem::create_directories(cfg_dir);
 }
 
 FS::~FS() noexcept {
-  if (m_counter > 0) {
-    rollback();
-  }
-
   std::error_code dummy;
   std::filesystem::remove_all(
       std::filesystem::temp_directory_path() / FILEMOD_TEMP_DIR, dummy);
-}
-
-void FS::rollback() {
-  for (auto start = m_log.crbegin(); start != m_log.crend(); ++start) {
-    switch (start->action) {
-      case action::create:
-      case action::copy:
-        std::filesystem::remove(start->dest_path);
-        break;
-      case action::move:
-        std::filesystem::create_directories(start->src_path.parent_path());
-        cross_filesystem_rename(start->dest_path, start->src_path);
-        break;
-      case action::del:
-        std::filesystem::create_directories(start->dest_path);
-        break;
-    }
-  }
 }
 
 void FS::create_target(int64_t tar_id) {
@@ -281,8 +267,24 @@ void FS::delete_empty_dirs_(
        sorted_dir_iter != sorted_dirs.crend(); ++sorted_dir_iter) {
     std::error_code dummy;
     if (std::filesystem::remove(*sorted_dir_iter, dummy)) {
-      log_del_(*sorted_dir_iter);
+      log_rm_(*sorted_dir_iter);
     }
   }
 }
+
+void FS::begin_tx_() {
+  if (!m_curr_scope) {
+    m_curr_scope = &m_root_scope;
+  } else {
+    m_curr_scope = &m_curr_scope->new_child();
+  }
+}
+
+void FS::end_tx_() {
+  m_curr_scope = m_curr_scope->parent();
+  if (!m_curr_scope) {
+    m_root_scope.reset();
+  }
+}
+
 }  // namespace filemod

@@ -10,6 +10,10 @@ project(
         'cpp_std=c++20',
         'b_ndebug=if-release',
         'warning_level=3',
+
+        'boost:default_library=static',
+        'sqlitecpp:default_library=static',
+        'libarchive:default_library=static',
     ],
 )
 
@@ -31,11 +35,8 @@ if host_machine.system() == 'windows' or get_option('system_boost_dyn_link')
     boost_op_dep = dependency('boost', modules: ['program_options'])
     filemod_cli_compile_opts += ['-DBOOST_PROGRAM_OPTIONS_DYN_LINK']
 else
-    # always static link if not system package
     cmake = import('cmake')
-    opt_var = cmake.subproject_options()
-    opt_var.set_override_option('default_library', 'static')
-    sub_proj = cmake.subproject('boost', options: opt_var)
+    sub_proj = cmake.subproject('boost')
     boost_op_dep = sub_proj.dependency('boost_program_options')
 endif
 
@@ -45,10 +46,11 @@ executable(
     cpp_args: filemod_cli_compile_opts,
     dependencies: [libfilemod_dep, boost_op_dep],
     install: true,
-    install_tag: 'strip'
+    install_tag: 'strip',
 )
 
-configure_file(input : 'debian/control.in',
-               output : 'debian_control.out',
-               configuration : {'version': meson.project_version()}
+configure_file(
+    input: 'debian/control.in',
+    output: 'debian_control.out',
+    configuration: {'version': meson.project_version()},
 )

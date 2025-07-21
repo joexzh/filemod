@@ -5,6 +5,20 @@ set(FILEMOD_NAME filemod)
 
 find_package(SQLiteCpp REQUIRED)
 
+set(${PROJECT_NAME}_src
+    src/modder.cpp
+    src/fs.cpp
+    src/fs_tx.cpp
+    src/fs_utils.cpp
+    src/sql.cpp
+    src/utils.cpp
+)
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    list(APPEND ${PROJECT_NAME}_src src/win32/utils.cpp)
+else()
+    list(APPEND ${PROJECT_NAME}_src src/linux/utils.cpp)
+endif()
+
 add_library(${PROJECT_NAME})
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${FILEMOD_VERSION}
@@ -16,20 +30,17 @@ target_sources(${PROJECT_NAME}
         FILES
             include/filemod/modder.hpp
             include/filemod/fs.hpp
+            include/filemod/fs_rec.hpp
+            include/filemod/fs_tx.hpp
             include/filemod/sql.hpp
             include/filemod/utils.hpp
     PRIVATE
-        src/modder.cpp
-        src/fs.cpp
-        src/sql.cpp
-        src/utils.cpp
-        $<$<PLATFORM_ID:Windows>:src/win32/utils.cpp>
-        $<$<OR:$<PLATFORM_ID:Linux>,$<PLATFORM_ID:Darwin>>:src/linux/utils.cpp>
+        ${${PROJECT_NAME}_src}
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE SQLiteCpp)
 
-get_target_property(TARGET_TYPE ${PROJECT_NAME} TYPE)
-if (TARGET_TYPE STREQUAL "SHARED_LIBRARY")
+get_target_property(${PROJECT_NAME}_TYPE ${PROJECT_NAME} TYPE)
+if (${PROJECT_NAME}_TYPE STREQUAL "SHARED_LIBRARY")
     target_compile_definitions(${PROJECT_NAME}
         PUBLIC FILEMOD_DLL
         PRIVATE FILEMOD_DLL_EXPORTS
@@ -70,6 +81,17 @@ if (${PROJECT_NAME}_INSTALL_DEV)
 endif()
 
 # test
+if (${PROJECT_NAME}_TYPE STREQUAL "SHARED_LIBRARY")
+    # static link to test unexported functions
+    set(libfilemod_static "libfilemod_static")
+    add_library(libfilemod_static STATIC)
+    target_include_directories(libfilemod_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_sources(libfilemod_static PRIVATE ${${PROJECT_NAME}_src})
+    target_link_libraries(libfilemod_static PRIVATE SQLiteCpp)
+else()
+    set(libfilemod_static ${PROJECT_NAME})
+endif()
+
 find_package(GTest REQUIRED)
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
@@ -78,7 +100,7 @@ add_executable(${PROJECT_NAME}_test
     test/testmodder.cpp
     test/testsql.cpp
 )
-target_link_libraries(${PROJECT_NAME}_test PRIVATE GTest::gtest_main ${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME}_test PRIVATE GTest::gtest_main ${libfilemod_static})
 
 include(GoogleTest)
 gtest_discover_tests(${PROJECT_NAME}_test)

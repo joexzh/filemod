@@ -1,8 +1,7 @@
 libfilemod_shared = get_option('default_library') == 'shared'
 
-# always static link sqlitecpp
-sub_proj = subproject('sqlitecpp', default_options: ['default_library=static'])
-sqlitecpp_dep = sub_proj.get_variable('sqlitecpp_dep')
+sqlitecpp_dep = dependency('sqlitecpp', fallback: ['sqlitecpp', 'sqlitecpp_dep'])
+libarchive_dep = dependency('libarchive', fallback: ['libarchive', 'libarchive_dep'])
 
 libfilemod_inc = include_directories('include')
 
@@ -13,7 +12,14 @@ if libfilemod_shared
     interface_export_defs += ['-DFILEMOD_DLL']
 endif
 
-libfilemod_src = ['src/fs.cpp', 'src/modder.cpp', 'src/sql.cpp', 'src/utils.cpp']
+libfilemod_src = [
+    'src/fs.cpp',
+    'src/fs_tx.cpp',
+    'src/fs_utils.cpp',
+    'src/modder.cpp',
+    'src/sql.cpp',
+    'src/utils.cpp',
+]
 if host_machine.system() == 'windows'
     libfilemod_src += 'src/win32/utils.cpp'
 else
@@ -26,7 +32,7 @@ libfilemod = library(
     include_directories: libfilemod_inc,
     cpp_args: private_export_defs,
     install: true,
-    dependencies: [sqlitecpp_dep],
+    dependencies: [sqlitecpp_dep, libarchive_dep],
 )
 
 libfilemod_dep = declare_dependency(
@@ -38,12 +44,16 @@ libfilemod_dep = declare_dependency(
 # test
 gtest_main_dep = dependency('gtest_main', fallback: ['gtest', 'gtest_main_dep'], static: false)
 # static link to test unexported functions
-libfilemod_static = static_library(
-    'filemod_static',
-    libfilemod_src,
-    include_directories: libfilemod_inc,
-    dependencies: [sqlitecpp_dep],
-)
+if libfilemod_shared
+    libfilemod_static = static_library(
+        'filemod_static',
+        libfilemod_src,
+        include_directories: libfilemod_inc,
+        dependencies: [sqlitecpp_dep],
+    )
+else
+    libfilemod_static = libfilemod
+endif
 
 libfilemod_test_src = [
     'test/testmodder.cpp',

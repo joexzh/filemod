@@ -9,6 +9,7 @@
 #include <string>
 
 #include "filemod/fs.hpp"
+#include "filemod/fs_tx.hpp"
 #include "filemod/sql.hpp"
 #include "filemod/utils.hpp"
 
@@ -77,7 +78,7 @@ static std::vector<ModDto> find_conflict_mods(
 
 template <typename Func>
 void modder::tx_wrapper_(Func func) {
-  m_fs.begin();
+  fs_tx fstx{m_fs};
   auto dbtx = m_db.begin();
 
   auto& ret = func();
@@ -86,7 +87,7 @@ void modder::tx_wrapper_(Func func) {
   }
 
   dbtx.release();
-  m_fs.commit();
+  fstx.commit();
 }
 
 modder::modder() : modder(get_config_dir(), get_db_path()) {}

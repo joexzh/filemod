@@ -7,6 +7,8 @@
 #include <filesystem>
 #include <vector>
 
+#include "filemod/fs_rec.hpp"
+
 namespace filemod {
 
 const char BACKUP_DIR[] = "___filemod_backup";
@@ -14,20 +16,32 @@ const char FILEMOD_TEMP_DIR[] = "joexie.filemod";
 const char TMP_UNINSTALLED[] = "___filemod_uninstalled";
 const char TMP_EXTRACTED[] = "___extracted";
 
-enum class action : unsigned char {
-  create = 0,
-  copy = 1 /* file only */,
-  move = 2 /* file only */,
-  del = 3 /* dir only */
+// internal transaction scope
+class tx_scope {
+ public:
+  explicit tx_scope(tx_scope *parent) : m_parent{parent} {}
+
+  tx_scope &new_child() { return m_children.emplace_back(this); }
+
+  tx_scope *parent() { return m_parent; }
+
+  rec_man &get_rec_man() { return m_rec_man; }
+
+  // unused
+  void commit();
+
+  void rollback();
+
+  void reset();
+
+ private:
+  std::vector<tx_scope> m_children;
+  rec_man m_rec_man;
+  tx_scope *const m_parent = nullptr;
+  bool m_rollbacked = false;
 };
 
-struct change_record {
-  explicit change_record(std::filesystem::path src_path,
-                         std::filesystem::path dest_path, enum action action);
-  std::filesystem::path src_path;
-  std::filesystem::path dest_path;
-  enum action action;
-};
+class fs_tx;
 
 class FS {
  public:
@@ -53,13 +67,6 @@ class FS {
       const std::filesystem::path &tar_id) {
     return (get_tmp_dir() /= tar_id) /= TMP_UNINSTALLED;
   }
-
-  // Begin fs transaction. Use RAII to rollback changes if missing the
-  // corresponding commit() call.
-  void begin() noexcept { ++m_counter; };
-
-  // commit() matches the begin() call.
-  void commit() noexcept { --m_counter; };
 
   // Rollback all changes. Called by FS::~FS(), no need to manually call it.
   void rollback();
@@ -112,32 +119,34 @@ class FS {
   }
 
  private:
-  int m_counter = 0;
-  std::vector<change_record> m_log;
   const std::filesystem::path m_cfg_dir;
+  tx_scope m_root_scope{nullptr};
+  tx_scope *m_curr_scope = nullptr;
 
-  void log_create_(const std::filesystem::path &dest_path) {
-    if (m_counter) {
-      m_log.emplace_back(std::filesystem::path(), dest_path, action::create);
+  friend fs_tx;
+
+  void log_create_(const std::filesystem::path &dest) {
+    if (m_curr_scope) {
+      m_curr_scope->get_rec_man().log_create(dest);
     }
   }
 
-  void log_move_(const std::filesystem::path &src_path,
-                 const std::filesystem::path &dest_path) {
-    if (m_counter) {
-      m_log.emplace_back(src_path, dest_path, action::move);
+  void log_move_(const std::filesystem::path &src,
+                 const std::filesystem::path &dest) {
+    if (m_curr_scope) {
+      m_curr_scope->get_rec_man().log_mv(src, dest);
     }
   }
 
-  void log_copy_(const std::filesystem::path &dest_path) {
-    if (m_counter) {
-      m_log.emplace_back(std::filesystem::path(), dest_path, action::copy);
+  void log_copy_(const std::filesystem::path &dest) {
+    if (m_curr_scope) {
+      m_curr_scope->get_rec_man().log_cp(dest);
     }
   }
 
-  void log_del_(const std::filesystem::path &dest_path) {
-    if (m_counter) {
-      m_log.emplace_back(std::filesystem::path(), dest_path, action::del);
+  void log_rm_(const std::filesystem::path &dest) {
+    if (m_curr_scope) {
+      m_curr_scope->get_rec_man().log_rm(dest);
     }
   }
 
@@ -164,6 +173,12 @@ class FS {
       const std::filesystem::path &src_dir,
       const std::filesystem::path &dest_dir,
       const std::vector<std::filesystem::path> &sorted_file_rels);
+
+  // Proxy function for `fs_tx`.
+  void begin_tx_();
+
+  // Proxy function for `fs_tx`.
+  void end_tx_();
 
 };  // class FS
 }  // namespace filemod

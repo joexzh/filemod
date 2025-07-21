@@ -28,13 +28,13 @@ inline std::vector<std::filesystem::path> strs_to_paths(
 struct mod_obj {
   std::vector<std::string> file_rel_strs;
   std::vector<std::filesystem::file_type> file_types;
-  std::string dir_rel_str;
+  std::string mod_name;
 
-  mod_obj(std::string&& dir_rel_str, std::vector<std::string>&& rel_strs,
+  mod_obj(std::string&& mod_name, std::vector<std::string>&& rel_strs,
           std::vector<std::filesystem::file_type>&& file_types)
       : file_rel_strs{std::move(rel_strs)},
         file_types{std::move(file_types)},
-        dir_rel_str{std::move(dir_rel_str)} {}
+        mod_name{std::move(mod_name)} {}
 
   std::vector<std::filesystem::path> file_rels() const {
     return strs_to_paths(file_rel_strs);
@@ -56,6 +56,7 @@ class PathHelper : public testing::Test {
   const std::filesystem::path m_tmp_dir{std::filesystem::temp_directory_path() /
                                         "filemod_test"};
   const std::filesystem::path m_game1_dir{m_tmp_dir / "games" / "game1"};
+  const std::filesystem::path m_game2_dir{m_tmp_dir / "games" / "game2"};
 
   const mod_obj m_mod1_obj{"mod1_dir",
                            {(char*)u8"moda", (char*)u8"mod1",
@@ -77,8 +78,10 @@ class FSTest : public PathHelper {
   FSTest() {
     std::filesystem::create_directories(m_cfg_dir);
     std::filesystem::create_directories(m_game1_dir);
+    std::filesystem::create_directories(m_game2_dir);
 
     create_mod_files(m_mod1_dir, m_mod1_obj);
+    create_mod_files(m_mod2_dir, m_mod2_obj);
   }
   ~FSTest() override {
     std::filesystem::remove_all(m_cfg_dir);
@@ -88,7 +91,8 @@ class FSTest : public PathHelper {
  protected:
   const std::filesystem::path m_cfg_dir{std::filesystem::temp_directory_path() /
                                         filemod::CONFIGDIR};
-  const std::filesystem::path m_mod1_dir{m_tmp_dir / m_mod1_obj.dir_rel_str};
+  const std::filesystem::path m_mod1_dir{m_tmp_dir / m_mod1_obj.mod_name};
+  const std::filesystem::path m_mod2_dir{m_tmp_dir / m_mod2_obj.mod_name};
   const int64_t m_tar_id = 1;
 
   filemod::FS create_fs() { return filemod::FS{m_cfg_dir}; }
