@@ -35,17 +35,36 @@ class rec_man {
     m_chg_logs.emplace_back(std::filesystem::path(), dest, fs_action::create);
   }
 
+  void log_create(std::filesystem::path &&dest) {
+    m_chg_logs.emplace_back(std::filesystem::path(), std::move(dest),
+                            fs_action::create);
+  }
+
   void log_mv(const std::filesystem::path &src,
               const std::filesystem::path &dest) {
     m_chg_logs.emplace_back(src, dest, fs_action::mv);
+  }
+
+  void log_mv(std::filesystem::path &&src, std::filesystem::path &&dest) {
+    m_chg_logs.emplace_back(std::move(src), std::move(dest), fs_action::mv);
   }
 
   void log_cp(const std::filesystem::path &dest) {
     m_chg_logs.emplace_back(std::filesystem::path(), dest, fs_action::cp);
   }
 
+  void log_cp(std::filesystem::path &&dest) {
+    m_chg_logs.emplace_back(std::filesystem::path(), std::move(dest),
+                            fs_action::cp);
+  }
+
   void log_rm(const std::filesystem::path &dest) {
     m_chg_logs.emplace_back(std::filesystem::path(), dest, fs_action::rm);
+  }
+
+  void log_rm(std::filesystem::path &&dest) {
+    m_chg_logs.emplace_back(std::filesystem::path(), std::move(dest),
+                            fs_action::rm);
   }
 
   void reset() { m_chg_logs.clear(); }

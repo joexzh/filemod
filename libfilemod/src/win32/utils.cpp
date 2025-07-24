@@ -46,13 +46,13 @@ static std::string wstr_to_cp(std::wstring_view wsv, UINT cp) {
   return utf8str;
 }
 
-std::filesystem::path getexepath() {
+stdfs::path getexepath() {
   TCHAR buf[MAX_PATH];
   DWORD length = GetModuleFileName(NULL, buf, MAX_PATH);
   // length include null terminator
   auto ec = GetLastError();
   if (length != 0 && ec == ERROR_SUCCESS) {
-    return std::filesystem::path{buf};
+    return stdfs::path{buf};
   }
 
   throw std::runtime_error(WinErrToStr(ec));
@@ -88,15 +88,15 @@ std::string current_cp_to_utf8str(std::string_view sv) {
 #endif
 }
 
-std::filesystem::path utf8str_to_path(std::string_view sv) {
+stdfs::path utf8str_to_path(std::string_view sv) {
 #ifdef UNICODE
   return {sv};
 #else
-  return std::filesystem::path(cp_to_wstr(sv, CP_UTF8));
+  return stdfs::path(cp_to_wstr(sv, CP_UTF8));
 #endif
 }
 
-std::filesystem::path utf8str_to_path(std::string &&str) {
+stdfs::path utf8str_to_path(std::string &&str) {
 #ifdef UNICODE
   return {std::move(str)};
 #else
@@ -104,7 +104,7 @@ std::filesystem::path utf8str_to_path(std::string &&str) {
 #endif
 }
 
-std::string path_to_utf8str(const std::filesystem::path &path) {
+std::string path_to_utf8str(const stdfs::path &path) {
 #ifdef UNICODE
   return path.string();
 #else

@@ -50,6 +50,7 @@
 #define STRINGIFY(x) STRINGIFY_HELPER(x)
 
 namespace filemod {
+
 struct result_base {
   bool success;
   std::string msg;

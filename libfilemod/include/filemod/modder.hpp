@@ -6,14 +6,11 @@
 #include <string>
 #include <vector>
 
-#include "fs.hpp"
-#include "sql.hpp"
-#include "utils.hpp"
+#include "filemod/fs.hpp"
+#include "filemod/sql.hpp"
+#include "filemod/utils.hpp"
 
 namespace filemod {
-
-struct path_archive {};
-struct path_archive_or_dir {};
 
 class modder {
  public:
@@ -100,21 +97,21 @@ class modder {
                                       const std::filesystem::path& mod_dir_raw);
 
   /**
+   * @brief Add mod from archive.
    * Reference:\n
    * @copydoc add_mod(int64_t,const std::filesystem::path&)
    */
-  FILEMOD_API result<int64_t> add_mod(int64_t tar_id,
-                                      const std::string& mod_name,
-                                      const std::filesystem::path& path,
-                                      path_archive);
+  FILEMOD_API result<int64_t> add_mod_a(int64_t tar_id,
+                                        const std::string& mod_name,
+                                        const std::filesystem::path& path);
 
   /**
+   * @brief Add mod fro archive.
    * Reference:\n
    * @copydoc add_mod(int64_t,const std::filesystem::path&)
    */
-  FILEMOD_API result<int64_t> add_mod(int64_t tar_id,
-                                      const std::filesystem::path& path,
-                                      path_archive);
+  FILEMOD_API result<int64_t> add_mod_a(int64_t tar_id,
+                                        const std::filesystem::path& path);
 
   /**
    * @brief Install mods.
@@ -179,21 +176,21 @@ class modder {
       const std::filesystem::path& mod_dir_raw);
 
   /**
+   * @brief Install from archive.
    * Reference:\n
    * @copydoc install_from_mod_dir(int64_t,const std::filesystem::path&)
    */
-  FILEMOD_API result<int64_t> install_path(int64_t tar_id,
-                                           const std::string& mod_name,
-                                           const std::filesystem::path& path,
-                                           path_archive);
+  FILEMOD_API result<int64_t> install_path_a(int64_t tar_id,
+                                             const std::string& mod_name,
+                                             const std::filesystem::path& path);
 
   /**
+   * @brief Install from archive.
    * Reference:\n
    * @copydoc install_from_mod_dir(int64_t,const std::filesystem::path&)
    */
-  FILEMOD_API result<int64_t> install_path(int64_t tar_id,
-                                           const std::filesystem::path& path,
-                                           path_archive);
+  FILEMOD_API result<int64_t> install_path_a(int64_t tar_id,
+                                             const std::filesystem::path& path);
 
   /**
    * @brief Uninstall mods.
@@ -309,10 +306,16 @@ class modder {
   template <typename Func>
   void tx_wrapper_(Func func);
 
-  template <typename AddMod>
-  result<int64_t> install_path_body_(AddMod& fn, int64_t tar_id,
-                                     const std::string& mod_name,
-                                     const std::filesystem::path& path);
+  result<int64_t> add_mod_(int64_t tar_id, const std::string& mod_name,
+                           const std::filesystem::path& mod_src_raw,
+                           copy_mod_t cp_mod_fn);
+
+  using add_mod_t = result<int64_t> (modder::*)(int64_t, const std::string&,
+                                                const std::filesystem::path&);
+
+  result<int64_t> install_path_(int64_t tar_id, const std::string& mod_name,
+                                const std::filesystem::path& path,
+                                add_mod_t add_mod_fn);
 
   result_base install_mod_(int64_t mod_id);
 

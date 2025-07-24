@@ -6,19 +6,21 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <functional>
 #include <string>
 
 #include "filemod/fs.hpp"
+#include "filemod/fs_archive.hpp"
 #include "filemod/fs_tx.hpp"
 #include "filemod/sql.hpp"
 #include "filemod/utils.hpp"
 
 namespace filemod {
 
-constexpr char ERR_TAR_NOT_EXIST[] = "error: target not exist";
-constexpr char ERR_MOD_NOT_EXIST[] = "error: mod not exist";
-constexpr char ERR_NOT_DIR[] = "error: directory not exist";
-constexpr char ERR_MISSING_FILE[] = "error: missing file";
+constexpr char ERR_TAR_NOT_EXIST[] = "error: target not exists";
+constexpr char ERR_MOD_NOT_EXIST[] = "error: mod not exists";
+constexpr char ERR_NOT_DIR[] = "error: directory not exists";
+constexpr char ERR_NOT_EXISTS[] = "error: file not exists";
 
 static void set_succeed(result_base& ret) {
   ret.success = true;
@@ -46,7 +48,15 @@ static void set_fail(result_base& ret, std::string&& str) {
 static bool check_directory(result_base& ret,
                             const std::filesystem::path& path) {
   if (!std::filesystem::is_directory(path)) {
-    set_fail(ret, {ERR_NOT_DIR, ": ", path.string().c_str()});
+    set_fail(ret, {ERR_NOT_DIR, ": '", path.c_str(), "'"});
+    return false;
+  }
+  return true;
+}
+
+static bool check_exists(result_base& ret, const std::filesystem::path& path) {
+  if (!std::filesystem::exists(path)) {
+    set_fail(ret, {ERR_NOT_EXISTS, ": '", path.c_str(), "'"});
     return false;
   }
   return true;
@@ -107,15 +117,16 @@ result<int64_t> modder::add_target(const std::filesystem::path& tar_dir_raw) {
 
   tx_wrapper_([&]() -> auto& {
     auto tar_dir = std::filesystem::absolute(tar_dir_raw);
-    auto tar_dir_str = path_to_utf8str(tar_dir);
+    auto utf8_tar_dir_str = path_to_utf8str(tar_dir);
 
-    if (auto tar_ret = m_db.query_target_by_dir(tar_dir_str); tar_ret.success) {
+    if (auto tar_ret = m_db.query_target_by_dir(utf8_tar_dir_str);
+        tar_ret.success) {
       ret.data = tar_ret.data.id;
       // if target exists, do nothing
       return ret;
     }
 
-    ret.data = m_db.insert_target(tar_dir_str);
+    ret.data = m_db.insert_target(utf8_tar_dir_str);
     m_fs.create_target(ret.data);
     return ret;
   });
@@ -123,12 +134,13 @@ result<int64_t> modder::add_target(const std::filesystem::path& tar_dir_raw) {
   return ret;
 }
 
-result<int64_t> modder::add_mod(int64_t tar_id, const std::string& mod_name,
-                                const std::filesystem::path& mod_dir_raw) {
+result<int64_t> modder::add_mod_(int64_t tar_id, const std::string& mod_name,
+                                 const std::filesystem::path& mod_src_raw,
+                                 copy_mod_t cp_mod_fn) {
   result<int64_t> ret;
   ret.success = true;
 
-  if (!check_directory(ret, mod_dir_raw)) {
+  if (!check_exists(ret, mod_src_raw)) {
     return ret;
   }
 
@@ -138,7 +150,7 @@ result<int64_t> modder::add_mod(int64_t tar_id, const std::string& mod_name,
       return ret;
     }
 
-    auto mod_dir = std::filesystem::absolute(mod_dir_raw);
+    auto mod_src = std::filesystem::absolute(mod_src_raw);
     std::string utf8_mod_name = current_cp_to_utf8str(mod_name);
 
     if (auto mod_ret = m_db.query_mod_by_targetid_dir(tar_id, utf8_mod_name);
@@ -148,7 +160,8 @@ result<int64_t> modder::add_mod(int64_t tar_id, const std::string& mod_name,
       return ret;
     }
 
-    auto mod_file_rels = m_fs.add_mod(tar_id, mod_name, mod_dir);
+    auto mod_file_rels =
+        m_fs.add_mod_base(tar_id, mod_name, mod_src, cp_mod_fn);
 
     std::vector<std::string> mod_file_strs;
     mod_file_strs.reserve(mod_file_rels.size());
@@ -165,29 +178,26 @@ result<int64_t> modder::add_mod(int64_t tar_id, const std::string& mod_name,
   return ret;
 }
 
+result<int64_t> modder::add_mod(int64_t tar_id, const std::string& mod_name,
+                                const std::filesystem::path& mod_dir_raw) {
+  return add_mod_(tar_id, mod_name, mod_dir_raw, copy_mod);
+}
+
 result<int64_t> modder::add_mod(int64_t tar_id,
                                 const std::filesystem::path& mod_dir_raw) {
   auto mod_name = (*--mod_dir_raw.end()).string();
   return add_mod(tar_id, mod_name, mod_dir_raw);
 }
 
-result<int64_t> modder::add_mod(int64_t tar_id, const std::string& mod_name,
-                                const std::filesystem::path& path,
-                                path_archive) {
-  auto extract_dir = (FS::get_tmp_dir() /= TMP_EXTRACTED) /= *--path.end();
-  std::filesystem::create_directories(extract_dir);
-
-  // TODO: extract archive to `extracted_dir`
-
-  auto ret = add_mod(tar_id, mod_name, extract_dir);
-  return ret;
+result<int64_t> modder::add_mod_a(int64_t tar_id, const std::string& mod_name,
+                                  const std::filesystem::path& path) {
+  return add_mod_(tar_id, mod_name, path, copy_mod_a);
 }
 
-result<int64_t> modder::add_mod(int64_t tar_id,
-                                const std::filesystem::path& path,
-                                path_archive) {
-  auto file = *--path.end();
-  return add_mod(tar_id, file.string(), path, path_archive{});
+result<int64_t> modder::add_mod_a(int64_t tar_id,
+                                  const std::filesystem::path& path) {
+  auto mod_name = (*--path.end()).stem().string();
+  return add_mod_a(tar_id, mod_name, path);
 }
 
 result_base modder::install_mod_(int64_t mod_id) {
@@ -212,7 +222,7 @@ result_base modder::install_mod_(int64_t mod_id) {
     for (auto& mod_file_str : mod.files) {
       if (auto cfg_mod_file = cfg_mod / utf8str_to_path(mod_file_str);
           !std::filesystem::exists(cfg_mod_file)) {
-        set_fail(ret, {ERR_MISSING_FILE, ": ", cfg_mod_file.string().c_str()});
+        set_fail(ret, {ERR_NOT_EXISTS, ": ", cfg_mod_file.string().c_str()});
         return ret;
       }
     }
@@ -312,43 +322,30 @@ result<int64_t> modder::install_path(int64_t tar_id,
 result<int64_t> modder::install_path(int64_t tar_id,
                                      const std::string& mod_name,
                                      const std::filesystem::path& mod_dir_raw) {
-  auto fn = [&](int64_t tar_id, const std::string& mod_name,
-                const std::filesystem::path& path) -> result<int64_t> {
-    return add_mod(tar_id, mod_name, path);
-  };
-
-  return install_path_body_(fn, tar_id, mod_name, mod_dir_raw);
+  return install_path_(tar_id, mod_name, mod_dir_raw, &modder::add_mod);
 }
 
-result<int64_t> modder::install_path(int64_t tar_id,
-                                     const std::string& mod_name,
-                                     const std::filesystem::path& path,
-                                     path_archive) {
-  auto fn = [&](int64_t tar_id, const std::string& mod_name,
-                const std::filesystem::path& path) -> result<int64_t> {
-    return add_mod(tar_id, mod_name, path, path_archive{});
-  };
-
-  return install_path_body_(fn, tar_id, mod_name, path);
+result<int64_t> modder::install_path_a(int64_t tar_id,
+                                       const std::string& mod_name,
+                                       const std::filesystem::path& path) {
+  return install_path_(tar_id, mod_name, path, &modder::add_mod_a);
 }
 
-result<int64_t> modder::install_path(int64_t tar_id,
-                                     const std::filesystem::path& path,
-                                     path_archive) {
+result<int64_t> modder::install_path_a(int64_t tar_id,
+                                       const std::filesystem::path& path) {
   std::string mod_name = (--path.end())->string();
-  return install_path(tar_id, mod_name, path, path_archive{});
+  return install_path_a(tar_id, mod_name, path);
 }
 
-template <typename AddMod>
-result<int64_t> modder::install_path_body_(AddMod& fn, int64_t tar_id,
-                                           const std::string& mod_name,
-                                           const std::filesystem::path& path) {
+result<int64_t> modder::install_path_(int64_t tar_id,
+                                      const std::string& mod_name,
+                                      const std::filesystem::path& path,
+                                      add_mod_t add_mod_fn) {
   result<int64_t> ret;
   ret.success = true;
 
   tx_wrapper_([&]() -> auto& {
-    // fn substitutes `add_mode(tar_id, ...)`
-    auto add_ret = fn(tar_id, mod_name, path);
+    auto add_ret = std::invoke(add_mod_fn, *this, tar_id, mod_name, path);
     if (!add_ret.success) {
       set_fail(ret, std::move(add_ret.msg));
       return ret;

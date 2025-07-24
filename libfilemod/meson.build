@@ -14,6 +14,7 @@ endif
 
 libfilemod_src = [
     'src/fs.cpp',
+    'src/fs_archive.cpp',
     'src/fs_tx.cpp',
     'src/fs_utils.cpp',
     'src/modder.cpp',
@@ -49,7 +50,7 @@ if libfilemod_shared
         'filemod_static',
         libfilemod_src,
         include_directories: libfilemod_inc,
-        dependencies: [sqlitecpp_dep],
+        dependencies: [sqlitecpp_dep, libarchive_dep],
     )
 else
     libfilemod_static = libfilemod

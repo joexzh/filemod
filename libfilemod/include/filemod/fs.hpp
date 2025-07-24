@@ -41,6 +41,19 @@ class tx_scope {
   bool m_rollbacked = false;
 };
 
+// param 1: mod source.
+// param 2: mod destination.
+// param 3: rec_man*.
+// return : newly added relative mod file paths.
+using copy_mod_t = std::vector<std::filesystem::path> (*)(
+    const std::filesystem::path &, const std::filesystem::path &, rec_man *);
+
+// Default copy function used by `add_mod`.
+// Copy files from `mod_dir` to `cfg_mod`.
+std::vector<std::filesystem::path> copy_mod(
+    const std::filesystem::path &mod_dir, const std::filesystem::path &cfg_mod,
+    rec_man *recman);
+
 class fs_tx;
 
 class FS {
@@ -68,9 +81,6 @@ class FS {
     return (get_tmp_dir() /= tar_id) /= TMP_UNINSTALLED;
   }
 
-  // Rollback all changes. Called by FS::~FS(), no need to manually call it.
-  void rollback();
-
   // The directory that stores the managed target and mod files.
   const std::filesystem::path &cfg_dir() const noexcept { return m_cfg_dir; }
 
@@ -85,6 +95,14 @@ class FS {
   std::vector<std::filesystem::path> add_mod(
       int64_t tar_id, const std::string &mod_name,
       const std::filesystem::path &mod_dir);
+
+  // Create files in `cfg_dir/target_id/mod_name` from `mod_src`, using
+  // `copy_mod_t` function.
+  // Return relative mod file paths.
+  // Throws exception if `cfg_dir/target_id` not exists, or mod_dir not exists
+  std::vector<std::filesystem::path> add_mod_base(
+      int64_t tar_id, const std::string &mod_name,
+      const std::filesystem::path &mod_src, copy_mod_t copy_mod);
 
   // Create symlinks from cfg_mod to tar_dir.
   //

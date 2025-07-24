@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <system_error>
 
+#include "filemod/fs_rec.hpp"
 #include "filemod/fs_utils.hpp"
 
 namespace filemod {
@@ -106,16 +107,9 @@ void FS::create_target(int64_t tar_id) {
   create_directory_(get_cfg_tar(tar_id));
 }
 
-std::vector<std::filesystem::path> FS::add_mod(
-    int64_t tar_id, const std::string &mod_name,
-    const std::filesystem::path &mod_dir) {
-  auto cfg_mod = get_cfg_mod(tar_id, mod_name);
-
-  validate_dir_exist(cfg_mod.parent_path());
-  validate_dir_not_exist(cfg_mod);
-
-  create_directory_(cfg_mod);
-
+std::vector<std::filesystem::path> copy_mod(
+    const std::filesystem::path &mod_dir, const std::filesystem::path &cfg_mod,
+    rec_man *recman) {
   std::vector<std::filesystem::path> mod_file_rels;
   // copy from src to dest folder
   for (auto const &mod_file :
@@ -124,15 +118,40 @@ std::vector<std::filesystem::path> FS::add_mod(
     auto cfg_mod_file = cfg_mod / mod_file_rel;
 
     if (mod_file.is_directory()) {
-      create_directory_(cfg_mod_file);
+      if (std::filesystem::create_directory(cfg_mod_file) && recman) {
+        recman->log_create(std::move(cfg_mod_file));
+      }
     } else {
       std::filesystem::copy(mod_file, cfg_mod_file);
-      log_copy_(cfg_mod_file);
+      if (recman) {
+        recman->log_cp(std::move(cfg_mod_file));
+      }
     }
 
     mod_file_rels.push_back(mod_file_rel);
   }
+
   return mod_file_rels;
+}
+
+std::vector<std::filesystem::path> FS::add_mod(
+    int64_t tar_id, const std::string &mod_name,
+    const std::filesystem::path &mod_dir) {
+  return add_mod_base(tar_id, mod_name, mod_dir, copy_mod);
+}
+
+std::vector<std::filesystem::path> FS::add_mod_base(
+    int64_t tar_id, const std::string &mod_name,
+    const std::filesystem::path &mod_src, copy_mod_t copy_mod) {
+  auto cfg_mod = get_cfg_mod(tar_id, mod_name);
+
+  validate_dir_exist(cfg_mod.parent_path());
+  validate_dir_not_exist(cfg_mod);
+
+  create_directory_(cfg_mod);
+
+  rec_man *recman = m_curr_scope ? &m_curr_scope->get_rec_man() : nullptr;
+  return copy_mod(mod_src, cfg_mod, recman);
 }
 
 std::vector<std::filesystem::path> FS::backup_files_(
