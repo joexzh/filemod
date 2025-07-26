@@ -27,8 +27,6 @@ jobs:
         with:
           submodules: true
 
-      - uses: lukka/get-cmake@latest
-
       - name: Setup a new (or from cache) vcpkg (and does not build any package)
         uses: lukka/run-vcpkg@v11
 
@@ -36,7 +34,7 @@ jobs:
 
       - name: CMake preset workflow (config, build, test and pack)
         run: |
-          cmake --workflow --preset release-pack-wf
+          cmake --workflow release-pack-wf
 
       - name: Upload *.exe, *.zip
         uses: softprops/action-gh-release@v2
@@ -63,7 +61,7 @@ jobs:
           meson setup builddir --buildtype=release --default-library=static --prefix=/
           cd builddir
           meson compile
-          out_dir="filemod-${{ git.ref_name }}-x86_64-linux"
+          out_dir="filemod-${{ github.ref_name }}-x86_64-linux"
           meson install --destdir="$out_dir" --tags strip,runtime --strip
           tar -czf "$out_dir.tar.gz" "$out_dir"
 
@@ -91,7 +89,7 @@ jobs:
           meson setup builddir --buildtype=release --prefix=/usr
           cd builddir
           meson compile
-          out_dir="filemod_${{ git.ref_name }}_amd64"
+          out_dir="filemod_${{ github.ref_name }}_amd64"
           meson install --destdir "$out_dir" --tags strip --strip
           meson install --destdir "$out_dir" --tags runtime
           mkdir "$out_dir/DEBIAN"
