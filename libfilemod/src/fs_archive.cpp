@@ -4,6 +4,7 @@
 #include <archive_entry.h>
 
 #include <algorithm>
+#include <clocale>
 #include <cstring>
 #include <memory>
 #include <stdexcept>
@@ -88,13 +89,16 @@ static int extract(const char *filename, const char *destdir, size_t destsize,
     }
 
     const char *original_path = archive_entry_pathname(entry);
+    if (!original_path) {
+      r = ARCHIVE_FATAL;
+      strncpy(err, archive_error_string(a.get()), errsize);
+      break;
+    }
     size_t pathlen = destsize + strlen(original_path) + 2;
     std::unique_ptr<char[], void (*)(char *)> newpath{
         new char[pathlen], [](char *p) { delete[] p; }};
     snprintf(newpath.get(), pathlen, "%s/%s", destdir, original_path);
-    std::string utf8str_newpath{
-        current_cp_to_utf8str(std::string_view{newpath.get()})};
-    archive_entry_set_pathname_utf8(entry, utf8str_newpath.c_str());
+    archive_entry_set_pathname_utf8(entry, newpath.get());
 
     r = archive_write_header(ext.get(), entry);
     if (r < ARCHIVE_OK && r != ARCHIVE_WARN) {
@@ -137,19 +141,19 @@ std::vector<std::filesystem::path> copy_mod_a(
   int r = extract(GET_VAR_CSTR(filepath_str, filepath),
                   GET_VAR_CSTR(destdir_str, destdir), destsize, err,
                   sizeof(err), outpaths);
-  if (r < ARCHIVE_OK && r != ARCHIVE_WARN) {
-    throw std::runtime_error{err};
-  }
 
   std::sort(
       outpaths.begin(), outpaths.end(), [](new_path_t &ptr1, new_path_t &ptr2) {
         return std::string_view{ptr1.get()} < std::string_view{ptr2.get()};
       });
-
   if (recman) {
     for (auto &outpath : outpaths) {
       recman->log_create(std::filesystem::path{outpath.get()});
     }
+  }
+
+  if (r < ARCHIVE_OK && r != ARCHIVE_WARN) {
+    throw std::runtime_error{err};
   }
 
   std::vector<std::filesystem::path> mod_file_rels{};

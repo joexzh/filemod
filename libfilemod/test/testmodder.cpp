@@ -142,6 +142,7 @@ TEST_F(FilemodTest, remove_target) {
 
 // test add_mod from archive
 TEST_F(FilemodTest, add_mod_archive) {
+  setlocale(LC_CTYPE, "en_US.UTF-8");
   // prepare archive
   std::filesystem::path archive_file{m_tmp_dir / "__archive.zip"};
   // WIN32 compatible
@@ -163,6 +164,7 @@ TEST_F(FilemodTest, add_mod_archive) {
 
 // test install_path from archive
 TEST_F(FilemodTest, install_path_archive) {
+  setlocale(LC_CTYPE, "en_US.UTF-8");
   // prepare archive
   std::filesystem::path archive_file{m_tmp_dir / "__archive.zip"};
   // WIN32 compatible

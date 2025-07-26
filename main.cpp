@@ -49,25 +49,42 @@ static void parse_error(const po::options_description &desc,
 
 static void parse_add(filemod::result_base &ret, std::ostringstream &oss,
                       po::basic_parsed_options<char> &parsed,
-                      po::variables_map &vm, std::string &dir, int64_t &id) {
+                      po::variables_map &vm, int64_t &id, std::string &name,
+                      std::string &dir) {
   po::options_description desc(
       "add target or mod\n"
       "Usage: filemod add --tdir <target_dir>\n"
-      "       filemod add -t <target_id> --mdir <mod_dir>\n"
+      "       filemod add -t <target_id> [--name <mod_name>] --mdir "
+      "<mod_dir>\n"
+      "       filemod add -t <target_id> [--name <mod_name>] --archive "
+      "<archive_path>\n"
       "Options");
   desc.add_options()("tdir", po::value<std::string>(&dir), "target directory")(
       "tid,t", po::value<int64_t>(&id), "target id")(
-      "mdir", po::value<std::string>(&dir), "mod source files directory")(
-      "help,h", "");
+      "name,n", po::value<std::string>(&name), "mod name")(
+      "mdir,d", po::value<std::string>(&dir), "mod source files directory")(
+      "archive,a", po::value<std::string>(&dir), "mod archie path")("help,h",
+                                                                    "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
 
   if (vm.count("help")) {
     oss << desc;
-  } else if (is_set(dir) && is_set(id)) {  // add mod to existing target
-    move_to_retbase(md.add_mod(id, dir), ret);
-  } else if (is_set(dir)) {  // add target
+  } else if (vm.count("tdir")) {  // add target
     move_to_retbase(md.add_target(dir), ret);
+  } else if (vm.count("tid") &&
+             vm.count("mdir")) {  // add mod from mod source directory
+    if (vm.count("name")) {
+      move_to_retbase(md.add_mod(id, name, dir), ret);
+    } else {
+      move_to_retbase(md.add_mod(id, dir), ret);
+    }
+  } else if (vm.count("tid") && vm.count("archive")) {  // add mod from archive
+    if (vm.count("name")) {
+      move_to_retbase(md.add_mod_a(id, name, dir), ret);
+    } else {
+      move_to_retbase(md.add_mod_a(id, dir), ret);
+    }
   } else {
     parse_error(desc, oss, ret);
   }
@@ -75,7 +92,7 @@ static void parse_add(filemod::result_base &ret, std::ostringstream &oss,
 
 static void parse_install(filemod::result_base &ret, std::ostringstream &oss,
                           po::basic_parsed_options<char> &parsed,
-                          po::variables_map &vm, std::string &dir, int64_t &id,
+                          po::variables_map &vm, int64_t &id, std::string &dir,
                           std::vector<int64_t> &ids) {
   po::options_description desc(
       "install mod(s)\n"
@@ -84,7 +101,7 @@ static void parse_install(filemod::result_base &ret, std::ostringstream &oss,
       "       filemod install -m <mod_id1>...\n"
       "Options");
   desc.add_options()("tid,t", po::value<int64_t>(&id), "target id")(
-      "mdir", po::value<std::string>(&dir), "mod source directory")(
+      "mdir,d", po::value<std::string>(&dir), "mod source directory")(
       "mid,m", po::value<std::vector<int64_t>>(&ids)->multitoken(), "mod ids")(
       "help,h", "");
   parse_subcmd(desc, parsed, vm);
@@ -213,13 +230,14 @@ int parse(int argc, char *argv[]) {
     auto cmd = vm["command"].as<std::string>();
 
     int64_t id = std::numeric_limits<int64_t>::min();
+    std::string name;
     std::string dir;
     std::vector<int64_t> ids;
 
     if ("add" == cmd) {
-      parse_add(ret, oss, parsed, vm, dir, id);
+      parse_add(ret, oss, parsed, vm, id, name, dir);
     } else if ("install" == cmd) {
-      parse_install(ret, oss, parsed, vm, dir, id, ids);
+      parse_install(ret, oss, parsed, vm, id, dir, ids);
     } else if ("uninstall" == cmd) {
       parse_uninstall(ret, oss, parsed, vm, id, ids);
     } else if ("remove" == cmd) {
@@ -246,6 +264,7 @@ int parse(int argc, char *argv[]) {
 }
 
 int main(int argc, char **argv) {
+  setlocale(LC_CTYPE, "en_US.UTF-8");
   try {
     return parse(argc, argv);
   } catch (std::exception &e) {
