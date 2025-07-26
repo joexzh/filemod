@@ -53,8 +53,14 @@ if libfilemod_shared
         include_directories: libfilemod_inc,
         dependencies: [sqlitecpp_dep, libarchive_dep],
     )
+    libfilemod_static_dep = declare_dependency(
+        link_with: libfilemod_static,
+        include_directories: libfilemod_inc,
+        dependencies: [libarchive_dep]
+    )
+    
 else
-    libfilemod_static = libfilemod
+    libfilemod_static_dep = libfilemod_dep
 endif
 
 libfilemod_test_src = [
@@ -66,8 +72,6 @@ libfilemod_test_src = [
 libfilemod_test = executable(
     'filemod_test',
     libfilemod_test_src,
-    include_directories: libfilemod_inc,
-    link_with: libfilemod_static,
-    dependencies: [gtest_main_dep],
+    dependencies: [gtest_main_dep, libfilemod_static_dep],
 )
 test('test libfilemod', libfilemod_test)

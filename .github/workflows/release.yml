@@ -27,10 +27,10 @@ jobs:
         with:
           submodules: true
 
+      - uses: ilammy/msvc-dev-cmd@v1
+
       - name: Setup a new (or from cache) vcpkg (and does not build any package)
         uses: lukka/run-vcpkg@v11
-
-      - uses: ilammy/msvc-dev-cmd@v1
 
       - name: CMake preset workflow (config, build, test and pack)
         run: |

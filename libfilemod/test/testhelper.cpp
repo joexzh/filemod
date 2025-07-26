@@ -30,7 +30,8 @@ void write_archive(const char* outname, const std::filesystem::path& mod_dir,
     entry = archive_entry_new();
     // WIN32 compatible
     VAR_EQUAL_PATH_STR(mod_file_str, mod_file_rel)
-    archive_entry_set_pathname(entry, GET_VAR_CSTR(mod_file_str, mod_file_rel));
+    archive_entry_set_pathname_utf8(entry,
+                                    GET_VAR_CSTR(mod_file_str, mod_file_rel));
     if (is_dir) {
       archive_entry_set_filetype(entry, AE_IFDIR);
     } else {
