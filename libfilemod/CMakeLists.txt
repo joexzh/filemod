@@ -1,15 +1,18 @@
 cmake_minimum_required(VERSION 3.25)
-project(libfilemod)
+project(libfilemod C CXX)
 option(${PROJECT_NAME}_INSTALL_DEV "install bin, lib, headers and cmake config files" OFF)
 set(FILEMOD_NAME filemod)
 
 find_package(SQLiteCpp REQUIRED)
+find_package(LibArchive REQUIRED)
 
 set(${PROJECT_NAME}_src
-    src/modder.cpp
     src/fs.cpp
+    src/fs_archive.cpp
     src/fs_tx.cpp
     src/fs_utils.cpp
+    src/modder.cpp
+    src/modder_archive.cpp
     src/sql.cpp
     src/utils.cpp
 )
@@ -37,7 +40,7 @@ target_sources(${PROJECT_NAME}
     PRIVATE
         ${${PROJECT_NAME}_src}
 )
-target_link_libraries(${PROJECT_NAME} PRIVATE SQLiteCpp)
+target_link_libraries(${PROJECT_NAME} PRIVATE SQLiteCpp LibArchive::LibArchive)
 
 get_target_property(${PROJECT_NAME}_TYPE ${PROJECT_NAME} TYPE)
 if (${PROJECT_NAME}_TYPE STREQUAL "SHARED_LIBRARY")
@@ -97,6 +100,7 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 add_executable(${PROJECT_NAME}_test
     test/testfs.cpp
+    test/testhelper.cpp
     test/testmodder.cpp
     test/testsql.cpp
 )

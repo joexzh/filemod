@@ -7,21 +7,15 @@
 #include <cstring>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <vector>
+
+#include "filemod/fs_utils.hpp"
+#include "filemod/utils.hpp"
 
 namespace filemod {
 
 typedef std::unique_ptr<char[], void (*)(char *)> new_path_t;
-
-// `full_path` must starts with `base` with length of `base_size`.
-// Returns a pointer to substring of `full_path`.
-static const char *relative_path(size_t basesize, const char *fullpath) {
-  size_t pos = basesize;
-  while ('/' == fullpath[pos]) {
-    ++pos;
-  }
-  return fullpath + pos;
-}
 
 static int copy_data(archive *ar, archive *aw) {
   const void *buff;
@@ -98,7 +92,9 @@ static int extract(const char *filename, const char *destdir, size_t destsize,
     std::unique_ptr<char[], void (*)(char *)> newpath{
         new char[pathlen], [](char *p) { delete[] p; }};
     snprintf(newpath.get(), pathlen, "%s/%s", destdir, original_path);
-    archive_entry_set_pathname(entry, newpath.get());
+    std::string utf8str_newpath{
+        current_cp_to_utf8str(std::string_view{newpath.get()})};
+    archive_entry_set_pathname_utf8(entry, utf8str_newpath.c_str());
 
     r = archive_write_header(ext.get(), entry);
     if (r < ARCHIVE_OK && r != ARCHIVE_WARN) {
@@ -107,9 +103,9 @@ static int extract(const char *filename, const char *destdir, size_t destsize,
     }
 
     if (archive_entry_size(entry) > 0) {
-      r = copy_data(a.get(), ext.get());
       // maybe half write, so log regular file no matter what
       outpaths.push_back(std::move(newpath));
+      r = copy_data(a.get(), ext.get());
       if (r < ARCHIVE_OK && r != ARCHIVE_WARN) {
         strncpy(err, archive_error_string(ext.get()), errsize);
         break;
@@ -133,18 +129,22 @@ std::vector<std::filesystem::path> copy_mod_a(
     rec_man *recman) {
   std::vector<new_path_t> outpaths;
   char err[512];
-  size_t destsize = strlen(destdir.c_str());
+  // WIN32 compatible
+  VAR_EQUAL_PATH_STR(destdir_str, destdir)
+  VAR_EQUAL_PATH_STR(filepath_str, filepath)
+  size_t destsize = strlen(GET_VAR_CSTR(destdir_str, destdir));
 
-  int r = extract(filepath.c_str(), destdir.c_str(), destsize, err, sizeof(err),
-                  outpaths);
+  int r = extract(GET_VAR_CSTR(filepath_str, filepath),
+                  GET_VAR_CSTR(destdir_str, destdir), destsize, err,
+                  sizeof(err), outpaths);
   if (r < ARCHIVE_OK && r != ARCHIVE_WARN) {
     throw std::runtime_error{err};
   }
 
-  std::sort(outpaths.begin(), outpaths.end(),
-            [](new_path_t &up1, new_path_t &up2) {
-              return std::string_view{up1.get()} < std::string_view{up2.get()};
-            });
+  std::sort(
+      outpaths.begin(), outpaths.end(), [](new_path_t &ptr1, new_path_t &ptr2) {
+        return std::string_view{ptr1.get()} < std::string_view{ptr2.get()};
+      });
 
   if (recman) {
     for (auto &outpath : outpaths) {
@@ -152,7 +152,8 @@ std::vector<std::filesystem::path> copy_mod_a(
     }
   }
 
-  std::vector<std::filesystem::path> mod_file_rels{outpaths.size()};
+  std::vector<std::filesystem::path> mod_file_rels{};
+  mod_file_rels.reserve(outpaths.size());
   for (auto &outpath : outpaths) {
     mod_file_rels.emplace_back(relative_path(destsize, outpath.get()));
   }

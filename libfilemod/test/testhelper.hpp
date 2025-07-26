@@ -15,15 +15,8 @@
 #include "filemod/fs.hpp"
 #include "filemod/utils.hpp"
 
-inline std::vector<std::filesystem::path> strs_to_paths(
-    const std::vector<std::string>& strs) {
-  std::vector<std::filesystem::path> paths;
-  paths.reserve(strs.size());
-  for (auto& str : strs) {
-    paths.push_back(filemod::utf8str_to_path(str));
-  }
-  return paths;
-}
+void write_archive(const char* outname, const std::filesystem::path& mod_dir,
+                   const std::vector<std::filesystem::path>& mod_file_rels);
 
 struct mod_obj {
   std::vector<std::string> file_rel_strs;
@@ -37,7 +30,12 @@ struct mod_obj {
         mod_name{std::move(mod_name)} {}
 
   std::vector<std::filesystem::path> file_rels() const {
-    return strs_to_paths(file_rel_strs);
+    std::vector<std::filesystem::path> file_rels;
+    file_rels.reserve(file_rel_strs.size());
+    for (const auto& str : file_rel_strs) {
+      file_rels.push_back(filemod::utf8str_to_path(str));
+    }
+    return file_rels;
   }
 
   size_t num_regular_files() const {
@@ -59,8 +57,7 @@ class PathHelper : public testing::Test {
   const std::filesystem::path m_game2_dir{m_tmp_dir / "games" / "game2"};
 
   const mod_obj m_mod1_obj{"mod1_dir",
-                           {(char*)u8"moda", (char*)u8"mod1",
-                            (char*)u8"mod1/资产", (char*)u8"mod1/资产/a.so"},
+                           {"moda", "mod1", "mod1/资产", "mod1/资产/a.so"},
                            {std::filesystem::file_type::directory,
                             std::filesystem::file_type::directory,
                             std::filesystem::file_type::directory,

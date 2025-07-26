@@ -32,8 +32,8 @@ static std::basic_string<TCHAR> WinErrToStr(DWORD ec) {
   return err_str;
 }
 
-// convert wstring (UTF-16) to string of code page %cp
-static std::string wstr_to_cp(std::wstring_view wsv, UINT cp) {
+// convert wstring (UTF-16) to string of code page `cp`
+std::string wstr_to_cp(std::wstring_view wsv, UINT cp) {
   int sz = WideCharToMultiByte(cp, 0, wsv.data(), wsv.size() + 1, NULL, 0, NULL,
                                NULL);
   // sz include null terminator
@@ -46,20 +46,20 @@ static std::string wstr_to_cp(std::wstring_view wsv, UINT cp) {
   return utf8str;
 }
 
-stdfs::path getexepath() {
+std::filesystem::path getexepath() {
   TCHAR buf[MAX_PATH];
   DWORD length = GetModuleFileName(NULL, buf, MAX_PATH);
   // length include null terminator
   auto ec = GetLastError();
   if (length != 0 && ec == ERROR_SUCCESS) {
-    return stdfs::path{buf};
+    return std::filesystem::path{buf};
   }
 
   throw std::runtime_error(WinErrToStr(ec));
 }
 
 // convert string of code page %cp to wstring
-static std::wstring cp_to_wstr(std::string_view sv, UINT cp) {
+std::wstring cp_to_wstr(std::string_view sv, UINT cp) {
   int sz = MultiByteToWideChar(cp, 0, sv.data(), sv.size() + 1, NULL, 0);
   // sz include null terminator
   if (0 == sz) {
@@ -88,15 +88,15 @@ std::string current_cp_to_utf8str(std::string_view sv) {
 #endif
 }
 
-stdfs::path utf8str_to_path(std::string_view sv) {
+std::filesystem::path utf8str_to_path(std::string_view sv) {
 #ifdef UNICODE
   return {sv};
 #else
-  return stdfs::path(cp_to_wstr(sv, CP_UTF8));
+  return std::filesystem::path(cp_to_wstr(sv, CP_UTF8));
 #endif
 }
 
-stdfs::path utf8str_to_path(std::string &&str) {
+std::filesystem::path utf8str_to_path(std::string &&str) {
 #ifdef UNICODE
   return {std::move(str)};
 #else
@@ -104,7 +104,7 @@ stdfs::path utf8str_to_path(std::string &&str) {
 #endif
 }
 
-std::string path_to_utf8str(const stdfs::path &path) {
+std::string path_to_utf8str(const std::filesystem::path &path) {
 #ifdef UNICODE
   return path.string();
 #else

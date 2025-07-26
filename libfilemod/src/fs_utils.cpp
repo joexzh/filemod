@@ -23,4 +23,12 @@ void cross_filesystem_rename(const std::filesystem::path &src,
   }
 }
 
+const char *relative_path(size_t basesize, const char *fullpath) {
+  size_t pos = basesize;
+  while ('/' == fullpath[pos]) {
+    ++pos;
+  }
+  return fullpath + pos;
+}
+
 }  // namespace filemod

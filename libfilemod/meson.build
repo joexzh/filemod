@@ -18,6 +18,7 @@ libfilemod_src = [
     'src/fs_tx.cpp',
     'src/fs_utils.cpp',
     'src/modder.cpp',
+    'src/modder_archive.cpp',
     'src/sql.cpp',
     'src/utils.cpp',
 ]
@@ -57,8 +58,9 @@ else
 endif
 
 libfilemod_test_src = [
-    'test/testmodder.cpp',
     'test/testfs.cpp',
+    'test/testhelper.cpp',
+    'test/testmodder.cpp',
     'test/testsql.cpp',
 ]
 libfilemod_test = executable(

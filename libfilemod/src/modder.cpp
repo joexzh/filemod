@@ -10,8 +10,8 @@
 #include <string>
 
 #include "filemod/fs.hpp"
-#include "filemod/fs_archive.hpp"
 #include "filemod/fs_tx.hpp"
+#include "filemod/fs_utils.hpp"
 #include "filemod/sql.hpp"
 #include "filemod/utils.hpp"
 
@@ -48,7 +48,9 @@ static void set_fail(result_base& ret, std::string&& str) {
 static bool check_directory(result_base& ret,
                             const std::filesystem::path& path) {
   if (!std::filesystem::is_directory(path)) {
-    set_fail(ret, {ERR_NOT_DIR, ": '", path.c_str(), "'"});
+    // WIN32 compatible
+    VAR_EQUAL_PATH_STR(path_str, path)
+    set_fail(ret, {ERR_NOT_DIR, ": '", GET_VAR_CSTR(path_str, path), "'"});
     return false;
   }
   return true;
@@ -56,7 +58,9 @@ static bool check_directory(result_base& ret,
 
 static bool check_exists(result_base& ret, const std::filesystem::path& path) {
   if (!std::filesystem::exists(path)) {
-    set_fail(ret, {ERR_NOT_EXISTS, ": '", path.c_str(), "'"});
+    // WIN32 compatible
+    VAR_EQUAL_PATH_STR(path_str, path)
+    set_fail(ret, {ERR_NOT_EXISTS, ": '", GET_VAR_CSTR(path_str, path), "'"});
     return false;
   }
   return true;
@@ -189,17 +193,6 @@ result<int64_t> modder::add_mod(int64_t tar_id,
   return add_mod(tar_id, mod_name, mod_dir_raw);
 }
 
-result<int64_t> modder::add_mod_a(int64_t tar_id, const std::string& mod_name,
-                                  const std::filesystem::path& path) {
-  return add_mod_(tar_id, mod_name, path, copy_mod_a);
-}
-
-result<int64_t> modder::add_mod_a(int64_t tar_id,
-                                  const std::filesystem::path& path) {
-  auto mod_name = (*--path.end()).stem().string();
-  return add_mod_a(tar_id, mod_name, path);
-}
-
 result_base modder::install_mod_(int64_t mod_id) {
   result_base ret{.success = true};
 
@@ -323,18 +316,6 @@ result<int64_t> modder::install_path(int64_t tar_id,
                                      const std::string& mod_name,
                                      const std::filesystem::path& mod_dir_raw) {
   return install_path_(tar_id, mod_name, mod_dir_raw, &modder::add_mod);
-}
-
-result<int64_t> modder::install_path_a(int64_t tar_id,
-                                       const std::string& mod_name,
-                                       const std::filesystem::path& path) {
-  return install_path_(tar_id, mod_name, path, &modder::add_mod_a);
-}
-
-result<int64_t> modder::install_path_a(int64_t tar_id,
-                                       const std::filesystem::path& path) {
-  std::string mod_name = (--path.end())->string();
-  return install_path_a(tar_id, mod_name, path);
 }
 
 result<int64_t> modder::install_path_(int64_t tar_id,

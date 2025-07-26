@@ -2,46 +2,48 @@
 
 #include <filesystem>
 
+#include "filemod/fs_utils.hpp"
 #include "filemod/modder.hpp"
+#include "filemod/utils.hpp"
 #include "testhelper.hpp"
 
 class FilemodTest : public FSTest {
  public:
  protected:
-  filemod::modder _modder{m_cfg_dir.string(), m_db_path.string()};
+  filemod::modder m_modder{m_cfg_dir, m_db_path};
 };
 
 TEST_F(FilemodTest, add_target) {
-  auto ret = _modder.add_target(m_game1_dir.string());
+  auto ret = m_modder.add_target(m_game1_dir);
 
   ASSERT_TRUE(ret.success);
   EXPECT_LT(0, ret.data);
 
-  auto tars = _modder.query_targets({ret.data});
+  auto tars = m_modder.query_targets({ret.data});
 
   EXPECT_EQ(1, tars.size());
 }
 
 TEST_F(FilemodTest, add_mod) {
-  auto tar_ret = _modder.add_target(m_game1_dir.string());
-  auto mod_ret = _modder.add_mod(tar_ret.data, m_mod1_dir.string());
+  auto tar_ret = m_modder.add_target(m_game1_dir);
+  auto mod_ret = m_modder.add_mod(tar_ret.data, m_mod1_dir);
 
   ASSERT_TRUE(mod_ret.success);
   EXPECT_LT(0, mod_ret.data);
 
-  auto mods = _modder.query_mods({mod_ret.data});
+  auto mods = m_modder.query_mods({mod_ret.data});
 
   EXPECT_EQ(1, mods.size());
 }
 
 TEST_F(FilemodTest, install_mods) {
-  auto tar_ret = _modder.add_target(m_game1_dir.string());
-  auto mod_ret = _modder.add_mod(tar_ret.data, m_mod1_dir.string());
-  auto ins_ret = _modder.install_mods({mod_ret.data});
+  auto tar_ret = m_modder.add_target(m_game1_dir);
+  auto mod_ret = m_modder.add_mod(tar_ret.data, m_mod1_dir);
+  auto ins_ret = m_modder.install_mods({mod_ret.data});
 
   EXPECT_TRUE(ins_ret.success);
 
-  auto mods = _modder.query_mods({mod_ret.data});
+  auto mods = m_modder.query_mods({mod_ret.data});
   ASSERT_EQ(1, mods.size());
   auto &mod = mods[0];
 
@@ -50,14 +52,14 @@ TEST_F(FilemodTest, install_mods) {
   EXPECT_EQ(m_mod1_obj.file_rel_strs.size(), std::distance(begin(it), end(it)));
 }
 
-TEST_F(FilemodTest, install_from_target_id) {
-  auto tar_ret = _modder.add_target(m_game1_dir.string());
-  auto mod_ret = _modder.add_mod(tar_ret.data, m_mod1_dir.string());
-  auto ret = _modder.install_target(tar_ret.data);
+TEST_F(FilemodTest, install_target) {
+  auto tar_ret = m_modder.add_target(m_game1_dir);
+  auto mod_ret = m_modder.add_mod(tar_ret.data, m_mod1_dir);
+  auto ret = m_modder.install_target(tar_ret.data);
 
   EXPECT_TRUE(ret.success);
 
-  auto mods = _modder.query_mods({mod_ret.data});
+  auto mods = m_modder.query_mods({mod_ret.data});
   ASSERT_EQ(1, mods.size());
   auto &mod = mods[0];
 
@@ -66,15 +68,14 @@ TEST_F(FilemodTest, install_from_target_id) {
   EXPECT_EQ(m_mod1_obj.file_rel_strs.size(), std::distance(begin(it), end(it)));
 }
 
-TEST_F(FilemodTest, install_from_mod_dir) {
-  auto tar_ret = _modder.add_target(m_game1_dir.string());
-  auto mod_ret =
-      _modder.install_path(tar_ret.data, m_mod1_dir.string());
+TEST_F(FilemodTest, install_path) {
+  auto tar_ret = m_modder.add_target(m_game1_dir);
+  auto mod_ret = m_modder.install_path(tar_ret.data, m_mod1_dir);
 
   EXPECT_TRUE(mod_ret.success);
   EXPECT_LT(0, mod_ret.data);
 
-  auto mods = _modder.query_mods({mod_ret.data});
+  auto mods = m_modder.query_mods({mod_ret.data});
   ASSERT_EQ(1, mods.size());
   auto &mod = mods[0];
 
@@ -84,14 +85,13 @@ TEST_F(FilemodTest, install_from_mod_dir) {
 }
 
 TEST_F(FilemodTest, uninstall_mods) {
-  auto tar_ret = _modder.add_target(m_game1_dir.string());
-  auto mod_ret =
-      _modder.install_path(tar_ret.data, m_mod1_dir.string());
-  auto ret = _modder.uninstall_mods({mod_ret.data});
+  auto tar_ret = m_modder.add_target(m_game1_dir);
+  auto mod_ret = m_modder.install_path(tar_ret.data, m_mod1_dir);
+  auto ret = m_modder.uninstall_mods({mod_ret.data});
 
   EXPECT_TRUE(ret.success);
 
-  auto mods = _modder.query_mods({mod_ret.data});
+  auto mods = m_modder.query_mods({mod_ret.data});
   ASSERT_EQ(1, mods.size());
   auto &mod = mods[0];
 
@@ -99,15 +99,14 @@ TEST_F(FilemodTest, uninstall_mods) {
   EXPECT_TRUE(std::filesystem::is_empty(m_game1_dir));
 }
 
-TEST_F(FilemodTest, uninstall_from_target_id) {
-  auto tar_ret = _modder.add_target(m_game1_dir.string());
-  auto mod_ret =
-      _modder.install_path(tar_ret.data, m_mod1_dir.string());
-  auto ret = _modder.uninstall_target(tar_ret.data);
+TEST_F(FilemodTest, uninstall_target) {
+  auto tar_ret = m_modder.add_target(m_game1_dir);
+  auto mod_ret = m_modder.install_path(tar_ret.data, m_mod1_dir);
+  auto ret = m_modder.uninstall_target(tar_ret.data);
 
   EXPECT_TRUE(ret.success);
 
-  auto mods = _modder.query_mods({mod_ret.data});
+  auto mods = m_modder.query_mods({mod_ret.data});
   ASSERT_EQ(1, mods.size());
   auto &mod = mods[0];
 
@@ -116,29 +115,73 @@ TEST_F(FilemodTest, uninstall_from_target_id) {
 }
 
 TEST_F(FilemodTest, remove_mods) {
-  auto tar_ret = _modder.add_target(m_game1_dir.string());
-  auto mod_ret =
-      _modder.install_path(tar_ret.data, m_mod1_dir.string());
-  auto ret = _modder.remove_mods({mod_ret.data});
+  auto tar_ret = m_modder.add_target(m_game1_dir);
+  auto mod_ret = m_modder.install_path(tar_ret.data, m_mod1_dir);
+  auto ret = m_modder.remove_mods({mod_ret.data});
 
   EXPECT_TRUE(ret.success);
 
-  auto mods = _modder.query_mods({mod_ret.data});
+  auto mods = m_modder.query_mods({mod_ret.data});
 
   EXPECT_TRUE(mods.empty());
   EXPECT_TRUE(std::filesystem::is_empty(m_game1_dir));
 }
 
 TEST_F(FilemodTest, remove_target) {
-  auto tar_ret = _modder.add_target(m_game1_dir.string());
-  auto mod_ret =
-      _modder.install_path(tar_ret.data, m_mod1_dir.string());
-  auto ret = _modder.remove_target(tar_ret.data);
+  auto tar_ret = m_modder.add_target(m_game1_dir);
+  auto mod_ret = m_modder.install_path(tar_ret.data, m_mod1_dir);
+  auto ret = m_modder.remove_target(tar_ret.data);
 
   EXPECT_TRUE(ret.success);
 
-  auto mods = _modder.query_mods({mod_ret.data});
+  auto mods = m_modder.query_mods({mod_ret.data});
 
   EXPECT_TRUE(mods.empty());
   EXPECT_TRUE(std::filesystem::is_empty(m_game1_dir));
+}
+
+// test add_mod from archive
+TEST_F(FilemodTest, add_mod_archive) {
+  // prepare archive
+  std::filesystem::path archive_file{m_tmp_dir / "__archive.zip"};
+  // WIN32 compatible
+  VAR_EQUAL_PATH_STR(archive_file_str, archive_file)
+  write_archive(GET_VAR_CSTR(archive_file_str, archive_file), m_mod1_dir,
+                m_mod1_obj.file_rels());
+
+  auto tar_ret = m_modder.add_target(m_game1_dir);
+  auto mod_ret =
+      m_modder.add_mod_a(tar_ret.data, m_mod1_obj.mod_name, archive_file);
+
+  ASSERT_TRUE(mod_ret.success);
+  EXPECT_LT(0, mod_ret.data);
+
+  auto mods = m_modder.query_mods({mod_ret.data});
+
+  EXPECT_EQ(1, mods.size());
+}
+
+// test install_path from archive
+TEST_F(FilemodTest, install_path_archive) {
+  // prepare archive
+  std::filesystem::path archive_file{m_tmp_dir / "__archive.zip"};
+  // WIN32 compatible
+  VAR_EQUAL_PATH_STR(archive_file_str, archive_file)
+  write_archive(GET_VAR_CSTR(archive_file_str, archive_file), m_mod1_dir,
+                m_mod1_obj.file_rels());
+
+  auto tar_ret = m_modder.add_target(m_game1_dir);
+  auto mod_ret =
+      m_modder.install_path_a(tar_ret.data, m_mod1_obj.mod_name, archive_file);
+
+  EXPECT_TRUE(mod_ret.success);
+  EXPECT_LT(0, mod_ret.data);
+
+  auto mods = m_modder.query_mods({mod_ret.data});
+  ASSERT_EQ(1, mods.size());
+  auto &mod = mods[0];
+
+  EXPECT_EQ(filemod::ModStatus::Installed, mod.status);
+  auto it = std::filesystem::recursive_directory_iterator(m_game1_dir);
+  EXPECT_EQ(m_mod1_obj.file_rel_strs.size(), std::distance(begin(it), end(it)));
 }
