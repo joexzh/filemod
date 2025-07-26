@@ -82,7 +82,7 @@ jobs:
 
       - run: |
           apt update
-          apt install -y meson libsqlite3-dev
+          apt install -y meson libsqlite3-dev libarchive-dev
 
       - name: Meson compile dynamic link, create .deb
         run: |

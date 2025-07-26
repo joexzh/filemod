@@ -39,3 +39,7 @@ jobs:
       - name: CMake preset workflow (config, build and test)
         run: |
           cmake --workflow release-test-wf
+
+      - name: Print failed tests
+        if: failure()
+        run: ctest --preset release-test --rerun-failed --output-on-failure
