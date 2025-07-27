@@ -17,42 +17,9 @@
 #define MAIN wmain
 typedef wchar_t mychar;
 
-static void put_exception(std::exception &e) {
-  std::wcerr << filemod::cp_to_wstr(e.what(), CP_UTF8) << L'\n';
-}
-
-static void put_os(std::wostream &wos, const std::string &msg,
-                   std::ostringstream &oss) {
-  wos << filemod::cp_to_wstr(msg, CP_UTF8)
-      << filemod::cp_to_wstr(oss.str(), CP_UTF8) << L'\n';
-}
-
-static void put_msg(const std::string &msg, std::ostringstream &oss) {
-  put_os(std::wcout, msg, oss);
-}
-
-static void put_err(const std::string &msg, std::ostringstream &oss) {
-  put_os(std::wcerr, msg, oss);
-}
-
 #else
 #define MAIN main
 typedef char mychar;
-
-static void put_exception(std::exception &e) { std::cerr << e.what() << '\n'; }
-
-static void put_os(std::ostream &os, const std::string &msg,
-                   std::ostringstream &oss) {
-  os << msg << oss.str() << '\n';
-}
-
-static void put_msg(const std::string &msg, std::ostringstream &oss) {
-  put_os(std::cout, msg, oss);
-}
-
-static void put_err(const std::string &msg, std::ostringstream &oss) {
-  put_os(std::cerr, msg, oss);
-}
 
 #endif
 
@@ -263,7 +230,7 @@ static void parse_list(filemod::result_base &ret, std::ostringstream &oss,
   }
 }
 
-int parse(int argc, const char *argv[]) {
+int parse(int argc, char *argv[]) {
   filemod::result_base ret{.success = true};
   std::ostringstream oss;
 
@@ -323,10 +290,10 @@ int parse(int argc, const char *argv[]) {
   }
 
   if (ret.success) {
-    put_msg(ret.msg, oss);
+    std::cout << ret.msg << oss.str() << '\n';
     return 0;
   }
-  put_err(ret.msg, oss);
+  std::cerr << ret.msg << oss.str() << '\n';
   return 1;
 }
 
@@ -336,25 +303,25 @@ int MAIN(int argc, mychar **argv) {
 #ifdef _WIN32
   SetConsoleOutputCP(CP_UTF8);
   // convert wchar** to utf8 char** on Windows
-  std::unique_ptr<const char *[], void (*)(const char **p)> ptr {
-    new const char *[argc], [](const char **p) { delete[] p; }
+  std::unique_ptr<char *[], void (*)(char **p)> ptr {
+    new char *[argc], [](char **p) { delete p; }
   };
   std::vector<std::string> str;
   str.reserve(argc);
   for (int i = 0; i < argc; ++i) {
     str.push_back(filemod::wstr_to_cp(argv[i], CP_UTF8));
-    ptr[i] = str[i].c_str();
+    ptr[i] = str[i].data();
   }
-  const char **args = ptr.get();
+  char **args = ptr.get();
 #else
   char **args = argv;
 #endif
 
   try {
     // args are all utf-8 encoded
-    return parse(argc, const_cast<const char **>(args));
+    return parse(argc, args);
   } catch (std::exception &e) {
-    put_exception(e);
+    std::cerr << e.what() << '\n';
     return 1;
   }
 }

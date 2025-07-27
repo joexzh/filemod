@@ -21,6 +21,7 @@ jobs:
     runs-on: windows-latest
     env:
       BUILD_TYPE: Release
+      VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/vcpkg/binary-cache,readwrite
 
     steps:
       - uses: actions/checkout@v4
@@ -29,8 +30,10 @@ jobs:
 
       - uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Setup a new (or from cache) vcpkg (and does not build any package)
-        uses: lukka/run-vcpkg@v11
+      - uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/vcpkg/binary-cache
+          key: vcpkg-${{ github.workflow }}-${{ github.job }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
 
       - name: CMake preset workflow (config, build, test and pack)
         run: |
@@ -51,6 +54,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/builddir/subprojects
+          key: meson-${{ github.workflow }}-${{ github.job}}-${{ hashFiles('subprojects/*.wrap') }}
 
       - run: |
           apt update
@@ -79,6 +87,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/builddir/subprojects
+          key: meson-${{ github.workflow }}-${{ github.job }}-${{ hashFiles('subprojects/*.wrap') }}
 
       - run: |
           apt update

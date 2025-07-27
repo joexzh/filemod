@@ -22,7 +22,7 @@ jobs:
           - os: ubuntu-latest
             triplet: x64-linux
     env:
-      BUILD_TYPE: Debug
+      VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/vcpkg/binary-cache,readwrite
 
     steps:
       - uses: actions/checkout@v4
@@ -31,10 +31,10 @@ jobs:
 
       - uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Setup a new (or from cache) vcpkg (and does not build any package)
-        uses: lukka/run-vcpkg@v11 # Always specify the specific _version_ of the
-                                  # action you need, `v11` in this case to stay up
-                                  # to date with fixes on the v11 branch.
+      - uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/vcpkg/binary-cache
+          key: vcpkg-${{ github.workflow }}-${{ matrix.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
 
       - name: CMake preset workflow (config, build and test)
         run: |
