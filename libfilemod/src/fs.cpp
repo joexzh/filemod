@@ -141,7 +141,7 @@ std::vector<std::filesystem::path> FS::add_mod(
 }
 
 std::vector<std::filesystem::path> FS::add_mod_base(
-    int64_t tar_id, const std::string &mod_name,
+    int64_t tar_id, const std::filesystem::path &mod_name,
     const std::filesystem::path &mod_src, copy_mod_t copy_mod) {
   auto cfg_mod = get_cfg_mod(tar_id, mod_name);
 

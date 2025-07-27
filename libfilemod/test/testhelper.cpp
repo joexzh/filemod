@@ -5,21 +5,26 @@
 
 #include <chrono>
 
-#include "filemod/fs_utils.hpp"
-
-void write_archive(const char* outname, const std::filesystem::path& mod_dir,
-                   const std::vector<std::filesystem::path>& mod_file_rels) {
+int write_archive(const std::filesystem::path& outname,
+                  const std::filesystem::path& mod_dir,
+                  const std::vector<std::filesystem::path>& mod_file_rels) {
   char buff[8192];
   struct archive* a;
   struct archive_entry* entry;
+  int r;
 
   a = archive_write_new();
   archive_write_set_format_zip(a);
-  archive_write_zip_set_compression_deflate(a);
+  archive_write_set_options(a, "zip:hdrcharset=UTF-8");
 
-  if (archive_write_open_filename(a, outname) != ARCHIVE_OK) {
+#ifdef _WIN32
+  r = archive_write_open_filename_w(a, outname.c_str());
+#else
+  r = archive_write_open_filename(a, outname.c_str());
+#endif
+  if (ARCHIVE_OK != r) {
     fprintf(stderr, "%s\n", archive_error_string(a));
-    exit(1);
+    goto cleanup;
   }
 
   for (const auto& mod_file_rel : mod_file_rels) {
@@ -28,10 +33,11 @@ void write_archive(const char* outname, const std::filesystem::path& mod_dir,
     bool is_dir = std::filesystem::is_directory(st);
 
     entry = archive_entry_new();
-    // WIN32 compatible
-    VAR_EQUAL_PATH_STR(mod_file_str, mod_file_rel)
-    archive_entry_set_pathname_utf8(entry,
-                                    GET_VAR_CSTR(mod_file_str, mod_file_rel));
+#ifdef _WIN32
+    archive_entry_copy_pathname_w(entry, mod_file_rel.c_str());
+#else
+    archive_entry_set_pathname(entry, mod_file_rel.c_str());
+#endif
     if (is_dir) {
       archive_entry_set_filetype(entry, AE_IFDIR);
     } else {
@@ -45,21 +51,24 @@ void write_archive(const char* outname, const std::filesystem::path& mod_dir,
     auto t = std::chrono::system_clock::to_time_t(sctp);
     archive_entry_set_mtime(entry, t, 0);
 
-    if (archive_write_header(a, entry) != ARCHIVE_OK) {
+    if ((r = archive_write_header(a, entry) != ARCHIVE_OK)) {
       fprintf(stderr, "%s\n", archive_error_string(a));
-      exit(1);
+      goto cleanup_l;
     }
     if (!is_dir) {
       std::ifstream f{mod_file, std::ios_base::binary};
       while (f.read(buff, sizeof(buff))) {
-        if (archive_write_data(a, buff, f.gcount()) < ARCHIVE_OK) {
+        if ((r = archive_write_data(a, buff, f.gcount()) < ARCHIVE_OK)) {
           fprintf(stderr, "%s\n", archive_error_string(a));
-          exit(1);
+          goto cleanup_l;
         }
       }
     }
+  cleanup_l:
     archive_entry_free(entry);
   }
+cleanup:
   archive_write_close(a);
   archive_write_free(a);
+  return r;
 }

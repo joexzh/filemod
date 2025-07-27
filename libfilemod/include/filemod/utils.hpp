@@ -8,6 +8,9 @@
 #include <filesystem>
 #include <string>
 #include <string_view>
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 // https://gcc.gnu.org/wiki/Visibility
 // Generic helper definitions for shared library support
@@ -87,16 +90,46 @@ constexpr size_t length_s(const char *str) noexcept {
   return strlen(str);
 }
 
-std::filesystem::path utf8str_to_path(std::string_view sv);
+#ifdef _WIN32
+FILEMOD_API std::filesystem::path utf8str_to_path(std::string_view sv);
 
-std::filesystem::path utf8str_to_path(std::string &&str);
+FILEMOD_API std::filesystem::path utf8str_to_path(std::string &&str);
 
-std::string path_to_utf8str(const std::filesystem::path &path);
+FILEMOD_API std::string path_to_utf8str(const std::filesystem::path &path);
 
 // convert utf-8 string to current system (Windows) code page
-std::string utf8str_to_current_cp(std::string_view sv);
+FILEMOD_API std::string utf8str_to_current_cp(std::string_view sv);
 
 // convert current system (Windows) code page to utf-8 string.
-std::string current_cp_to_utf8str(std::string_view sv);
+FILEMOD_API std::string current_cp_to_utf8str(std::string_view sv);
+
+// convert mbs of code page `cp` to wcs.
+FILEMOD_API std::wstring cp_to_wstr(std::string_view sv, UINT cp);
+
+// convert wcs to mbs of code page `cp`.
+FILEMOD_API std::string wstr_to_cp(std::wstring_view wsv, UINT cp);
+
+#else
+inline std::filesystem::path utf8str_to_path(std::string_view sv) {
+  return {sv};
+}
+
+inline std::filesystem::path utf8str_to_path(std::string &&str) {
+  return {std::move(str)};
+}
+
+inline const std::string &path_to_utf8str(const std::filesystem::path &path) {
+  return path.native();
+}
+
+#ifndef utf8str_to_current_cp
+#define utf8str_to_current_cp(str) str
+#endif
+
+#ifndef current_cp_to_utf8str
+#define current_cp_to_utf8str(str) str
+#endif
+
+#endif
 
 }  // namespace filemod

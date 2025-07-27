@@ -15,8 +15,9 @@
 #include "filemod/fs.hpp"
 #include "filemod/utils.hpp"
 
-void write_archive(const char* outname, const std::filesystem::path& mod_dir,
-                   const std::vector<std::filesystem::path>& mod_file_rels);
+int write_archive(const std::filesystem::path& outname,
+                  const std::filesystem::path& mod_dir,
+                  const std::vector<std::filesystem::path>& mod_file_rels);
 
 struct mod_obj {
   std::vector<std::string> file_rel_strs;

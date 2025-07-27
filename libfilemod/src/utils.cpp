@@ -4,7 +4,6 @@
 
 #include "filemod/utils.hpp"
 
-#include <cstring>
 #include <filesystem>
 
 #include "filemod/private/utils.hpp"
@@ -16,20 +15,15 @@ std::filesystem::path get_exe_dir() {
 }
 
 std::filesystem::path get_home_cfg_dir() {
-  std::string dir;
-
-  const char *home = get_home();
-
-  if (nullptr == home) {
+  std::filesystem::path dir = get_home();
+  if (dir.empty()) {
     return dir;
   }
 
-  dir.reserve(std::strlen(home) - 1 + length_s("/.config/") +
-              length_s(CONFIGDIR));
-  dir += home;
-  dir += "/.config/";
-  dir += CONFIGDIR;
-  return std::filesystem::path{dir};
+  dir /= ".config";
+  dir /= CONFIGDIR;
+
+  return dir;
 }
 
 std::filesystem::path get_config_dir() {

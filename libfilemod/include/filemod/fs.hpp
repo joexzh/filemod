@@ -101,7 +101,7 @@ class FS {
   // Return relative mod file paths.
   // Throws exception if `cfg_dir/target_id` not exists, or mod_dir not exists
   std::vector<std::filesystem::path> add_mod_base(
-      int64_t tar_id, const std::string &mod_name,
+      int64_t tar_id, const std::filesystem::path &mod_name,
       const std::filesystem::path &mod_src, copy_mod_t copy_mod);
 
   // Create symlinks from cfg_mod to tar_dir.

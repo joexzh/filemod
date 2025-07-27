@@ -2,7 +2,6 @@
 
 #include <filesystem>
 
-#include "filemod/fs_utils.hpp"
 #include "filemod/modder.hpp"
 #include "filemod/utils.hpp"
 #include "testhelper.hpp"
@@ -145,10 +144,8 @@ TEST_F(FilemodTest, add_mod_archive) {
   setlocale(LC_CTYPE, "en_US.UTF-8");
   // prepare archive
   std::filesystem::path archive_file{m_tmp_dir / "__archive.zip"};
-  // WIN32 compatible
-  VAR_EQUAL_PATH_STR(archive_file_str, archive_file)
-  write_archive(GET_VAR_CSTR(archive_file_str, archive_file), m_mod1_dir,
-                m_mod1_obj.file_rels());
+  int r = write_archive(archive_file, m_mod1_dir, m_mod1_obj.file_rels());
+  EXPECT_TRUE(r > -1);
 
   auto tar_ret = m_modder.add_target(m_game1_dir);
   auto mod_ret =
@@ -167,10 +164,8 @@ TEST_F(FilemodTest, install_path_archive) {
   setlocale(LC_CTYPE, "en_US.UTF-8");
   // prepare archive
   std::filesystem::path archive_file{m_tmp_dir / "__archive.zip"};
-  // WIN32 compatible
-  VAR_EQUAL_PATH_STR(archive_file_str, archive_file)
-  write_archive(GET_VAR_CSTR(archive_file_str, archive_file), m_mod1_dir,
-                m_mod1_obj.file_rels());
+  int r = write_archive(archive_file, m_mod1_dir, m_mod1_obj.file_rels());
+  EXPECT_TRUE(r > -1);
 
   auto tar_ret = m_modder.add_target(m_game1_dir);
   auto mod_ret =

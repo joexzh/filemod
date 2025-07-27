@@ -87,19 +87,23 @@ class modder {
    */
   FILEMOD_API result<int64_t> add_mod(int64_t tar_id,
                                       const std::filesystem::path& mod_dir_raw);
-
   /**
    * Reference:\n
    * @copydoc add_mod(int64_t,const std::filesystem::path&)
+   * @param tar_id
+   * @param mod_name require UTF-8 encoded
+   * @param mod_dir_raw
    */
   FILEMOD_API result<int64_t> add_mod(int64_t tar_id,
                                       const std::string& mod_name,
                                       const std::filesystem::path& mod_dir_raw);
 
   /**
-   * @brief Add mod from archive.
    * Reference:\n
    * @copydoc add_mod(int64_t,const std::filesystem::path&)
+   * @param tar_id
+   * @param mod_name require UTF-8 encoded
+   * @param path
    */
   FILEMOD_API result<int64_t> add_mod_a(int64_t tar_id,
                                         const std::string& mod_name,
@@ -169,16 +173,21 @@ class modder {
 
   /**
    * Reference:\n
-   * @copydoc install_from_mod_dir(int64_t,const std::filesystem::path&)
+   * @copydoc install_path(int64_t,const std::filesystem::path&)
+   * @param tar_id
+   * @param mod_name require UTF-8 encoded
+   * @param mod_dir_raw
    */
   FILEMOD_API result<int64_t> install_path(
       int64_t tar_id, const std::string& mod_name,
       const std::filesystem::path& mod_dir_raw);
 
   /**
-   * @brief Install from archive.
    * Reference:\n
-   * @copydoc install_from_mod_dir(int64_t,const std::filesystem::path&)
+   * @copydoc install_path(int64_t,const std::filesystem::path&)
+   * @param tar_id
+   * @param mod_name require UTF-8 encoded
+   * @param path
    */
   FILEMOD_API result<int64_t> install_path_a(int64_t tar_id,
                                              const std::string& mod_name,
@@ -187,7 +196,7 @@ class modder {
   /**
    * @brief Install from archive.
    * Reference:\n
-   * @copydoc install_from_mod_dir(int64_t,const std::filesystem::path&)
+   * @copydoc install_path(int64_t,const std::filesystem::path&)
    */
   FILEMOD_API result<int64_t> install_path_a(int64_t tar_id,
                                              const std::filesystem::path& path);

@@ -3,6 +3,7 @@
 
 #include "filemod/fs_archive.hpp"
 #include "filemod/modder.hpp"
+#include "filemod/utils.hpp"
 
 namespace filemod {
 
@@ -13,7 +14,7 @@ result<int64_t> modder::add_mod_a(int64_t tar_id, const std::string& mod_name,
 
 result<int64_t> modder::add_mod_a(int64_t tar_id,
                                   const std::filesystem::path& path) {
-  std::string mod_name{(*--path.end()).stem().string()};
+  std::string mod_name{path_to_utf8str((*--path.end()).stem())};
   return add_mod_a(tar_id, mod_name, path);
 }
 
@@ -25,7 +26,7 @@ result<int64_t> modder::install_path_a(int64_t tar_id,
 
 result<int64_t> modder::install_path_a(int64_t tar_id,
                                        const std::filesystem::path& path) {
-  std::string mod_name{(*--path.end()).stem().string()};
+  std::string mod_name{path_to_utf8str((*--path.end()).stem())};
   return install_path_a(tar_id, mod_name, path);
 }
 

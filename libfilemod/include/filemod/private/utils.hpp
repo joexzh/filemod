@@ -6,6 +6,6 @@ namespace filemod {
 
 std::filesystem::path getexepath();
 
-const char *get_home();
+std::filesystem::path get_home();
 
 }  // namespace filemod

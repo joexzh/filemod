@@ -11,7 +11,6 @@
 
 #include "filemod/fs.hpp"
 #include "filemod/fs_tx.hpp"
-#include "filemod/fs_utils.hpp"
 #include "filemod/sql.hpp"
 #include "filemod/utils.hpp"
 
@@ -48,9 +47,7 @@ static void set_fail(result_base& ret, std::string&& str) {
 static bool check_directory(result_base& ret,
                             const std::filesystem::path& path) {
   if (!std::filesystem::is_directory(path)) {
-    // WIN32 compatible
-    VAR_EQUAL_PATH_STR(path_str, path)
-    set_fail(ret, {ERR_NOT_DIR, ": '", GET_VAR_CSTR(path_str, path), "'"});
+    set_fail(ret, {ERR_NOT_DIR, ": '", path_to_utf8str(path).c_str(), "'"});
     return false;
   }
   return true;
@@ -58,9 +55,7 @@ static bool check_directory(result_base& ret,
 
 static bool check_exists(result_base& ret, const std::filesystem::path& path) {
   if (!std::filesystem::exists(path)) {
-    // WIN32 compatible
-    VAR_EQUAL_PATH_STR(path_str, path)
-    set_fail(ret, {ERR_NOT_EXISTS, ": '", GET_VAR_CSTR(path_str, path), "'"});
+    set_fail(ret, {ERR_NOT_EXISTS, ": '", path_to_utf8str(path).c_str(), "'"});
     return false;
   }
   return true;
@@ -155,17 +150,16 @@ result<int64_t> modder::add_mod_(int64_t tar_id, const std::string& mod_name,
     }
 
     auto mod_src = std::filesystem::absolute(mod_src_raw);
-    std::string utf8_mod_name = current_cp_to_utf8str(mod_name);
 
-    if (auto mod_ret = m_db.query_mod_by_targetid_dir(tar_id, utf8_mod_name);
+    if (auto mod_ret = m_db.query_mod_by_targetid_dir(tar_id, mod_name);
         mod_ret.success) {
       set_fail(ret, {"mod already exists, id: ",
                      std::to_string(mod_ret.data.id).c_str()});
       return ret;
     }
 
-    auto mod_file_rels =
-        m_fs.add_mod_base(tar_id, mod_name, mod_src, cp_mod_fn);
+    auto mod_file_rels = m_fs.add_mod_base(tar_id, utf8str_to_path(mod_name),
+                                           mod_src, cp_mod_fn);
 
     std::vector<std::string> mod_file_strs;
     mod_file_strs.reserve(mod_file_rels.size());
@@ -174,7 +168,7 @@ result<int64_t> modder::add_mod_(int64_t tar_id, const std::string& mod_name,
     }
 
     ret.data = m_db.insert_mod_w_files(
-        tar_id, utf8_mod_name, static_cast<int64_t>(ModStatus::Uninstalled),
+        tar_id, mod_name, static_cast<int64_t>(ModStatus::Uninstalled),
         mod_file_strs);
     return ret;
   });
@@ -189,7 +183,7 @@ result<int64_t> modder::add_mod(int64_t tar_id, const std::string& mod_name,
 
 result<int64_t> modder::add_mod(int64_t tar_id,
                                 const std::filesystem::path& mod_dir_raw) {
-  auto mod_name = (*--mod_dir_raw.end()).string();
+  std::string mod_name{path_to_utf8str(*--mod_dir_raw.end())};
   return add_mod(tar_id, mod_name, mod_dir_raw);
 }
 
@@ -308,7 +302,7 @@ result_base modder::install_target(int64_t tar_id) {
 
 result<int64_t> modder::install_path(int64_t tar_id,
                                      const std::filesystem::path& mod_dir_raw) {
-  std::string mod_name = (--mod_dir_raw.end())->string();
+  std::string mod_name{path_to_utf8str(*--mod_dir_raw.end())};
   return install_path(tar_id, mod_name, mod_dir_raw);
 }
 
@@ -554,7 +548,7 @@ static std::string _list_mods(const std::vector<ModDto>& mods,
 }
 
 std::string modder::list_mods(const std::vector<int64_t>& mod_ids) {
-  return utf8str_to_current_cp(_list_mods(query_mods(mod_ids), true));
+  return _list_mods(query_mods(mod_ids), true);
 }
 
 std::string modder::list_targets(const std::vector<int64_t>& tar_ids) {
@@ -571,6 +565,6 @@ std::string modder::list_targets(const std::vector<int64_t>& tar_ids) {
     ret += _list_mods(tar.ModDtos, false, 1);
   }
 
-  return utf8str_to_current_cp(ret);
+  return ret;
 }
 }  // namespace filemod

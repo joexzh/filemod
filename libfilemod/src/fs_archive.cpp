@@ -8,15 +8,9 @@
 #include <cstring>
 #include <memory>
 #include <stdexcept>
-#include <string>
 #include <vector>
 
-#include "filemod/fs_utils.hpp"
-#include "filemod/utils.hpp"
-
 namespace filemod {
-
-typedef std::unique_ptr<char[], void (*)(char *)> new_path_t;
 
 static int copy_data(archive *ar, archive *aw) {
   const void *buff;
@@ -40,12 +34,14 @@ static int copy_data(archive *ar, archive *aw) {
   return r;
 }
 
-// Extract absolute path `filename` to `destdir`, both are exist in disk.
-// Puts all absolute path of files and directories created on disk to
+// Extract absolute path `filepath` to `destdir`, both already exist in disk.
+// Outputs all absolute path of files and directories created on disk to
 // `outpaths`.
-static int extract(const char *filename, const char *destdir, size_t destsize,
-                   char *err, size_t errsize,
-                   std::vector<new_path_t> &outpaths) {
+// Require setting LC_CTYPE to utf8, e.g. `setlocale(LC_CTYPE, "en_US.UTF-8")`.
+static int extract(const std::filesystem::path &filepath,
+                   const std::filesystem::path &destdir, char *err,
+                   size_t errsize,
+                   std::vector<std::filesystem::path> &outpaths) {
   struct archive_entry *entry;
   int flags;
   int r;
@@ -73,11 +69,16 @@ static int extract(const char *filename, const char *destdir, size_t destsize,
   archive_write_disk_set_options(ext.get(), flags);
   archive_write_disk_set_standard_lookup(ext.get());
 
-  r = archive_read_open_filename(a.get(), filename, 10240);
+#ifdef _WIN32
+  r = archive_read_open_filename_w(a.get(), filepath.c_str(), 10240);
+#else
+  r = archive_read_open_filename(a.get(), filepath.c_str(), 10240);
+#endif
   if (r != ARCHIVE_OK) {
     strncpy(err, archive_error_string(a.get()), errsize);
     return r;
   }
+
   while (true) {
     r = archive_read_next_header(a.get(), &entry);
     if (r == ARCHIVE_EOF) {
@@ -88,17 +89,22 @@ static int extract(const char *filename, const char *destdir, size_t destsize,
       break;
     }
 
+#ifdef _WIN32
+    const wchar_t *original_path = archive_entry_pathname_w(entry);
+#else
     const char *original_path = archive_entry_pathname(entry);
+#endif
     if (!original_path) {
       r = ARCHIVE_FATAL;
       strncpy(err, archive_error_string(a.get()), errsize);
       break;
     }
-    size_t pathlen = destsize + strlen(original_path) + 2;
-    std::unique_ptr<char[], void (*)(char *)> newpath{
-        new char[pathlen], [](char *p) { delete[] p; }};
-    snprintf(newpath.get(), pathlen, "%s/%s", destdir, original_path);
-    archive_entry_set_pathname_utf8(entry, newpath.get());
+    std::filesystem::path newpath{destdir / original_path};
+#ifdef _WIN32
+    archive_entry_copy_pathname_w(entry, newpath.c_str());
+#else
+    archive_entry_set_pathname(entry, newpath.c_str());
+#endif
 
     r = archive_write_header(ext.get(), entry);
     if (r < ARCHIVE_OK && r != ARCHIVE_WARN) {
@@ -106,17 +112,15 @@ static int extract(const char *filename, const char *destdir, size_t destsize,
       break;
     }
 
+    // maybe half write, so log regular file no matter what
+    outpaths.push_back(std::move(newpath));
+
     if (archive_entry_size(entry) > 0) {
-      // maybe half write, so log regular file no matter what
-      outpaths.push_back(std::move(newpath));
       r = copy_data(a.get(), ext.get());
       if (r < ARCHIVE_OK && r != ARCHIVE_WARN) {
         strncpy(err, archive_error_string(ext.get()), errsize);
         break;
       }
-    } else {
-      // log directory
-      outpaths.push_back(std::move(newpath));
     }
 
     r = archive_write_finish_entry(ext.get());
@@ -131,24 +135,15 @@ static int extract(const char *filename, const char *destdir, size_t destsize,
 std::vector<std::filesystem::path> copy_mod_a(
     const std::filesystem::path &filepath, const std::filesystem::path &destdir,
     rec_man *recman) {
-  std::vector<new_path_t> outpaths;
+  std::vector<std::filesystem::path> outpaths;
   char err[512];
-  // WIN32 compatible
-  VAR_EQUAL_PATH_STR(destdir_str, destdir)
-  VAR_EQUAL_PATH_STR(filepath_str, filepath)
-  size_t destsize = strlen(GET_VAR_CSTR(destdir_str, destdir));
 
-  int r = extract(GET_VAR_CSTR(filepath_str, filepath),
-                  GET_VAR_CSTR(destdir_str, destdir), destsize, err,
-                  sizeof(err), outpaths);
+  int r = extract(filepath, destdir, err, sizeof(err), outpaths);
 
-  std::sort(
-      outpaths.begin(), outpaths.end(), [](new_path_t &ptr1, new_path_t &ptr2) {
-        return std::string_view{ptr1.get()} < std::string_view{ptr2.get()};
-      });
+  std::sort(outpaths.begin(), outpaths.end());
   if (recman) {
     for (auto &outpath : outpaths) {
-      recman->log_create(std::filesystem::path{outpath.get()});
+      recman->log_create(outpath);
     }
   }
 
@@ -159,7 +154,7 @@ std::vector<std::filesystem::path> copy_mod_a(
   std::vector<std::filesystem::path> mod_file_rels{};
   mod_file_rels.reserve(outpaths.size());
   for (auto &outpath : outpaths) {
-    mod_file_rels.emplace_back(relative_path(destsize, outpath.get()));
+    mod_file_rels.push_back(std::filesystem::relative(outpath, destdir));
   }
 
   return mod_file_rels;
