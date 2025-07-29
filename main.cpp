@@ -241,7 +241,7 @@ static void parse_rename(filemod::result_base &ret, std::ostringstream &oss,
       "Usage: filemod rename -m <mod_id> -n <newname>\n"
       "Options");
   desc.add_options()("mid,m", po::value<int64_t>(&mid), "mod id")(
-      "name,n", po::value<std::string>(&newname), "new mod name");
+      "name,n", po::value<std::string>(&newname), "new mod name")("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
 
@@ -260,9 +260,9 @@ static int parse(int argc, char *argv[]) {
 
   po::options_description visible(
       "filemod is a file replacement manager.\n"
-      "Usage: filemod --help [<command> <args>]\n"
+      "Usage: filemod <command> <args>\n"
       " Commands: add | install | uninstall | remove | list | rename\n"
-      " filemod <command> --help to show command help."
+      " filemod <command> --help to show command help.\n"
       "Common Options");
   visible.add_options()("help,h", "")("version,v", "");
 

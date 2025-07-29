@@ -4,7 +4,6 @@
 #include <filesystem>
 
 #include "filemod/fs_utils.hpp"
-#include "filemod/utils.hpp"
 #include "ranges"
 
 namespace filemod {
@@ -24,12 +23,9 @@ void fsman::revert() {
     try {
       recptr->revert();
     } catch (std::filesystem::filesystem_error &ex) {
-      std::fprintf(stderr, "revert: %s, src: %s, dest: %s, err msg: %s\n",
-                   ex.what(), path_to_utf8str(ex.path1()).c_str(),
-                   path_to_utf8str(ex.path2()).c_str(),
-                   ex.code().message().c_str());
+      std::fprintf(stderr, "revert error: %s\n", ex.what());
     } catch (std::exception &ex) {
-      std::fprintf(stderr, "%s\n", ex.what());
+      std::fprintf(stderr, "revert error: %s\n", ex.what());
     };
   }
 }

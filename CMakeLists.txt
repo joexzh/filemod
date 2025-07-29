@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-set(FILEMOD_VERSION 0.0.2)
+set(FILEMOD_VERSION 0.0.3)
 project(filemod VERSION ${FILEMOD_VERSION})
 set(CMAKE_CXX_STANDARD 20)
 
