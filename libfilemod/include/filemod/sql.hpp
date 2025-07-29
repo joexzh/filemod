@@ -19,16 +19,16 @@ enum class ModStatus {
 struct [[nodiscard]] ModDto {
   int64_t id;
   int64_t tar_id;
-  std::string dir;
+  std::string dir{};
   ModStatus status;
-  std::vector<std::string> files;
-  std::vector<std::string> bak_files;
+  std::vector<std::string> files{};
+  std::vector<std::string> bak_files{};
 };
 
 struct [[nodiscard]] TargetDto {
   int64_t id;
-  std::string dir;
-  std::vector<ModDto> ModDtos;
+  std::string dir{};
+  std::vector<ModDto> ModDtos{};
 };
 
 class DB {
@@ -84,6 +84,8 @@ class DB {
   void install_mod(int64_t id, const std::vector<std::string> &backup_files);
 
   void uninstall_mod(int64_t id);
+
+  int rename_mod(int64_t mid, const std::string &newname);
 
  private:
   // db wrapper

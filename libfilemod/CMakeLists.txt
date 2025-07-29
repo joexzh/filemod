@@ -9,6 +9,7 @@ find_package(LibArchive REQUIRED)
 set(${PROJECT_NAME}_src
     src/fs.cpp
     src/fs_archive.cpp
+    src/fs_manager.cpp
     src/fs_tx.cpp
     src/fs_utils.cpp
     src/modder.cpp
@@ -33,7 +34,7 @@ target_sources(${PROJECT_NAME}
         FILES
             include/filemod/modder.hpp
             include/filemod/fs.hpp
-            include/filemod/fs_rec.hpp
+            include/filemod/fs_manager.hpp
             include/filemod/fs_tx.hpp
             include/filemod/sql.hpp
             include/filemod/utils.hpp

@@ -7,7 +7,7 @@
 #include <filesystem>
 #include <vector>
 
-#include "filemod/fs_rec.hpp"
+#include "filemod/fs_manager.hpp"
 
 namespace filemod {
 
@@ -19,13 +19,14 @@ const char TMP_EXTRACTED[] = "___extracted";
 // internal transaction scope
 class tx_scope {
  public:
-  explicit tx_scope(tx_scope *parent) : m_parent{parent} {}
+  explicit tx_scope(tx_scope *parent, bool log = true)
+      : m_fsman{log}, m_parent{parent} {}
 
   tx_scope &new_child() { return m_children.emplace_back(this); }
 
   tx_scope *parent() { return m_parent; }
 
-  rec_man &get_rec_man() { return m_rec_man; }
+  fsman &get_fsman() { return m_fsman; }
 
   // unused
   void commit();
@@ -36,23 +37,23 @@ class tx_scope {
 
  private:
   std::vector<tx_scope> m_children;
-  rec_man m_rec_man;
+  fsman m_fsman;
   tx_scope *const m_parent = nullptr;
   bool m_rollbacked = false;
 };
 
 // param 1: mod source.
 // param 2: mod destination.
-// param 3: rec_man*.
+// param 3: rec_man&.
 // return : newly added relative mod file paths.
 using copy_mod_t = std::vector<std::filesystem::path> (*)(
-    const std::filesystem::path &, const std::filesystem::path &, rec_man *);
+    const std::filesystem::path &, const std::filesystem::path &, fsman &);
 
 // Default copy function used by `add_mod`.
 // Copy files from `mod_dir` to `cfg_mod`.
 std::vector<std::filesystem::path> copy_mod(
     const std::filesystem::path &mod_dir, const std::filesystem::path &cfg_mod,
-    rec_man *recman);
+    fsman &fsman);
 
 class fs_tx;
 
@@ -127,6 +128,9 @@ class FS {
   // Delete cfg_dir/<tar_id> and log all changes
   void remove_target(int64_t tar_id);
 
+  void rename_mod(int64_t tar_id, const std::filesystem::path &oldname,
+                  const std::filesystem::path &newname);
+
   std::filesystem::path get_cfg_tar(int64_t tar_id) {
     return m_cfg_dir / std::to_string(tar_id);
   }
@@ -138,41 +142,8 @@ class FS {
 
  private:
   const std::filesystem::path m_cfg_dir;
-  tx_scope m_root_scope{nullptr};
-  tx_scope *m_curr_scope = nullptr;
-
-  friend fs_tx;
-
-  void log_create_(const std::filesystem::path &dest) {
-    if (m_curr_scope) {
-      m_curr_scope->get_rec_man().log_create(dest);
-    }
-  }
-
-  void log_move_(const std::filesystem::path &src,
-                 const std::filesystem::path &dest) {
-    if (m_curr_scope) {
-      m_curr_scope->get_rec_man().log_mv(src, dest);
-    }
-  }
-
-  void log_copy_(const std::filesystem::path &dest) {
-    if (m_curr_scope) {
-      m_curr_scope->get_rec_man().log_cp(dest);
-    }
-  }
-
-  void log_rm_(const std::filesystem::path &dest) {
-    if (m_curr_scope) {
-      m_curr_scope->get_rec_man().log_rm(dest);
-    }
-  }
-
-  void create_directory_(const std::filesystem::path &dir) {
-    if (std::filesystem::create_directory(dir)) {
-      log_create_(dir);
-    }
-  }
+  tx_scope m_root_scope{nullptr, false};
+  tx_scope *m_curr_scope = &m_root_scope;
 
   void move_file_(const std::filesystem::path &src_file,
                   const std::filesystem::path &dest_file,
@@ -184,8 +155,7 @@ class FS {
       const std::filesystem::path &tar_dir,
       const std::vector<std::filesystem::path> &tar_files);
 
-  void delete_empty_dirs_(
-      const std::vector<std::filesystem::path> &sorted_dirs);
+  void delete_empty_dirs_(std::vector<std::filesystem::path> &&sorted_dirs);
 
   void move_mod_files_(
       const std::filesystem::path &src_dir,
@@ -197,6 +167,8 @@ class FS {
 
   // Proxy function for `fs_tx`.
   void end_tx_();
+
+  friend fs_tx;
 
 };  // class FS
 }  // namespace filemod

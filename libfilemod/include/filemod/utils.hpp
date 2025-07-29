@@ -56,12 +56,12 @@ namespace filemod {
 
 struct result_base {
   bool success;
-  std::string msg;
+  std::string msg{};
 };
 
 template <typename T>
 struct result : result_base {
-  T data;
+  T data{};
 };
 
 const char UnSupportedOS[] = "Unsupported OS!";

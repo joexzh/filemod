@@ -141,7 +141,6 @@ TEST_F(FilemodTest, remove_target) {
 
 // test add_mod from archive
 TEST_F(FilemodTest, add_mod_archive) {
-  setlocale(LC_CTYPE, "en_US.UTF-8");
   // prepare archive
   std::filesystem::path archive_file{m_tmp_dir / "__archive.zip"};
   int r = write_archive(archive_file, m_mod1_dir, m_mod1_obj.file_rels());
@@ -161,7 +160,6 @@ TEST_F(FilemodTest, add_mod_archive) {
 
 // test install_path from archive
 TEST_F(FilemodTest, install_path_archive) {
-  setlocale(LC_CTYPE, "en_US.UTF-8");
   // prepare archive
   std::filesystem::path archive_file{m_tmp_dir / "__archive.zip"};
   int r = write_archive(archive_file, m_mod1_dir, m_mod1_obj.file_rels());
@@ -180,5 +178,23 @@ TEST_F(FilemodTest, install_path_archive) {
 
   EXPECT_EQ(filemod::ModStatus::Installed, mod.status);
   auto it = std::filesystem::recursive_directory_iterator(m_game1_dir);
+  EXPECT_EQ(m_mod1_obj.file_rel_strs.size(), std::distance(begin(it), end(it)));
+}
+
+// test rename mod
+TEST_F(FilemodTest, test_rename_mod) {
+  auto tar_ret = m_modder.add_target(m_game1_dir);
+  auto mod_ret = m_modder.add_mod(tar_ret.data, m_mod1_dir);
+  std::string newname{"السلام عليكم"};
+
+  auto rename_ret = m_modder.rename_mod(mod_ret.data, newname);
+  EXPECT_TRUE(rename_ret.success);
+
+  auto mods = m_modder.query_mods({mod_ret.data});
+  EXPECT_EQ(newname, mods[0].dir);
+
+  auto it = std::filesystem::recursive_directory_iterator(
+      m_cfg_dir / std::to_string(tar_ret.data) /=
+      filemod::utf8str_to_path(newname));
   EXPECT_EQ(m_mod1_obj.file_rel_strs.size(), std::distance(begin(it), end(it)));
 }

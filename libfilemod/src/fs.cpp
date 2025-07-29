@@ -9,8 +9,7 @@
 #include <stdexcept>
 #include <system_error>
 
-#include "filemod/fs_rec.hpp"
-#include "filemod/fs_utils.hpp"
+#include "filemod/fs_manager.hpp"
 
 namespace filemod {
 
@@ -23,39 +22,20 @@ void tx_scope::rollback() {
     child.rollback();
   }
 
-  for (const auto &rec : std::ranges::reverse_view(m_rec_man.chg_recs())) {
-    switch (rec.act) {
-      case fs_action::create:
-      case fs_action::cp:
-        std::filesystem::remove(rec.dest);
-        break;
-      case fs_action::mv:
-        std::filesystem::create_directories(rec.src.parent_path());
-        cross_filesystem_rename(rec.dest, rec.src);
-        break;
-      case fs_action::rm:
-        std::filesystem::create_directories(rec.dest);
-        break;
-    }
-  }
-
+  m_fsman.revert();
   m_rollbacked = true;
 }
 
-void tx_scope::reset() {
-  m_children.clear();
-  m_rec_man.reset();
-  m_rollbacked = false;
-}
+void tx_scope::reset() { m_children.clear(); }
 
-static void validate_dir_exist(const std::filesystem::path &dir) {
+static void check_dir_exist(const std::filesystem::path &dir) {
   if (!std::filesystem::is_directory(dir)) {
     throw std::runtime_error((std::string{"dir not exist"} += ": ") +=
                              dir.string());
   }
 }
 
-static void validate_dir_not_exist(const std::filesystem::path &dir) {
+static void check_dir_not_exist(const std::filesystem::path &dir) {
   if (std::filesystem::is_directory(dir)) {
     throw std::runtime_error((std::string{"dir already exist"} += ": ") +=
                              dir.string());
@@ -88,7 +68,7 @@ inline static void visit_through_path(const std::filesystem::path &path_rel,
   std::filesystem::path dir{base_dir};
   for (const auto &each : path_rel) {
     dir /= each;
-    f(dir);
+    f(const_cast<const std::filesystem::path &>(dir));
   }
 }
 
@@ -104,28 +84,23 @@ FS::~FS() noexcept {
 
 void FS::create_target(int64_t tar_id) {
   // create new folder named tar_id
-  create_directory_(get_cfg_tar(tar_id));
+  m_curr_scope->get_fsman().create_d(get_cfg_tar(tar_id));
 }
 
 std::vector<std::filesystem::path> copy_mod(
     const std::filesystem::path &mod_dir, const std::filesystem::path &cfg_mod,
-    rec_man *recman) {
+    fsman &fsman) {
   std::vector<std::filesystem::path> mod_file_rels;
   // copy from src to dest folder
-  for (auto const &mod_file :
+  for (auto &mod_file :
        std::filesystem::recursive_directory_iterator(mod_dir)) {
     auto mod_file_rel = std::filesystem::relative(mod_file, mod_dir);
     auto cfg_mod_file = cfg_mod / mod_file_rel;
 
     if (mod_file.is_directory()) {
-      if (std::filesystem::create_directory(cfg_mod_file) && recman) {
-        recman->log_create(std::move(cfg_mod_file));
-      }
+      fsman.create_d(std::move(cfg_mod_file));
     } else {
-      std::filesystem::copy(mod_file, cfg_mod_file);
-      if (recman) {
-        recman->log_cp(std::move(cfg_mod_file));
-      }
+      fsman.cp_f(mod_file.path(), std::move(cfg_mod_file));
     }
 
     mod_file_rels.push_back(mod_file_rel);
@@ -143,15 +118,14 @@ std::vector<std::filesystem::path> FS::add_mod(
 std::vector<std::filesystem::path> FS::add_mod_base(
     int64_t tar_id, const std::filesystem::path &mod_name,
     const std::filesystem::path &mod_src, copy_mod_t copy_mod) {
-  auto cfg_mod = get_cfg_mod(tar_id, mod_name);
+  const auto cfg_mod = get_cfg_mod(tar_id, mod_name);
 
-  validate_dir_exist(cfg_mod.parent_path());
-  validate_dir_not_exist(cfg_mod);
+  check_dir_exist(cfg_mod.parent_path());
+  check_dir_not_exist(cfg_mod);
 
-  create_directory_(cfg_mod);
+  m_curr_scope->get_fsman().create_d(cfg_mod);
 
-  rec_man *recman = m_curr_scope ? &m_curr_scope->get_rec_man() : nullptr;
-  return copy_mod(mod_src, cfg_mod, recman);
+  return copy_mod(mod_src, cfg_mod, m_curr_scope->get_fsman());
 }
 
 std::vector<std::filesystem::path> FS::backup_files_(
@@ -163,8 +137,8 @@ std::vector<std::filesystem::path> FS::backup_files_(
     return bak_file_rels;
   }
 
-  auto bak_dir = get_bak_dir(cfg_mod.parent_path());
-  create_directory_(bak_dir);
+  const auto bak_dir = get_bak_dir(cfg_mod.parent_path());
+  m_curr_scope->get_fsman().create_d(bak_dir);
 
   for (auto &tar_file : tar_files) {
     auto tar_file_rel = std::filesystem::relative(tar_file, tar_dir);
@@ -188,10 +162,10 @@ std::vector<std::filesystem::path> FS::install_mod(
     auto mod_file_rel = std::filesystem::relative(cfg_mod_file.path(), cfg_mod);
     auto tar_file = tar_dir / mod_file_rel;
     if (cfg_mod_file.is_directory()) {
-      create_directory_(tar_file);
+      m_curr_scope->get_fsman().create_d(std::move(tar_file));
     } else {
-      std::filesystem::create_symlink(cfg_mod_file.path(), tar_file);
-      log_create_(tar_file);
+      m_curr_scope->get_fsman().create_s(cfg_mod_file.path(),
+                                         std::move(tar_file));
     }
   }
 
@@ -236,7 +210,7 @@ void FS::move_mod_files_(
     }
   }
 
-  delete_empty_dirs_(sorted_dirs);
+  delete_empty_dirs_(std::move(sorted_dirs));
 }
 
 void FS::move_file_(const std::filesystem::path &src_file,
@@ -244,10 +218,11 @@ void FS::move_file_(const std::filesystem::path &src_file,
                     const std::filesystem::path &dest_dir) {
   visit_through_path(
       std::filesystem::relative(dest_file.parent_path(), dest_dir), dest_dir,
-      [&](auto &visited_dir) { create_directory_(visited_dir); });
+      [&](const auto &visited_dir) {
+        m_curr_scope->get_fsman().create_d(visited_dir);
+      });
 
-  cross_filesystem_rename(src_file, dest_file);
-  log_move_(src_file, dest_file);
+  m_curr_scope->get_fsman().mv_f(src_file, dest_file);
 }
 
 void FS::remove_mod(const std::filesystem::path &cfg_mod) {
@@ -272,7 +247,7 @@ void FS::remove_mod(const std::filesystem::path &cfg_mod) {
     }
   }
 
-  delete_empty_dirs_(sorted_dirs);
+  delete_empty_dirs_(std::move(sorted_dirs));
 }
 
 void FS::remove_target(int64_t tar_id) {
@@ -280,28 +255,30 @@ void FS::remove_target(int64_t tar_id) {
   delete_empty_dirs_({cfg_tar, cfg_tar / BACKUP_DIR});
 }
 
-void FS::delete_empty_dirs_(
-    const std::vector<std::filesystem::path> &sorted_dirs) {
-  for (auto sorted_dir_iter = sorted_dirs.crbegin();
-       sorted_dir_iter != sorted_dirs.crend(); ++sorted_dir_iter) {
-    std::error_code dummy;
-    if (std::filesystem::remove(*sorted_dir_iter, dummy)) {
-      log_rm_(*sorted_dir_iter);
-    }
+void FS::rename_mod(int64_t tar_id, const std::filesystem::path &oldname,
+                    const std::filesystem::path &newname) {
+  auto oldpath = get_cfg_mod(tar_id, oldname);
+  auto newpath = get_cfg_mod(tar_id, newname);
+  check_dir_exist(oldpath);
+
+  if (oldpath.parent_path() != newpath.parent_path()) {
+    throw std::runtime_error{"rename mod error: Parent not the same"};
+  }
+
+  m_curr_scope->get_fsman().rename_d(std::move(oldpath), std::move(newpath));
+}
+
+void FS::delete_empty_dirs_(std::vector<std::filesystem::path> &&sorted_dirs) {
+  for (auto &sorted_dir : std::ranges::reverse_view(sorted_dirs)) {
+    m_curr_scope->get_fsman().rm_d(std::move(sorted_dir));
   }
 }
 
-void FS::begin_tx_() {
-  if (!m_curr_scope) {
-    m_curr_scope = &m_root_scope;
-  } else {
-    m_curr_scope = &m_curr_scope->new_child();
-  }
-}
+void FS::begin_tx_() { m_curr_scope = &m_curr_scope->new_child(); }
 
 void FS::end_tx_() {
   m_curr_scope = m_curr_scope->parent();
-  if (!m_curr_scope) {
+  if (m_curr_scope == &m_root_scope) {
     m_root_scope.reset();
   }
 }

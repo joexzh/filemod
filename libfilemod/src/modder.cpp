@@ -567,4 +567,27 @@ std::string modder::list_targets(const std::vector<int64_t>& tar_ids) {
 
   return ret;
 }
+
+result_base modder::rename_mod(int64_t mid, const std::string& newname) {
+  result_base ret;
+
+  tx_wrapper_([&]() -> auto& {
+    auto query_ret = m_db.query_mod(mid);
+    if (!query_ret.success) {
+      set_fail(ret, {ERR_MOD_NOT_EXIST, ": ", std::to_string(mid).c_str()});
+      return ret;
+    }
+    auto& oldmod = query_ret.data;
+    m_db.rename_mod(mid, newname);
+
+    m_fs.rename_mod(oldmod.tar_id, utf8str_to_path(std::move(oldmod.dir)),
+                    utf8str_to_path(newname));
+
+    set_succeed(ret);
+    return ret;
+  });
+
+  return ret;
+}
+
 }  // namespace filemod

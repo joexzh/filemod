@@ -104,6 +104,7 @@ class modder {
    * @param tar_id
    * @param mod_name require UTF-8 encoded
    * @param path
+   * @attention Require setting LC_CTYPE to UTF-8, e.g. `setlocale(LC_CTYPE,
    */
   FILEMOD_API result<int64_t> add_mod_a(int64_t tar_id,
                                         const std::string& mod_name,
@@ -113,6 +114,7 @@ class modder {
    * @brief Add mod fro archive.
    * Reference:\n
    * @copydoc add_mod(int64_t,const std::filesystem::path&)
+   * @attention Require setting LC_CTYPE to UTF-8, e.g. `setlocale(LC_CTYPE,
    */
   FILEMOD_API result<int64_t> add_mod_a(int64_t tar_id,
                                         const std::filesystem::path& path);
@@ -185,6 +187,8 @@ class modder {
   /**
    * Reference:\n
    * @copydoc install_path(int64_t,const std::filesystem::path&)
+   * @attention Require setting LC_CTYPE to UTF-8, e.g. `setlocale(LC_CTYPE,
+   * "en_US.UTF-8")`.
    * @param tar_id
    * @param mod_name require UTF-8 encoded
    * @param path
@@ -197,6 +201,7 @@ class modder {
    * @brief Install from archive.
    * Reference:\n
    * @copydoc install_path(int64_t,const std::filesystem::path&)
+   * @attention Require setting LC_CTYPE to UTF-8, e.g. `setlocale(LC_CTYPE,
    */
   FILEMOD_API result<int64_t> install_path_a(int64_t tar_id,
                                              const std::filesystem::path& path);
@@ -308,6 +313,15 @@ class modder {
    */
   FILEMOD_API std::string list_targets(const std::vector<int64_t>& tar_ids);
 
+  /**
+   * @brief Rename mod.
+   * Rename mod directory to `newname` and modify database record.
+   * @param mid
+   * @param newname require UTF-8 encoded. DO NOT pass a directory!
+   * @return result_base
+   */
+  FILEMOD_API result_base rename_mod(int64_t mid, const std::string& newname);
+
  private:
   FS m_fs;  // ORDER DEPENDENCY
   DB m_db;  // ORDER DEPENDENCY
@@ -332,4 +346,5 @@ class modder {
 
   result_base remove_mod_(int64_t mod_id);
 };  // class modder
+
 }  // namespace filemod

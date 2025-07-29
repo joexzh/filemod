@@ -4,7 +4,7 @@
 
 namespace filemod {
 
-void cross_filesystem_rename(const std::filesystem::path &src,
-                             const std::filesystem::path &desc);
+void cross_filesystem_mv(const std::filesystem::path &src,
+                         const std::filesystem::path &dest);
 
 }  // namespace filemod

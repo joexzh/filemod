@@ -15,6 +15,7 @@ endif
 libfilemod_src = [
     'src/fs.cpp',
     'src/fs_archive.cpp',
+    'src/fs_manager.cpp',
     'src/fs_tx.cpp',
     'src/fs_utils.cpp',
     'src/modder.cpp',
@@ -56,9 +57,9 @@ if libfilemod_shared
     libfilemod_static_dep = declare_dependency(
         link_with: libfilemod_static,
         include_directories: libfilemod_inc,
-        dependencies: [libarchive_dep]
+        dependencies: [libarchive_dep],
     )
-    
+
 else
     libfilemod_static_dep = libfilemod_dep
 endif

@@ -14,6 +14,9 @@
 
 #include "filemod/fs.hpp"
 #include "filemod/utils.hpp"
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 int write_archive(const std::filesystem::path& outname,
                   const std::filesystem::path& mod_dir,
@@ -50,6 +53,13 @@ struct mod_obj {
 
 class PathHelper : public testing::Test {
  public:
+  PathHelper() {
+    setlocale(LC_CTYPE, "en_US.UTF-8");
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+  }
+
  protected:
   const std::filesystem::path m_db_path{":memory:"};
   const std::filesystem::path m_tmp_dir{std::filesystem::temp_directory_path() /

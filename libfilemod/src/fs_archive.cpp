@@ -134,17 +134,15 @@ static int extract(const std::filesystem::path &filepath,
 
 std::vector<std::filesystem::path> copy_mod_a(
     const std::filesystem::path &filepath, const std::filesystem::path &destdir,
-    rec_man *recman) {
+    fsman &fsman) {
   std::vector<std::filesystem::path> outpaths;
   char err[512];
 
   int r = extract(filepath, destdir, err, sizeof(err), outpaths);
 
   std::sort(outpaths.begin(), outpaths.end());
-  if (recman) {
-    for (auto &outpath : outpaths) {
-      recman->log_create(outpath);
-    }
+  for (const auto &outpath : outpaths) {
+    fsman.log_create(outpath);
   }
 
   if (r < ARCHIVE_OK && r != ARCHIVE_WARN) {

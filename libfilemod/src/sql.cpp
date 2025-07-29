@@ -70,6 +70,8 @@ static const char QUERY_TARGET_MODS[] =
     "select t.id, t.dir, m.id, m.dir, m.status from target t left join mod m "
     "on t.id = m.target_id";
 
+constexpr char RENAME_MOD[] = "update mod set dir=? where id=?";
+
 static constexpr std::string buildstr_query_targets_mods(size_t size) {
   std::string str{QUERY_TARGET_MODS};
   if (size) {
@@ -527,4 +529,12 @@ void DB::uninstall_mod(int64_t id) {
   delete_backup_files_(id);
   tx.release();
 }
+
+int DB::rename_mod(int64_t mid, const std::string &newname) {
+  SQLite::Statement stmt{m_dr->db, RENAME_MOD};
+  stmt.bindNoCopy(1, newname);
+  stmt.bind(2, mid);
+  return stmt.exec();
+}
+
 }  // namespace filemod

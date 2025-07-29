@@ -11,6 +11,9 @@
 #include <string>
 #include <vector>
 
+#include "boost/program_options/options_description.hpp"
+#include "boost/program_options/parsers.hpp"
+
 #ifdef _WIN32
 #include <Windows.h>
 
@@ -209,20 +212,20 @@ static void parse_remove(filemod::result_base &ret, std::ostringstream &oss,
 static void parse_list(filemod::result_base &ret, std::ostringstream &oss,
                        po::basic_parsed_options<char> &parsed,
                        po::variables_map &vm, std::vector<int64_t> &ids) {
-  po::options_description list_desc(
+  po::options_description desc(
       "display target(s) and mod(s) in database\n"
       "Usage: filemod list [-t <target_id1> [target_id2] ...]\n"
       "       filemod list -m <mod_id1> [mod_id2] ...\n"
       "Options");
-  list_desc.add_options()(
+  desc.add_options()(
       "tid,t", po::value<std::vector<int64_t>>(&ids)->multitoken(),
       "target ids")("mid,m", po::value<std::vector<int64_t>>()->multitoken(),
                     "mod ids")("help,h", "");
-  parse_subcmd(list_desc, parsed, vm);
+  parse_subcmd(desc, parsed, vm);
   filemod::modder md;
 
   if (vm.count("help")) {
-    oss << list_desc;
+    oss << desc;
   } else if (vm.count("mid")) {  // list mods
     ret.msg = md.list_mods(vm["mid"].as<std::vector<int64_t>>());
   } else {  // list targets
@@ -230,29 +233,51 @@ static void parse_list(filemod::result_base &ret, std::ostringstream &oss,
   }
 }
 
-int parse(int argc, char *argv[]) {
+static void parse_rename(filemod::result_base &ret, std::ostringstream &oss,
+                         po::parsed_options &parsed, po::variables_map &vm,
+                         int64_t &mid, std::string &newname) {
+  po::options_description desc(
+      "rename mod\n"
+      "Usage: filemod rename -m <mod_id> -n <newname>\n"
+      "Options");
+  desc.add_options()("mid,m", po::value<int64_t>(&mid), "mod id")(
+      "name,n", po::value<std::string>(&newname), "new mod name");
+  parse_subcmd(desc, parsed, vm);
+  filemod::modder md;
+
+  if (vm.count("help")) {
+    oss << desc;
+  } else if (vm.count("mid") && vm.count("name")) {
+    ret = md.rename_mod(mid, newname);
+  } else {
+    parse_error(desc, oss, ret);
+  }
+}
+
+static int parse(int argc, char *argv[]) {
   filemod::result_base ret{.success = true};
   std::ostringstream oss;
 
-  po::options_description global_desc(
+  po::options_description visible(
       "filemod is a file replacement manager.\n"
-      "Usage: filemod <command> [<args>]\n"
-      "Commands: add | install | uninstall | remove | list\n"
-      "Global Options");
-  global_desc.add_options()("help,h", "")("version,v", "");
+      "Usage: filemod --help [<command> <args>]\n"
+      " Commands: add | install | uninstall | remove | list | rename\n"
+      " filemod <command> --help to show command help."
+      "Common Options");
+  visible.add_options()("help,h", "")("version,v", "");
 
   po::options_description hidden("command");
   hidden.add_options()("command", po::value<std::string>(), "")(
       "subargs", po::value<std::vector<std::string>>(), "");
 
-  po::options_description global_cmd_desc;
-  global_cmd_desc.add(global_desc).add(hidden);
+  po::options_description all;
+  all.add(visible).add(hidden);
 
   po::positional_options_description subcmd;
   subcmd.add("command", 1).add("subargs", -1);
 
   auto parsed = po::command_line_parser(argc, argv)
-                    .options(global_cmd_desc)
+                    .options(all)
                     .positional(subcmd)
                     .allow_unregistered()
                     .run();
@@ -278,15 +303,17 @@ int parse(int argc, char *argv[]) {
       parse_remove(ret, oss, parsed, vm, id, ids);
     } else if ("list" == cmd) {
       parse_list(ret, oss, parsed, vm, ids);
+    } else if ("rename" == cmd) {
+      parse_rename(ret, oss, parsed, vm, id, name);
     } else {
-      parse_error(global_desc, oss, ret);
+      parse_error(visible, oss, ret);
     }
   } else if (vm.count("help")) {
-    oss << global_desc;
+    oss << visible;
   } else if (vm.count("version")) {
     ret.msg = STRINGIFY(FILEMOD_VERSION);
   } else {
-    parse_error(global_desc, oss, ret);
+    parse_error(visible, oss, ret);
   }
 
   if (ret.success) {
