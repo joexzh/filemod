@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Extract Changelog
-        run: grep -Pzo '(?s)^## [^\n]*\n\n\K.*?(?=\n## v?[0-9])' ${{ github.workspace }}/CHANGELOG.md | tee ${{ github.workspace }}/extracted_changelog
+        run: grep -Pzo '(?s)^## [^\n]*\n\n\K.*?(?=\n\n## v?[0-9])' ${{ github.workspace }}/CHANGELOG.md | tee ${{ github.workspace }}/extracted_changelog
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -56,7 +56,7 @@ jobs:
     needs: create_release
     runs-on: ubuntu-latest
     env:
-      CCACHE_DIR: $HOME/.cache/ccache
+      CCACHE_DIR: ${{ github.workspace }}/.cache/ccache
 
     steps:
       - uses: actions/checkout@v4
@@ -67,7 +67,7 @@ jobs:
 
       - uses: actions/cache@v4
         with:
-          path: $HOME/.cache/ccache
+          path: ${{ github.workspace }}/.cache/ccache
           key: meson-${{ github.workflow }}-${{ github.job }}
 
       - run: |
@@ -95,7 +95,7 @@ jobs:
     needs: create_release
     runs-on: ubuntu-latest
     env:
-      CCACHE_DIR: $HOME/.cache/ccache
+      CCACHE_DIR: ${{ github.workspace }}/.cache/ccache
 
     steps:
       - uses: actions/checkout@v4
@@ -106,7 +106,7 @@ jobs:
 
       - uses: actions/cache@v4
         with:
-          path: $HOME/.cache/ccache
+          path: ${{ github.workspace }}/.cache/ccache
           key: meson-${{ github.workflow }}-${{ github.job }}
 
       - run: |
