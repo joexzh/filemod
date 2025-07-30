@@ -11,11 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Extract Changelog
-        run: grep -Pzo '(?s)^## [^\n]*\n\n\K.*?(?=\n\n## v?[0-9])' ${{ github.workspace }}/CHANGELOG.md | tee ${{ github.workspace }}/extracted_changelog
+        run: grep -Pzo '(?s)^## [^\n]*\n\n\K.*?(?=\n\n## v?[0-9])' ${{ github.workspace }}/CHANGELOG.md | tr -d '\0' | tee ${{ github.workspace }}/latest_changes
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          body_path: ${{ github.workspace }}/extracted_changelog
+          body_path: ${{ github.workspace }}/latest_changes
           generate_release_notes: true
           prerelease: ${{ contains(github.ref_name, '-') }}
           make_latest: true
