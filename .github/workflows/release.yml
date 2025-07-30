@@ -81,6 +81,7 @@ jobs:
           meson setup builddir --buildtype=release --default-library=static --prefix=$PWD/builddir/$out_dir
           cd builddir
           meson compile
+          meson test -v
           meson install --tags strip --strip
           tar -czf "$out_dir.tar.gz" "$out_dir"
 
@@ -118,6 +119,7 @@ jobs:
           meson setup builddir --buildtype=release --prefix=$PWD/builddir/$out_dir/usr
           cd builddir
           meson compile
+          meson test -v
           meson install --tags strip --strip
           meson install --tags runtime
           mkdir "$out_dir/DEBIAN"

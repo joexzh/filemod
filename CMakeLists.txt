@@ -42,9 +42,34 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     ARGS "$<TARGET_FILE:${PROJECT_NAME}>"
 )
 
-install(TARGETS ${PROJECT_NAME} RUNTIME LIBRARY)
+include(GNUInstallDirs)
+install(TARGETS ${PROJECT_NAME}
+    RUNTIME_DEPENDENCY_SET runtime_deps
+    RUNTIME
+)
 if (WIN32)
     install(FILES $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}> DESTINATION bin)
+    install(RUNTIME_DEPENDENCY_SET runtime_deps DESTINATION bin
+        PRE_EXCLUDE_REGEXES 
+            ".*api-ms-win-.*"
+            ".*ext-ms-win-.*"
+            ".*AzureAttest.*"
+            ".*wpaxholder.dll"
+            ".*kernel32.dll"
+            ".*user32.dll"
+            ".*advapi32.dll"
+            ".*crypt32.dll"
+            ".*ole32.dll"
+            ".*gdi32.dll"
+            ".*comdlg32.dll"
+            ".*shell32.dll"
+            ".*shlwapi.dll"
+            ".*oleaut32.dll"
+            ".*uuid.dll"
+            ".*ws2_32.dll"
+            ".*version.dll"
+        POST_EXCLUDE_REGEXES ".*system32/.*"
+    )
 endif()
 
 set(CPACK_PACKAGE_VENDOR "Joe Tse")

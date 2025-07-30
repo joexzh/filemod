@@ -43,13 +43,13 @@ target_sources(${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE SQLiteCpp LibArchive::LibArchive)
 
+include(GNUInstallDirs)
 get_target_property(${PROJECT_NAME}_TYPE ${PROJECT_NAME} TYPE)
 if (${PROJECT_NAME}_TYPE STREQUAL "SHARED_LIBRARY")
     target_compile_definitions(${PROJECT_NAME}
         PUBLIC FILEMOD_DLL
         PRIVATE FILEMOD_DLL_EXPORTS
     )
-    include(GNUInstallDirs)
     install(TARGETS ${PROJECT_NAME} RUNTIME LIBRARY)
 endif()
 
