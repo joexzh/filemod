@@ -105,7 +105,8 @@ add_executable(${PROJECT_NAME}_test
     test/testmodder.cpp
     test/testsql.cpp
 )
-target_link_libraries(${PROJECT_NAME}_test PRIVATE GTest::gtest_main ${libfilemod_static})
+target_link_libraries(${PROJECT_NAME}_test
+    PRIVATE GTest::gtest_main ${libfilemod_static} LibArchive::LibArchive)
 
 include(GoogleTest)
 gtest_discover_tests(${PROJECT_NAME}_test)

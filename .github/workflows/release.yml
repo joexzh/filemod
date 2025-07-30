@@ -10,11 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Extract Changelog
+        run: grep -Pzo '(?s)(?<=^## [^\n]{0,100}\n\n).*?(?=\n## v?[0-9])' ${{ github.workspace }}/CHANGELOG.md | tee ${{ github.workspace }}/extracted_changelog
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          body_path: ${{ github.workspace }}/CHANGELOG.md
+          body_path: ${{ github.workspace }}/extracted_changelog
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
           make_latest: true
 
   release_window_package:
@@ -65,7 +68,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: $HOME/.cache/ccache
-          key: meson-${{ github.workflow }}-${{ github.job}}
+          key: meson-${{ github.workflow }}-${{ github.job }}
 
       - run: |
           sudo apt-get update
@@ -78,7 +81,7 @@ jobs:
           meson setup builddir --buildtype=release --default-library=static --prefix=$PWD/builddir/$out_dir
           cd builddir
           meson compile
-          meson install --tags strip,runtime --strip
+          meson install --tags strip --strip
           tar -czf "$out_dir.tar.gz" "$out_dir"
 
       - name: Upload *.tar.gz
@@ -112,7 +115,7 @@ jobs:
       - name: Meson compile dynamic link, create .deb
         run: |
           out_dir="filemod_${{ github.ref_name }}_amd64"
-          meson setup builddir --buildtype=release --prefix=$PWD/bulddir/$out_dir/usr
+          meson setup builddir --buildtype=release --prefix=$PWD/builddir/$out_dir/usr
           cd builddir
           meson compile
           meson install --tags strip --strip
