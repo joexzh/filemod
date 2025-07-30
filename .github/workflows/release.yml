@@ -15,6 +15,7 @@ jobs:
         with:
           body_path: ${{ github.workspace }}/CHANGELOG.md
           generate_release_notes: true
+          make_latest: true
 
   release_window_package:
     needs: create_release
