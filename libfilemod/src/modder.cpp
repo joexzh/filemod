@@ -352,7 +352,7 @@ result<ModDto> modder::uninstall_mod_(int64_t mod_id) {
     }
 
     ret.data = std::move(mods[0]);
-    auto& mod = ret.data;
+    const auto& mod = ret.data;
 
     if (ModStatus::Uninstalled == mod.status) {
       // not considered error, just do nothing
@@ -374,10 +374,10 @@ result<ModDto> modder::uninstall_mod_(int64_t mod_id) {
         return paths;
       };
 
-      m_fs.uninstall_mod(
-          m_fs.get_cfg_mod(mod.tar_id, utf8str_to_path(std::move(mod.dir))),
-          utf8str_to_path(std::move(tar_ret.data.dir)),
-          make_paths_from_strs(mod.files), make_paths_from_strs(mod.bak_files));
+      m_fs.uninstall_mod(m_fs.get_cfg_mod(mod.tar_id, utf8str_to_path(mod.dir)),
+                         utf8str_to_path(std::move(tar_ret.data.dir)),
+                         make_paths_from_strs(mod.files),
+                         make_paths_from_strs(mod.bak_files));
     }
     return ret;
   });
