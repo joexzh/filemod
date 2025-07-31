@@ -19,21 +19,31 @@ If the `install` command replaces the files that are not managed by `filemod` (h
 ## Usage
 
 ```bash
-filemod add --tdir <DIR>
-filemod add -t <TAR_ID> --mdir <DIR>
+# add target or mod
+filemod add --tdir <target_dir>
+filemod add -t <target_id> [--name <mod_name>] --mdir <mod_dir>
+filemod add -t <target_id> [--name <mod_name>] --archive <archive_path>
 
-filemod install -t <TAR_ID>
-filemod install -t <TAR_ID> --mdir <DIR>
-filemod install -m <MOD_ID1> <MOD_ID2> ...
+# install mod(s)
+filemod install -t <target_id>
+filemod install -m <mod_id1> [mod_id2] ...
+filemod install -t <target_id> [--name <mod_name>] --mdir <mod_dir>
+filemod install -t <target_id> [--name <mod_name>] --archive <archive_dir>
 
-filemod uninstall -t <TAR_ID>
-filemod uninstall -m <MOD_ID1> <MOD_ID2> ...
+# uninstall mod(s)
+filemod uninstall -t <target_id>
+filemod uninstall -m <mod_id1> [mod_id2] ...
 
-filemod remove -t <TAR_ID>
-filemod remove -m <MOD_ID1> <MOD_ID2> ...
+# remove target or mod(s)
+filemod remove -t <target_id>
+filemod remove -m <mod_id1> [mod_id2] ...
 
-filemod list [-t <TAR_ID1> <TAR_ID2> ...]
-filemod list -m <MOD_ID1> <MOD_ID2> ...
+# display target(s) and mod(s) in database
+filemod list [-t <target_id1> [target_id2] ...]
+filemod list -m <mod_id1> [mod_id2] ...
+
+# rename mod
+filemod rename -m <mod_id> -n <newname>
 ```
 
 > Some commands require **Administrator Privilege** on **Windows** because it's required for syscalls such as create symbolic link.
@@ -44,109 +54,232 @@ The configuration directory is located in one of the three places:
 2. On Windows, `$env:USERPROFILE/.config/filemod_cfg`
 3. Otherwise, under `filemod` executable directory.
 
-### 1. Add an existing game directory as target
+### `add` command
 
-```bash
-./filemod add --tdir /path/to/game/installation
-```
+#### add a target
 
 e.g. 
 
-```bash
-/filemod add --tdir '/home/joexie/.steam/debian-installation/steamapps/common/The Witcher 3/mods'
+```terminal
+$ filemod add --tdir '/home/joexie/.steam/debian-installation/steamapps/common/The Witcher 3/mods'
+1
+
+$ filemod list
+TARGET_ID 1 DIR '/home/joexie/.steam/debian-installation/steamapps/common/The Witcher 3/mods'
 ```
 
-Returns target id if success.
+#### add a mod
 
-> Note that some target paths are not game installation roots, in this case, `The Witcher 3`'s target path is `/path/to/game/The Witcher 3/mods`.
+e.g., a mod archive downloaded from NexusMods named "Over 9000 - Weight limit mod v1.31-3-1-31.zip"
 
-### 2. Add an existing mod directory to database
+```terminal
+$ filemod add -t 1 --name unlimit-weight --archive "~/Downloads/Over 9000 - Weight limit mod v1.31-3-1-31.zip"
+1
 
-```bash
-./filemod add -t TAR_ID --mdir /path/to/mod/dir/
+$ filemod list
+TARGET_ID 1 DIR '/home/joexie/.steam/debian-installation/steamapps/common/The Witcher 3/mods'
+    MOD_ID 1 DIR 'unlimit-weight' STATUS not installed
 ```
+
+### `install` command
 
 e.g.
 
-```bash
-./filemod add -t 1 --mdir '/home/joexie/Downloads/mods/FTFANG-7157-1-1-1705443514'
+```terminal
+$ filemod install -t 1 -m 1
+ok
+
+$ filemod list
+TARGET_ID 1 DIR '/home/joexie/.steam/debian-installation/steamapps/common/The Witcher 3/mods'
+    MOD_ID 1 DIR 'unlimit-weight' STATUS installed
 ```
 
-This also copy the mods files to `filemod_cfg`, prepare for `install`.
-
-> You should download the mod package first, from nexusmods for example, extract the zip/tar.gz file to a directory, then use this directory as the argument of `--mdir`.
-
-Returns mod id if success.
-
-### 3. Install mods
-
-```bash
-./filemod install -t <TAR_ID> # install all mods of a target
-
-./filemod install -t <TAR_ID> --mdir <MOD_DIR> # add the mod to target, and install it
-
-./filemod install -m <MOD_ID_1> <MOD_ID_2> ... # install specific mods, ids are separated by whitespace
-```
-
-Installs the mods under management. This creates symlinks to the game directory.
-
-### 4. uninstall mods
-
-```bash
-./filemod uninstall -t <TAR_ID> # uninstall all mods of a target
-
-./filemod uninstall -m <MOD_ID_1> <MOD_ID_2> ... # uninstall mods, ids are separated by whitespace
-```
-
-Uninstalls the mods under management. This deletes symlinks from the game directory.
-
-### 5. remove target and mods
-
-```bash
-./filemod remove -t <TAR_ID> # remove a target and all of its mods
-
-./filemod remove -m <MOD_ID_1> <MOD_ID_2> ... # remove mods
-```
-
-Removes mods from management. This deletes the associated database records and files in `filemod_cfg`. Only works for non-installed mods.
-
-### 6. display targets and mods information
-
-```bash
-./filemod list [-t <TAR_ID_1> <TAR_ID_2> ...] # list targets and their mods status
-
-./filemod list -m <MOD_ID_1> <MOD_ID_2> ... # list mods status, mod files and backup files
-```
+### `uninstall` command
 
 e.g.
 
-```bash
-./filemod list -m 6
+```terminal
+$ filemod uninstall -m 1
+ok
 
-MOD ID 5 DIR 'FTFANG-7157-1-1-1705443514' STATUS installed
-    MOD FILES
-        'ReadMe.txt'
-        'modFTFA'
-        'modFTFA/content'
-        'modFTFA/content/scripts'
-        'modFTFA/content/scripts/game'
-        'modFTFA/content/scripts/game/gui'
-        'modFTFA/content/scripts/game/gui/menus'
-        'modFTFA/content/scripts/game/gui/menus/mapMenu.ws'
-    BACKUP FILES
-MOD ID 6 DIR 'Over 9000 - Weight limit mod v1.31-3-1-31' STATUS installed
-    MOD FILES
-        'modOver9000'
-        'modOver9000/content'
-        'modOver9000/content/blob0.bundle'
-        'modOver9000/content/metadata.store'
-    BACKUP FILES
+$ filemod list
+TARGET_ID 1 DIR '/home/joexie/.steam/debian-installation/steamapps/common/The Witcher 3/mods'
+    MOD_ID 1 DIR 'unlimit-weight' STATUS not installed
+```
+
+### `remove` command
+
+e.g.
+
+```terminal
+$ filemod remove -m 1
+ok
+
+$ filemod list
+TARGET_ID 1 DIR '/home/joexie/.steam/debian-installation/steamapps/common/The Witcher 3/mods'
+```
+
+### `list` command
+
+e.g.
+
+```terminal
+$ filemod list -m 1
+MOD_ID 1 DIR 'Glowing Guiding Lands Gathering Spots 4.0-2225-4-0-1584151239' STATUS installed
+    MOD_FILES
+        'nativePC'
+        'nativePC\Assets'
+        'nativePC\Assets\gm'
+        'nativePC\Assets\gm\gm000'
+        'nativePC\Assets\gm\gm000\gm000_510'
+        'nativePC\Assets\gm\gm000\gm000_510\mod'
+        'nativePC\Assets\gm\gm000\gm000_510\mod\gm000_510_00.mod3'
+        'nativePC\Assets\gm\gm000\gm000_510\mod\gm000_510_00.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_510\mod\gm000_510_00_EM.dds'
+        'nativePC\Assets\gm\gm000\gm000_510\mod\gm000_510_00_EM.tex'
+        'nativePC\Assets\gm\gm000\gm000_510\mod\gm000_510_01.mod3'
+        'nativePC\Assets\gm\gm000\gm000_510\mod\gm000_510_01.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_511'
+        'nativePC\Assets\gm\gm000\gm000_511\mod'
+        'nativePC\Assets\gm\gm000\gm000_511\mod\gm000_511.mod3'
+        'nativePC\Assets\gm\gm000\gm000_511\mod\gm000_511.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_512'
+        'nativePC\Assets\gm\gm000\gm000_512\mod'
+        'nativePC\Assets\gm\gm000\gm000_512\mod\gm000_512_00.mod3'
+        'nativePC\Assets\gm\gm000\gm000_512\mod\gm000_512_00.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_512\mod\gm000_512_01.mod3'
+        'nativePC\Assets\gm\gm000\gm000_512\mod\gm000_512_01.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_512\mod\gm000_513_01_EM.dds'
+        'nativePC\Assets\gm\gm000\gm000_512\mod\gm000_513_01_EM.tex'
+        'nativePC\Assets\gm\gm000\gm000_513'
+        'nativePC\Assets\gm\gm000\gm000_513\mod'
+        'nativePC\Assets\gm\gm000\gm000_513\mod\gm000_513.mod3'
+        'nativePC\Assets\gm\gm000\gm000_513\mod\gm000_513.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_520'
+        'nativePC\Assets\gm\gm000\gm000_520\mod'
+        'nativePC\Assets\gm\gm000\gm000_520\mod\gm000_520_00.mod3'
+        'nativePC\Assets\gm\gm000\gm000_520\mod\gm000_520_00.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_520\mod\gm000_520_01.mod3'
+        'nativePC\Assets\gm\gm000\gm000_520\mod\gm000_520_01.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_521'
+        'nativePC\Assets\gm\gm000\gm000_521\mod'
+        'nativePC\Assets\gm\gm000\gm000_521\mod\gm000_521.mod3'
+        'nativePC\Assets\gm\gm000\gm000_521\mod\gm000_521.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_522'
+        'nativePC\Assets\gm\gm000\gm000_522\mod'
+        'nativePC\Assets\gm\gm000\gm000_522\mod\gm000_522_00.mod3'
+        'nativePC\Assets\gm\gm000\gm000_522\mod\gm000_522_00.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_522\mod\gm000_522_01.mod3'
+        'nativePC\Assets\gm\gm000\gm000_522\mod\gm000_522_01.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_523'
+        'nativePC\Assets\gm\gm000\gm000_523\mod'
+        'nativePC\Assets\gm\gm000\gm000_523\mod\gm000_523.mod3'
+        'nativePC\Assets\gm\gm000\gm000_523\mod\gm000_523.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_530'
+        'nativePC\Assets\gm\gm000\gm000_530\mod'
+        'nativePC\Assets\gm\gm000\gm000_530\mod\gm000_530_00.mod3'
+        'nativePC\Assets\gm\gm000\gm000_530\mod\gm000_530_00.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_530\mod\gm000_530_01.mod3'
+        'nativePC\Assets\gm\gm000\gm000_530\mod\gm000_530_01.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_531'
+        'nativePC\Assets\gm\gm000\gm000_531\mod'
+        'nativePC\Assets\gm\gm000\gm000_531\mod\gm000_531.mod3'
+        'nativePC\Assets\gm\gm000\gm000_531\mod\gm000_531.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_532'
+        'nativePC\Assets\gm\gm000\gm000_532\mod'
+        'nativePC\Assets\gm\gm000\gm000_532\mod\gm000_532_00.mod3'
+        'nativePC\Assets\gm\gm000\gm000_532\mod\gm000_532_00.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_532\mod\gm000_532_01.mod3'
+        'nativePC\Assets\gm\gm000\gm000_532\mod\gm000_532_01.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_533'
+        'nativePC\Assets\gm\gm000\gm000_533\mod'
+        'nativePC\Assets\gm\gm000\gm000_533\mod\gm000_533.mod3'
+        'nativePC\Assets\gm\gm000\gm000_533\mod\gm000_533.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_540'
+        'nativePC\Assets\gm\gm000\gm000_540\mod'
+        'nativePC\Assets\gm\gm000\gm000_540\mod\gm000_540_00.mod3'
+        'nativePC\Assets\gm\gm000\gm000_540\mod\gm000_540_00.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_540\mod\gm000_540_01.mod3'
+        'nativePC\Assets\gm\gm000\gm000_540\mod\gm000_540_01.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_541'
+        'nativePC\Assets\gm\gm000\gm000_541\mod'
+        'nativePC\Assets\gm\gm000\gm000_541\mod\gm000_541.mod3'
+        'nativePC\Assets\gm\gm000\gm000_541\mod\gm000_541.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_542'
+        'nativePC\Assets\gm\gm000\gm000_542\mod'
+        'nativePC\Assets\gm\gm000\gm000_542\mod\gm000_542_00.mod3'
+        'nativePC\Assets\gm\gm000\gm000_542\mod\gm000_542_00.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_542\mod\gm000_542_01.mod3'
+        'nativePC\Assets\gm\gm000\gm000_542\mod\gm000_542_01.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_543'
+        'nativePC\Assets\gm\gm000\gm000_543\mod'
+        'nativePC\Assets\gm\gm000\gm000_543\mod\gm000_543.mod3'
+        'nativePC\Assets\gm\gm000\gm000_543\mod\gm000_543.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_550'
+        'nativePC\Assets\gm\gm000\gm000_550\mod'
+        'nativePC\Assets\gm\gm000\gm000_550\mod\gm000_550_00.mod3'
+        'nativePC\Assets\gm\gm000\gm000_550\mod\gm000_550_00.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_550\mod\gm000_550_01.mod3'
+        'nativePC\Assets\gm\gm000\gm000_550\mod\gm000_550_01.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_551'
+        'nativePC\Assets\gm\gm000\gm000_551\mod'
+        'nativePC\Assets\gm\gm000\gm000_551\mod\gm000_551.mod3'
+        'nativePC\Assets\gm\gm000\gm000_551\mod\gm000_551.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_552'
+        'nativePC\Assets\gm\gm000\gm000_552\mod'
+        'nativePC\Assets\gm\gm000\gm000_552\mod\gm000_552_00.mod3'
+        'nativePC\Assets\gm\gm000\gm000_552\mod\gm000_552_00.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_552\mod\gm000_552_01.mod3'
+        'nativePC\Assets\gm\gm000\gm000_552\mod\gm000_552_01.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_553'
+        'nativePC\Assets\gm\gm000\gm000_553\mod'
+        'nativePC\Assets\gm\gm000\gm000_553\mod\gm000_553.mod3'
+        'nativePC\Assets\gm\gm000\gm000_553\mod\gm000_553.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_580'
+        'nativePC\Assets\gm\gm000\gm000_580\mod'
+        'nativePC\Assets\gm\gm000\gm000_580\mod\gm000_580_00.mod3'
+        'nativePC\Assets\gm\gm000\gm000_580\mod\gm000_580_00.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_580\mod\gm000_580_01.mod3'
+        'nativePC\Assets\gm\gm000\gm000_580\mod\gm000_580_01.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_581'
+        'nativePC\Assets\gm\gm000\gm000_581\mod'
+        'nativePC\Assets\gm\gm000\gm000_581\mod\gm000_581.mod3'
+        'nativePC\Assets\gm\gm000\gm000_581\mod\gm000_581.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_582'
+        'nativePC\Assets\gm\gm000\gm000_582\mod'
+        'nativePC\Assets\gm\gm000\gm000_582\mod\gm000_582_00.mod3'
+        'nativePC\Assets\gm\gm000\gm000_582\mod\gm000_582_00.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_582\mod\gm000_582_01.mod3'
+        'nativePC\Assets\gm\gm000\gm000_582\mod\gm000_582_01.mrl3'
+        'nativePC\Assets\gm\gm000\gm000_583'
+        'nativePC\Assets\gm\gm000\gm000_583\mod'
+        'nativePC\Assets\gm\gm000\gm000_583\mod\gm000_583.mod3'
+        'nativePC\Assets\gm\gm000\gm000_583\mod\gm000_583.mrl3'
+    BACKUP_FILES
+```
+
+### `rename` command
+
+e.g.
+
+```terminal
+$ filemod rename -m 1 -n "9000 weight"
+ok
+
+$ filemod list
+TARGET_ID 1 DIR '/home/joexie/.steam/debian-installation/steamapps/common/The Witcher 3/mods'
+    MOD_ID 1 DIR '9000 weight' STATUS not installed
 ```
 
 ## Build the project
 
-### Requirements:
+### Requirements
 
-1. `g++` ,`clang` or `msvc` that supports C++20
-2. `cmake`
-3. `vcpkg`
+1. `gcc`, `clang` or `msvc` that supports C++20
+2. `cmake` & `vcpkg`, or `meson`
+
+### Dependencies
+
+- boost-program-options
+- SQLiteCpp
+- libarchive
