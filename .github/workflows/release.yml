@@ -23,7 +23,7 @@ jobs:
 
   release_window_package:
     needs: create_release
-    name: release_window_package-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
+    name: pack-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -60,7 +60,7 @@ jobs:
 
   release_linux_package:
     needs: create_release
-    name: release_linux_package-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
+    name: pack-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -81,6 +81,11 @@ jobs:
         with:
           path: ${{ github.workspace }}/.cache/ccache
           key: meson-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/subprojects/packagecache
+          key: meson-${{ matrix.os }}-${{ hashFiles('subprojects/*.wrap') }}
 
       - run: |
           sudo apt-get update
@@ -105,7 +110,7 @@ jobs:
 
   release_deb_package:
     needs: create_release
-    name: release_deb_package-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
+    name: pack-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -126,6 +131,11 @@ jobs:
         with:
           path: ${{ github.workspace }}/.cache/ccache
           key: meson-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/subprojects/packagecache
+          key: meson-${{ matrix.os }}-${{ hashFiles('subprojects/*.wrap') }}
 
       - run: |
           sudo apt-get update

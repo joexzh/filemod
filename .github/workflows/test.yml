@@ -71,6 +71,11 @@ jobs:
           path: ${{ github.workspace }}/.cache/ccache
           key: meson-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
 
+      - uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/subprojects/packagecache
+          key: meson-${{ matrix.os }}-${{ hashFiles('subprojects/*.wrap') }}
+
       - run: |
           sudo apt-get update
           sudo apt-get install -y meson ccache
