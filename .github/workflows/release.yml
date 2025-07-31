@@ -17,14 +17,20 @@ jobs:
         with:
           body_path: ${{ github.workspace }}/latest_changes
           generate_release_notes: true
+          draft: ${{ contains(github.ref_name, 'draft') }}
           prerelease: ${{ contains(github.ref_name, '-') }}
           make_latest: true
 
   release_window_package:
     needs: create_release
-    runs-on: windows-latest
+    name: release_window_package-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+        buildtype: [release]
+        default_library: [static]
     env:
-      BUILD_TYPE: Release
       VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/vcpkg/binary-cache,readwrite
 
     steps:
@@ -39,7 +45,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/vcpkg/binary-cache
-          key: vcpkg-${{ github.workflow }}-${{ github.job }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          key: vcpkg-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
 
       - name: CMake preset workflow (config, build, test and pack)
         run: |
@@ -54,7 +60,13 @@ jobs:
 
   release_linux_package:
     needs: create_release
-    runs-on: ubuntu-latest
+    name: release_linux_package-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        buildtype: [release]
+        default_library: [static]
     env:
       CCACHE_DIR: ${{ github.workspace }}/.cache/ccache
 
@@ -68,11 +80,11 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.cache/ccache
-          key: meson-${{ github.workflow }}-${{ github.job }}
+          key: meson-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
 
       - run: |
           sudo apt-get update
-          sudo apt-get purge libsqlite3-dev libarchive-dev
+          sudo apt-get autopurge -y libsqlite3-dev libarchive-dev
           sudo apt-get install -y meson ccache
 
       - name: Meson compile static link, create .tar.gz
@@ -93,7 +105,13 @@ jobs:
 
   release_deb_package:
     needs: create_release
-    runs-on: ubuntu-latest
+    name: release_deb_package-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        buildtype: [release]
+        default_library: [shared]
     env:
       CCACHE_DIR: ${{ github.workspace }}/.cache/ccache
 
@@ -107,7 +125,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.cache/ccache
-          key: meson-${{ github.workflow }}-${{ github.job }}
+          key: meson-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
 
       - run: |
           sudo apt-get update

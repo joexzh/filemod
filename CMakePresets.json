@@ -60,7 +60,7 @@
     ],
     "workflowPresets": [
         {
-            "name": "debug-wf",
+            "name": "debug-test-wf",
             "steps": [
                 {
                     "type": "configure",

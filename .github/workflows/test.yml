@@ -10,12 +10,14 @@ on:
     - dev
 
 jobs:
-  job:
-    name: ${{ matrix.os }}-${{ github.workflow }}
+  cmake-build:
+    name: cmake-build-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
+        buildtype: [debug, release]
+        default_library: [static]
         include:
           - os: windows-latest
             triplet: x64-windows
@@ -36,12 +38,52 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/vcpkg/binary-cache
-          key: vcpkg-${{ github.workflow }}-${{ matrix.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          key: vcpkg-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
 
       - name: CMake preset workflow (config, build and test)
         run: |
-          cmake --workflow release-test-wf
+          cmake --workflow ${{ matrix.buildtype }}-test-wf
 
       - name: Print failed tests
         if: failure()
-        run: ctest --preset release-test --rerun-failed --output-on-failure
+        run: ctest --preset ${{ matrix.buildtype }}-test --rerun-failed --output-on-failure
+
+  meson-build:
+    name: meson-build-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        buildtype: [debug, release]
+        default_library: [shared, static]
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.cache/ccache
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: lukka/run-vcpkg@v11
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.cache/ccache
+          key: meson-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}
+
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ccache
+          if [[ "${{ matrix.default_library }}" == "static" ]]; then \
+            sudo apt-get autopurge -y libsqlite3-dev libarchive-dev; \
+          else \
+            sudo apt-get install -y libsqlite3-dev libarchive-dev;
+          fi
+
+      - name: Compile & Test
+        run: |
+          meson setup builddir --buildtype=${{ matrix.buildtype }} --default-library=${{ matrix.default_library }}
+          [[ "${{ matrix.buildtype }}" == "debug" ]] && meson configure -Db_sanitize=address builddir
+          cd builddir
+          meson compile
+          meson test -v
