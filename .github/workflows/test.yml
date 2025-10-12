@@ -87,8 +87,9 @@ jobs:
 
       - name: Compile & Test
         run: |
-          meson setup builddir --buildtype=${{ matrix.buildtype }} --default-library=${{ matrix.default_library }}
-          [[ "${{ matrix.buildtype }}" == "debug" ]] && meson configure -Db_sanitize=address builddir
+          sanitize=none
+          [[ "${{ matrix.buildtype }}" == "debug" ]] && sanitize=address
+          meson setup builddir --buildtype=${{ matrix.buildtype }} --default-library=${{ matrix.default_library }} -Db_sanitize=$sanitize
           cd builddir
           meson compile
           meson test -v
