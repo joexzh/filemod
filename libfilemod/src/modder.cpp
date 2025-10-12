@@ -368,8 +368,8 @@ result<ModDto> modder::uninstall_mod_(int64_t mod_id) {
       auto make_paths_from_strs = [](auto& file_strs) {
         std::vector<std::filesystem::path> paths;
         paths.reserve(file_strs.size());
-        for (auto& file_str : file_strs) {
-          paths.push_back(utf8str_to_path(std::move(file_str)));
+        for (const auto& file_str : file_strs) {
+          paths.push_back(utf8str_to_path(file_str));
         }
         return paths;
       };
@@ -500,7 +500,7 @@ std::vector<TargetDto> modder::query_targets(
 
 constexpr char MARGIN[] = "    ";
 
-static void _list_files(const std::vector<std::string>& file_strs,
+static void list_files_(const std::vector<std::string>& file_strs,
                         std::string_view& margin, std::string& ret) {
   for (auto& file_str : file_strs) {
     ret += margin;
@@ -511,7 +511,7 @@ static void _list_files(const std::vector<std::string>& file_strs,
   }
 }
 
-static std::string _list_mods(const std::vector<ModDto>& mods,
+static std::string list_mods_(const std::vector<ModDto>& mods,
                               bool verbose = false, uint8_t indent = 0) {
   std::string ret;
 
@@ -537,10 +537,10 @@ static std::string _list_mods(const std::vector<ModDto>& mods,
     if (verbose) {
       ret += margin2;
       ret += "MOD_FILES\n";
-      _list_files(mod.files, margin3, ret);
+      list_files_(mod.files, margin3, ret);
       ret += margin2;
       ret += "BACKUP_FILES\n";
-      _list_files(mod.bak_files, margin3, ret);
+      list_files_(mod.bak_files, margin3, ret);
     }
   }
 
@@ -548,7 +548,7 @@ static std::string _list_mods(const std::vector<ModDto>& mods,
 }
 
 std::string modder::list_mods(const std::vector<int64_t>& mod_ids) {
-  return _list_mods(query_mods(mod_ids), true);
+  return list_mods_(query_mods(mod_ids), true);
 }
 
 std::string modder::list_targets(const std::vector<int64_t>& tar_ids) {
@@ -562,7 +562,7 @@ std::string modder::list_targets(const std::vector<int64_t>& tar_ids) {
     ret += tar.dir;
     ret += "'\n";
 
-    ret += _list_mods(tar.ModDtos, false, 1);
+    ret += list_mods_(tar.ModDtos, false, 1);
   }
 
   return ret;
