@@ -9,6 +9,7 @@ CMakeUserPresets.json
 CMakeSettings.json
 compile_commands.json
 subprojects/*
+!subprojects/packagefiles
 !subprojects/boost.wrap
 !subprojects/gtest.wrap
 !subprojects/sqlitecpp.wrap

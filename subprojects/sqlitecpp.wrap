@@ -5,6 +5,7 @@ source_filename = sqlitecpp-3.3.2.zip
 source_hash = 1f41ef7322da573fdfca95655bd1329282638b4d9d3dc16a48f4bad16008eda8
 source_fallback_url = https://github.com/mesonbuild/wrapdb/releases/download/sqlitecpp_3.3.2-1/sqlitecpp-3.3.2.zip
 wrapdb_version = 3.3.2-1
+diff_files = SQLiteCpp-3.3.2/643b153c61bd308353d2d7f2ddb8574762634956.patch
 
 [provide]
 sqlitecpp = sqlitecpp_dep
