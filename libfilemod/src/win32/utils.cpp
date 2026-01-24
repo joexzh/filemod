@@ -16,14 +16,15 @@ namespace {
 struct win_errmsg {
   using deleter_t = decltype([](LPWSTR ptr) noexcept { LocalFree(ptr); });
 
-  win_errmsg(LPWSTR ptr, size_t size) : buf{ptr, deleter_t{}}, size{size} {}
+  win_errmsg(LPWSTR ptr, size_t size) noexcept
+      : buf{ptr, deleter_t{}}, size{size} {}
 
   std::unique_ptr<WCHAR, deleter_t> buf;
   size_t size;
 };
 
 // Create a string with last error message
-win_errmsg WinErrToStr(DWORD ec) {
+win_errmsg WinErrToStr(DWORD ec) noexcept {
   LPWSTR lpMsgBuf = nullptr;
   DWORD bufLen = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
                                     FORMAT_MESSAGE_FROM_SYSTEM |
@@ -37,15 +38,23 @@ win_errmsg WinErrToStr(DWORD ec) {
 std::filesystem::path get_home() { return _wgetenv(L"USERPROFILE"); }
 
 std::string wstr_to_cp(std::wstring_view wsv, UINT cp) {
-  int sz = WideCharToMultiByte(cp, 0, wsv.data(), wsv.size() + 1, NULL, 0, NULL,
-                               NULL);
-  // sz include null terminator
-  if (0 == sz) {
-    throw std::runtime_error("WideCharToMultiByte error");
+  if (wsv.empty()) return {};
+
+  CPINFO cpInfo;
+  if (!GetCPInfo(cp, &cpInfo)) {
+    throw std::runtime_error("GetCPInfo error");
   }
-  std::string mbstr(sz - 1, '\0');
-  WideCharToMultiByte(cp, 0, wsv.data(), wsv.size() + 1, &mbstr[0], sz, NULL,
-                      NULL);
+  unsigned int char_size = cpInfo.MaxCharSize;
+  size_t numbytes = wsv.size() * char_size;  // upper bound size
+  std::string mbstr(numbytes, '\0');
+
+  // written NOT include null terminator
+  int written = WideCharToMultiByte(cp, 0, wsv.data(), wsv.size(), &mbstr[0],
+                                    numbytes, NULL, NULL);
+  if (0 == written) {
+    throw std::runtime_error("wstr_to_cp: WideCharToMultiByte error");
+  }
+  mbstr.resize(written);
   return mbstr;
 }
 
@@ -63,13 +72,17 @@ std::filesystem::path getexepath() {
 }
 
 std::wstring cp_to_wstr(std::string_view sv, UINT cp) {
-  int sz = MultiByteToWideChar(cp, 0, sv.data(), sv.size() + 1, NULL, 0);
-  // sz include null terminator
-  if (0 == sz) {
-    throw std::runtime_error("MultiByteToWideChar error");
+  if (sv.empty()) return {};
+
+  std::wstring wstr(sv.size(), L'0');  // alloc to upper bound size
+
+  // written Not include null terminator
+  int written =
+      MultiByteToWideChar(cp, 0, sv.data(), sv.size(), &wstr[0], sv.size());
+  if (0 == written) {
+    throw std::runtime_error("cp_to_wstr: MultiByteToWideChar error");
   }
-  std::wstring wstr(sz - 1, L'\0');
-  MultiByteToWideChar(cp, 0, sv.data(), sv.size() + 1, &wstr[0], sz);
+  wstr.resize(written);
   return wstr;
 }
 
