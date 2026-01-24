@@ -11,28 +11,30 @@
 
 namespace filemod {
 
-std::filesystem::path get_home() { return _wgetenv(L"USERPROFILE"); }
+namespace {
+// mimic a std::wstring but just adopt the ptr
+struct win_errmsg {
+  using deleter_t = decltype([](LPWSTR ptr) noexcept { LocalFree(ptr); });
+
+  win_errmsg(LPWSTR ptr, size_t size) : buf{ptr, deleter_t{}}, size{size} {}
+
+  std::unique_ptr<WCHAR, deleter_t> buf;
+  size_t size;
+};
 
 // Create a string with last error message
-static std::wstring WinErrToStr(DWORD ec) {
-  std::wstring errstr;
-  if (ec) {
-    LPWSTR lpMsgBuf;
-    DWORD bufLen = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                                      FORMAT_MESSAGE_FROM_SYSTEM |
-                                      FORMAT_MESSAGE_IGNORE_INSERTS,
-                                  NULL, ec, 0, lpMsgBuf, 0, NULL);
-    // bufLen exclude null terminator, but the buffer will receive it
-    if (bufLen) {
-      auto uniq_buf = std::unique_ptr<WCHAR, void (*)(LPWSTR)>(
-          lpMsgBuf, [](LPWSTR ptr) { LocalFree(ptr); });
-      errstr.reserve(bufLen);
-      errstr.assign(uniq_buf.get());
-      return errstr;
-    }
-  }
-  return errstr;
+win_errmsg WinErrToStr(DWORD ec) {
+  LPWSTR lpMsgBuf = nullptr;
+  DWORD bufLen = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                                    FORMAT_MESSAGE_FROM_SYSTEM |
+                                    FORMAT_MESSAGE_IGNORE_INSERTS,
+                                NULL, ec, 0, (LPWSTR)&lpMsgBuf, 0, NULL);
+  // bufLen exclude null terminator, but the buffer will receive it
+  return {lpMsgBuf, bufLen};
 }
+}  // namespace
+
+std::filesystem::path get_home() { return _wgetenv(L"USERPROFILE"); }
 
 std::string wstr_to_cp(std::wstring_view wsv, UINT cp) {
   int sz = WideCharToMultiByte(cp, 0, wsv.data(), wsv.size() + 1, NULL, 0, NULL,
@@ -55,8 +57,9 @@ std::filesystem::path getexepath() {
   if (length != 0 && ec == ERROR_SUCCESS) {
     return std::filesystem::path{buf};
   }
-
-  throw std::runtime_error{wstr_to_cp(WinErrToStr(ec), CP_UTF8)};
+  auto errmsg = WinErrToStr(ec);
+  throw std::runtime_error{
+      wstr_to_cp({errmsg.buf.get(), errmsg.size}, CP_UTF8)};
 }
 
 std::wstring cp_to_wstr(std::string_view sv, UINT cp) {
