@@ -14,6 +14,7 @@ project(
         'boost:default_library=static',
         'sqlitecpp:default_library=static',
         'libarchive:default_library=static',
+        'libarchive:progs=[]' # don't need libarchive's executables
     ],
 )
 
