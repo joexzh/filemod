@@ -327,6 +327,50 @@ TARGET_ID 1 DIR '/home/joexie/.steam/debian-installation/steamapps/common/The Wi
 1. `gcc`, `clang` or `msvc` that supports C++20
 2. `cmake` & `vcpkg`, or `meson`
 
+Use cmake:
+
+```shell
+# generate config
+cmake --preset ninja-multi
+
+# compile debug build
+cmake --build --preset debug-build
+# compile release build
+cmake --build --preset release-build
+
+# test debug build
+ctest --preset debug-build
+# test release build
+ctest --preset release-build
+```
+
+On Windows, please use cmake. Currently meson defaults to `nasm` to
+compile assembly files, causing build error for `boost`
+dependencies. Unless statically link to boost.
+
+On Linux, can also use meson:
+
+```shell
+# config debug build
+meson setup builddir
+# config release build
+meson setup builddir-rel --buildtype=release
+
+# compile debug build
+meson -C builddir
+# compile release build
+meson -C builddir-rel
+
+# test debug build
+meson test -C builddir
+# test release build
+meson test -C builddir-rel
+```
+
+See the github [workflow](.github/workflows/release.yml) file for more
+setup examples for meson. On Linux I prefer meson because it's easier
+to link to system libs and fallback to subprojects.
+
 ### Dependencies
 
 - boost-program-options
