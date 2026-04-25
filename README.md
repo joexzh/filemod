@@ -26,27 +26,35 @@ filemod add -t <target_id> [--name <mod_name>] --archive <archive_path>
 
 # install mod(s)
 filemod install -t <target_id>
-filemod install -m <mod_id1> [mod_id2] ...
+filemod install -m <mod_id>...
 filemod install -t <target_id> [--name <mod_name>] --mdir <mod_dir>
 filemod install -t <target_id> [--name <mod_name>] --archive <archive_dir>
 
 # uninstall mod(s)
 filemod uninstall -t <target_id>
-filemod uninstall -m <mod_id1> [mod_id2] ...
+filemod uninstall -m <mod_id>...
 
 # remove target or mod(s)
 filemod remove -t <target_id>
-filemod remove -m <mod_id1> [mod_id2] ...
+filemod remove -m <mod_id>...
 
 # display target(s) and mod(s) in database
-filemod list [-t <target_id1> [target_id2] ...]
-filemod list -m <mod_id1> [mod_id2] ...
+filemod list [-t <target_id>...]
+filemod list -m <mod_id>...
 
 # rename mod
 filemod rename -m <mod_id> -n <newname>
 ```
 
+> Multiple ids are separated by space.
+
 > Some commands require **Administrator Privilege** on **Windows** because it's required for syscalls such as create symbolic link.
+
+### configuration directory
+
+Configuration files are generated to store the management
+information. They should not be modified by humans. You can inspect
+them if you like.
 
 The configuration directory is located in one of the three places:
 
@@ -54,13 +62,29 @@ The configuration directory is located in one of the three places:
 2. On Windows, `$env:USERPROFILE/.config/filemod_cfg`
 3. Otherwise, under `filemod` executable directory.
 
+In configuration directory, managed mods are grouped by target id,
+e.g., a mod named mod1 belongs to target id 1, is located in
+`1/mod1/`. They are merely files copied or extracted from the original
+mod directory or archive, by the `add` command, or other commands that
+first adds a mod to management.
+
+Files inside `<target_id>/___filemod_backup/` are the original target
+files who conflict with the `install`ed mod files. After the mod is
+`uninstall`ed, they will be restored.
+
+A `SQLite` file named `filemod.db` in config root, stores all the
+management information.
+
 ### `add` command
 
 #### add a target
 
-e.g. 
+Add a target directory to management. This actually adds a record to
+the target table in filemod.db.
 
-```terminal
+e.g.
+
+```console
 $ filemod add --tdir '/home/joexie/.steam/debian-installation/steamapps/common/The Witcher 3/mods'
 1
 
@@ -70,9 +94,13 @@ TARGET_ID 1 DIR '/home/joexie/.steam/debian-installation/steamapps/common/The Wi
 
 #### add a mod
 
+Add original mod (a directory or archive) to management. This copies
+or extracts the files from the original mod, so after `add`, the
+original mod is no longer relevant.
+
 e.g., a mod archive downloaded from NexusMods named "Over 9000 - Weight limit mod v1.31-3-1-31.zip"
 
-```terminal
+```console
 $ filemod add -t 1 --name unlimit-weight --archive "~/Downloads/Over 9000 - Weight limit mod v1.31-3-1-31.zip"
 1
 
@@ -83,9 +111,13 @@ TARGET_ID 1 DIR '/home/joexie/.steam/debian-installation/steamapps/common/The Wi
 
 ### `install` command
 
+Create symlinks from managed mod to target directory. If conflict with
+other managed mods, yield error and go back to the state before
+`install`. Backup any conflicted target files.
+
 e.g.
 
-```terminal
+```console
 $ filemod install -t 1 -m 1
 ok
 
@@ -96,9 +128,11 @@ TARGET_ID 1 DIR '/home/joexie/.steam/debian-installation/steamapps/common/The Wi
 
 ### `uninstall` command
 
+Delete symlinks from target directory, restore any backed up files.
+
 e.g.
 
-```terminal
+```console
 $ filemod uninstall -m 1
 ok
 
@@ -109,9 +143,12 @@ TARGET_ID 1 DIR '/home/joexie/.steam/debian-installation/steamapps/common/The Wi
 
 ### `remove` command
 
+Remove mod from management. This will delete mod directory
+`<target_id>/<mod>/`. If the mod is installed, uninstall it first.
+
 e.g.
 
-```terminal
+```console
 $ filemod remove -m 1
 ok
 
@@ -121,10 +158,18 @@ TARGET_ID 1 DIR '/home/joexie/.steam/debian-installation/steamapps/common/The Wi
 
 ### `list` command
 
+Show information of all managed targets and mods.
+
 e.g.
 
-```terminal
+```console
 $ filemod list -m 1
+```
+
+<details>
+  <summary>Output too long: click to expand</summary>
+
+```console
 MOD_ID 1 DIR 'Glowing Guiding Lands Gathering Spots 4.0-2225-4-0-1584151239' STATUS installed
     MOD_FILES
         'nativePC'
@@ -258,11 +303,15 @@ MOD_ID 1 DIR 'Glowing Guiding Lands Gathering Spots 4.0-2225-4-0-1584151239' STA
     BACKUP_FILES
 ```
 
+</details>
+
 ### `rename` command
+
+Rename the managed mod. This will also rename the mod directory `<target_id>/<mod>/`.
 
 e.g.
 
-```terminal
+```console
 $ filemod rename -m 1 -n "9000 weight"
 ok
 
