@@ -9,55 +9,23 @@
 namespace filemod {
 
 class fsman;
+using revert_fn = void (*)(const std::filesystem::path &src,
+                           const std::filesystem::path &dest);
 
-class fs_rec_base {
+class fs_rec {
  public:
   template <typename S, typename D>
-  explicit fs_rec_base(S &&src, D &&dest)
-      : m_src{std::forward<S>(src)}, m_dest{std::forward<D>(dest)} {}
+  explicit fs_rec(S &&src, D &&dest, revert_fn custom_revert)
+      : m_src{std::forward<S>(src)},
+        m_dest{std::forward<D>(dest)},
+        m_custom_revert{custom_revert} {}
 
-  virtual void revert() = 0;
+  void revert() const { m_custom_revert(m_src, m_dest); }
 
- protected:
-  std::filesystem::path m_src;
-  std::filesystem::path m_dest;
-
-  friend fsman;
-};
-
-class fs_rec_create : public fs_rec_base {
- public:
-  using fs_rec_base::fs_rec_base;
-
-  void revert() override { std::filesystem::remove(m_dest); }
-};
-
-struct fs_rec_mv_f : public fs_rec_base {
- public:
-  using fs_rec_base::fs_rec_base;
-
-  void revert() override;
-};
-
-class fs_rec_cp_f : public fs_rec_base {
- public:
-  using fs_rec_base::fs_rec_base;
-
-  void revert() override { std::filesystem::remove(m_dest); }
-};
-
-class fs_rec_rm_d : public fs_rec_base {
- public:
-  using fs_rec_base::fs_rec_base;
-
-  void revert() override { std::filesystem::create_directories(m_dest); }
-};
-
-class fs_rec_rename_d : public fs_rec_base {
- public:
-  using fs_rec_base::fs_rec_base;
-
-  void revert() override { std::filesystem::rename(m_dest, m_src); }
+ private:
+  const revert_fn m_custom_revert;
+  const std::filesystem::path m_src;
+  const std::filesystem::path m_dest;
 };
 
 class fsman {
@@ -66,10 +34,7 @@ class fsman {
 
   [[nodiscard]] bool log() const { return m_log; }
 
-  [[nodiscard]] const std::vector<std::unique_ptr<fs_rec_base>> &records()
-      const {
-    return m_recs;
-  }
+  [[nodiscard]] const std::vector<fs_rec> &records() const { return m_recs; }
 
   void revert();
 
@@ -89,8 +54,11 @@ class fsman {
   template <typename D>
   void log_create(D &&dest) {
     if (m_log) {
-      m_recs.push_back(std::make_unique<fs_rec_create>(std::filesystem::path{},
-                                                       std::forward<D>(dest)));
+      m_recs.emplace_back(
+          std::filesystem::path{}, std::forward<D>(dest),
+          [](const std::filesystem::path &, const std::filesystem::path &dest) {
+            std::filesystem::remove(dest);
+          });
     }
   }
 
@@ -103,8 +71,13 @@ class fsman {
   template <typename S, typename D>
   void log_mv_f(S &&src, D &&dest) {
     if (m_log) {
-      m_recs.push_back(std::make_unique<fs_rec_mv_f>(std::forward<S>(src),
-                                                     std::forward<D>(dest)));
+      m_recs.emplace_back(
+          std::forward<S>(src), std::forward<D>(dest),
+          [](const std::filesystem::path &src,
+             const std::filesystem::path &dest) {
+            std::filesystem::create_directories(src.parent_path());
+            cross_filesystem_mv(dest, src);
+          });
     }
   }
 
@@ -117,8 +90,11 @@ class fsman {
   template <typename D>
   void log_cp_f(D &&dest) {
     if (m_log) {
-      m_recs.push_back(std::make_unique<fs_rec_cp_f>(std::filesystem::path(),
-                                                     std::forward<D>(dest)));
+      m_recs.emplace_back(
+          std::filesystem::path{}, std::forward<D>(dest),
+          [](const std::filesystem::path &, const std::filesystem::path &dest) {
+            std::filesystem::remove(dest);
+          });
     }
   }
 
@@ -133,8 +109,11 @@ class fsman {
   template <typename D>
   void log_rm_d(D &&dest) {
     if (m_log) {
-      m_recs.push_back(std::make_unique<fs_rec_rm_d>(std::filesystem::path(),
-                                                     std::forward<D>(dest)));
+      m_recs.emplace_back(
+          std::filesystem::path{}, std::forward<D>(dest),
+          [](const std::filesystem::path &, const std::filesystem::path &dest) {
+            std::filesystem::create_directories(dest);
+          });
     }
   }
 
@@ -147,15 +126,18 @@ class fsman {
   template <typename S, typename D>
   void log_rename_d(S &&src, D &&dest) {
     if (m_log) {
-      m_recs.push_back(std::make_unique<fs_rec_rename_d>(
-          std::forward<S>(src), std::forward<D>(dest)));
+      m_recs.emplace_back(std::forward<S>(src), std::forward<D>(dest),
+                          [](const std::filesystem::path &src,
+                             const std::filesystem::path &dest) {
+                            std::filesystem::rename(dest, src);
+                          });
     }
   }
 
   void reset() { m_recs.clear(); }
 
  private:
-  std::vector<std::unique_ptr<fs_rec_base>> m_recs;
+  std::vector<fs_rec> m_recs;
   bool m_log = true;
 };
 
