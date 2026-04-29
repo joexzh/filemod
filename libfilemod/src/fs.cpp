@@ -274,13 +274,4 @@ void FS::delete_empty_dirs_(std::vector<std::filesystem::path> &&sorted_dirs) {
   }
 }
 
-void FS::begin_tx_() { m_curr_scope = &m_curr_scope->new_child(); }
-
-void FS::end_tx_() {
-  m_curr_scope = m_curr_scope->parent();
-  if (m_curr_scope == &m_root_scope) {
-    m_root_scope.reset();
-  }
-}
-
 }  // namespace filemod

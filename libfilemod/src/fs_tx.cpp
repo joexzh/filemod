@@ -4,7 +4,9 @@
 
 namespace filemod {
 
-fs_tx::fs_tx(FS &fs) : m_fs{fs} { m_fs.begin_tx_(); }
+fs_tx::fs_tx(FS &fs) : m_fs{fs} {
+  m_fs.m_curr_scope = &m_fs.m_curr_scope->new_child();
+}
 
 void fs_tx::rollback() { m_fs.m_curr_scope->rollback(); }
 
@@ -15,7 +17,13 @@ fs_tx::~fs_tx() {
     } catch (...) {
     }
   }
-  m_fs.end_tx_();
+
+  m_fs.m_curr_scope = m_fs.m_curr_scope->parent();
+  if (m_fs.m_curr_scope == &m_fs.m_root_scope) {
+    // when goes back to root scope, all the child scopes are done, never need
+    // to touch them again, so clear all children
+    m_fs.m_root_scope.reset();
+  }
 }
 
 }  // namespace filemod

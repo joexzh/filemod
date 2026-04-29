@@ -16,12 +16,14 @@ const char FILEMOD_TEMP_DIR[] = "joexie.filemod";
 const char TMP_UNINSTALLED[] = "___filemod_uninstalled";
 const char TMP_EXTRACTED[] = "___extracted";
 
-// internal transaction scope
+// internal transaction scope.
+// All actual file system operations are done through `fsman`.
 class tx_scope {
  public:
   explicit tx_scope(tx_scope *parent, bool log = true)
       : m_fsman{log}, m_parent{parent} {}
 
+  // create a new log-ready child scope and return reference to it.
   tx_scope &new_child() { return m_children.emplace_back(this); }
 
   tx_scope *parent() { return m_parent; }
@@ -31,6 +33,7 @@ class tx_scope {
   // unused
   void commit();
 
+  // rollback this and all children scopes.
   void rollback();
 
   void reset();
@@ -38,6 +41,7 @@ class tx_scope {
  private:
   std::vector<tx_scope> m_children;
   fsman m_fsman;
+  // m_parent is not null, except for root scope
   tx_scope *const m_parent = nullptr;
   bool m_rollbacked = false;
 };
@@ -143,6 +147,13 @@ class FS {
  private:
   const std::filesystem::path m_cfg_dir;
   tx_scope m_root_scope{nullptr, false};
+  // m_curr_scope is never null.
+  //
+  // When no transaction started, it is m_root_scope.
+  //
+  // When new transaction started, it is the child of m_curr_scope.
+  //
+  // When transaction ended, it goes back to parent of m_curr_scope.
   tx_scope *m_curr_scope = &m_root_scope;
 
   void move_file_(const std::filesystem::path &src_file,
@@ -162,12 +173,7 @@ class FS {
       const std::filesystem::path &dest_dir,
       const std::vector<std::filesystem::path> &sorted_file_rels);
 
-  // Proxy function for `fs_tx`.
-  void begin_tx_();
-
-  // Proxy function for `fs_tx`.
-  void end_tx_();
-
+  // the actual external interface to start a transaction
   friend fs_tx;
 
 };  // class FS

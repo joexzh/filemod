@@ -18,8 +18,11 @@ class fs_tx {
  public:
   explicit fs_tx(FS &fs);
 
+  // If commit() is not called, the transaction will be rolled back when
+  // destructing fs_tx.
   void commit() { m_committed = true; }
 
+  // Rollback this and all nested transactions.
   void rollback();
 
   ~fs_tx();
