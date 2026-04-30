@@ -280,42 +280,7 @@ class modder {
       const std::vector<int64_t>& tar_ids);
 
   /**
-   * @brief Formatted mod(s) information from database.
-   * @param mod_ids ids of mods
-   * @return format:
-   * @code{.unparsed}
-   * MOD_ID 222 DIR e/f/g STATUS installed
-   *     MOD_FILES
-   *         'a/b/c'
-   *         'e/f/g'
-   *         'r/g/c'
-   *         'a'
-   *     BACKUP_FILES
-   *         'xxx'
-   * MOD_ID 333 DIR 'x/y/z' STATUS not_installed
-   *     MOD_FILES
-   *         ...
-   *     BACKUP_FILES
-   *         ...
-   * @endcode
-   */
-  FILEMOD_API std::string list_mods(const std::vector<int64_t>& mod_ids);
-
-  /**
-   * @brief Formatted target(s) information from database.
-   * @param tar_ids ids of targets
-   * @return format:
-   * @code{.unparsed}
-   * TARGET_ID 111 DIR '/a/b/c'
-   *     MOD_ID 222 DIR 'e/f/g' STATUS installed
-   *     MOD_ID 333 DIR 'x/y/z' STATUS not_installed
-   * @endcode
-   */
-  FILEMOD_API std::string list_targets(const std::vector<int64_t>& tar_ids);
-
-  /**
-   * @brief Rename mod.
-   * Rename mod directory to `newname` and modify database record.
+   * @brief Rename mod directory to `newname` and modify database record.
    * @param mid
    * @param newname require UTF-8 encoded. DO NOT pass a directory!
    * @return result_base
@@ -326,8 +291,7 @@ class modder {
   FS m_fs;  // ORDER DEPENDENCY
   DB m_db;  // ORDER DEPENDENCY
 
-  template <typename Func>
-  void tx_wrapper_(Func func);
+  void tx_wrapper_(const auto& ret, const auto& func);
 
   result<int64_t> add_mod_(int64_t tar_id, const std::string& mod_name,
                            const std::filesystem::path& mod_src_raw,

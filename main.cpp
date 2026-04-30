@@ -36,14 +36,117 @@ static bool is_set(const std::vector<int64_t> &ids) { return !ids.empty(); }
 
 static bool is_set(const std::string &dir) { return !dir.empty(); }
 
+static void append_ok(filemod::result_base &ret) {
+  if (ret.success) {
+    if (!ret.msg.empty()) {
+      ret.msg += '\n';
+    }
+    ret.msg += "ok";
+  }
+}
+
+static void move_to_retbase(filemod::result_base &&from,
+                            filemod::result_base &to) {
+  to = std::move(from);
+  append_ok(to);
+}
+
 static void move_to_retbase(filemod::result<int64_t> &&from,
                             filemod::result_base &to) {
   to.success = from.success;
   if (from.success) {
-    to.msg = std::to_string(from.data);
+    to.msg = std::to_string(from.data) + '\n' + "ok";
   } else {
     to.msg = std::move(from.msg);
   }
+}
+
+constexpr char FILEMOD_MARGIN[] = "    ";
+
+static void mod_files_to_string(const std::vector<std::string> &file_strs,
+                                std::string_view &margin, std::string &ret) {
+  for (auto &file_str : file_strs) {
+    ret += margin;
+    ret += '\'';
+    ret += file_str;
+    ret += '\'';
+    ret += '\n';
+  }
+}
+
+// Return format:
+//
+// MOD_ID 222 DIR e/f/g STATUS installed
+//     MOD_FILES
+//         'a/b/c'
+//         'e/f/g'
+//         'r/g/c'
+//         'a'
+//     BACKUP_FILES
+//         'xxx'
+// MOD_ID 333 DIR 'x/y/z' STATUS not_installed
+//     MOD_FILES
+//         ...
+//     BACKUP_FILES
+//         ...
+static std::string mods_to_string(const std::vector<filemod::ModDto> &mods,
+                                  bool verbose = false, uint8_t indent = 0) {
+  std::string ret;
+
+  std::string full_margin;
+  for (int i = 0; i < indent + 2; ++i) {
+    full_margin += FILEMOD_MARGIN;
+  }
+  std::string_view margin1{full_margin.c_str(),
+                           indent * filemod::length_s(FILEMOD_MARGIN)};
+  std::string_view margin2{full_margin.c_str(),
+                           (indent + 1) * filemod::length_s(FILEMOD_MARGIN)};
+  std::string_view margin3{full_margin.c_str(),
+                           (indent + 2) * filemod::length_s(FILEMOD_MARGIN)};
+
+  for (auto &mod : mods) {
+    ret += margin1;
+    ret += "MOD_ID ";
+    ret += std::to_string(mod.id);
+    ret += " DIR '";
+    ret += mod.dir;
+    ret += "' STATUS ";
+    ret += mod.status == filemod::ModStatus::Installed ? "installed"
+                                                       : "not_installed";
+    ret += '\n';
+    if (verbose) {
+      ret += margin2;
+      ret += "MOD_FILES\n";
+      mod_files_to_string(mod.files, margin3, ret);
+      ret += margin2;
+      ret += "BACKUP_FILES\n";
+      mod_files_to_string(mod.bak_files, margin3, ret);
+    }
+  }
+
+  return ret;
+}
+
+// Return format:
+//
+// TARGET_ID 111 DIR '/a/b/c'
+//     MOD_ID 222 DIR 'e/f/g' STATUS installed
+//     MOD_ID 333 DIR 'x/y/z' STATUS not_installed
+static std::string targets_to_string(
+    const std::vector<filemod::TargetDto> &tars) {
+  std::string ret;
+
+  for (auto &tar : tars) {
+    ret += "TARGET_ID ";
+    ret += std::to_string(tar.id);
+    ret += " DIR '";
+    ret += tar.dir;
+    ret += "'\n";
+
+    ret += mods_to_string(tar.ModDtos, false, 1);
+  }
+
+  return ret;
 }
 
 static void parse_subcmd(const po::options_description &desc,
@@ -175,9 +278,9 @@ static void parse_uninstall(filemod::result_base &ret, std::ostringstream &oss,
   if (vm.count("help")) {
     oss << desc;
   } else if (is_set(id)) {  // uninstall all mods of a target
-    ret = md.uninstall_target(id);
+    move_to_retbase(md.uninstall_target(id), ret);
   } else if (is_set(ids)) {  // uninstall multiple mods
-    ret = md.uninstall_mods(ids);
+    move_to_retbase(md.uninstall_mods(ids), ret);
   } else {
     parse_error(desc, oss, ret);
   }
@@ -201,9 +304,9 @@ static void parse_remove(filemod::result_base &ret, std::ostringstream &oss,
   if (vm.count("help")) {
     oss << desc;
   } else if (is_set(id)) {  // remove mod from a target
-    ret = md.remove_target(id);
+    move_to_retbase(md.remove_target(id), ret);
   } else if (is_set(ids)) {  // remove multiple mods
-    ret = md.remove_mods(ids);
+    move_to_retbase(md.remove_mods(ids), ret);
   } else {
     parse_error(desc, oss, ret);
   }
@@ -227,9 +330,10 @@ static void parse_list(filemod::result_base &ret, std::ostringstream &oss,
   if (vm.count("help")) {
     oss << desc;
   } else if (vm.count("mid")) {  // list mods
-    ret.msg = md.list_mods(vm["mid"].as<std::vector<int64_t>>());
+    ret.msg =
+        mods_to_string(md.query_mods(vm["mid"].as<std::vector<int64_t>>()));
   } else {  // list targets
-    ret.msg = md.list_targets(ids);
+    ret.msg = targets_to_string(md.query_targets(ids));
   }
 }
 
@@ -248,7 +352,7 @@ static void parse_rename(filemod::result_base &ret, std::ostringstream &oss,
   if (vm.count("help")) {
     oss << desc;
   } else if (vm.count("mid") && vm.count("name")) {
-    ret = md.rename_mod(mid, newname);
+    move_to_retbase(md.rename_mod(mid, newname), ret);
   } else {
     parse_error(desc, oss, ret);
   }
