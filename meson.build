@@ -24,27 +24,21 @@ cppc = meson.get_compiler('cpp')
 if cppc.has_argument('-Wnrvo')
     add_project_arguments('-Wnrvo', language: 'cpp')
 endif
-# enable operator""Q support for boost libraries
-if cppc.has_argument('-fext-numeric-literals')
-    add_global_arguments('-fext-numeric-literals', language: 'cpp')
-endif
 
 subdir('libfilemod')
 
-filemod_cli_compile_opts = []
-if host_machine.system() == 'windows' or get_option('system_boost_dyn_link')
-    boost_op_dep = dependency('boost', modules: ['program_options'])
-    filemod_cli_compile_opts += ['-DBOOST_PROGRAM_OPTIONS_DYN_LINK']
-else
-    cmake = import('cmake')
-    sub_proj = cmake.subproject('boost')
-    boost_op_dep = sub_proj.dependency('boost_program_options')
-endif
+cmake = import('cmake')
+sub_options = cmake.subproject_options()
+sub_options.add_cmake_defines({
+    'BOOST_INCLUDE_LIBRARIES': 'program_options',
+    'BUILD_TESTING': 'OFF',
+})
+sub_proj = cmake.subproject('boost', options: sub_options)
+boost_op_dep = sub_proj.dependency('boost_program_options')
 
 executable(
     'filemod',
     'main.cpp',
-    cpp_args: filemod_cli_compile_opts,
     dependencies: [libfilemod_dep, boost_op_dep],
     install: true,
     install_tag: 'strip',
