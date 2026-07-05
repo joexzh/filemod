@@ -1,9 +1,11 @@
 //
 // Created by Joe Tse on 11/26/23.
 //
+// On Windows, Require the executable to inject UTF-8 manifest.
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "filemod/fs.hpp"
@@ -47,15 +49,15 @@ class modder {
    * targets and mods.
    *
    * Similar to default constructor modder(), but config directory is replaced
-   * by @c cfg_dir, database file is replaced by @c db_path.
+   * by @c cfg_dir, database file is replaced by @c db_file.
    *
    * @param cfg_dir full path of config directory
-   * @param db_path full path of database file
-   * @exception std::exception if fail to create @c cfg_dir or @c db_path, or
+   * @param db_file full path of database file
+   * @exception std::exception if fail to create @c cfg_dir or @c db_file, or
    * cannot recognize existing ones as directory and SQLite database file.
    */
-  FILEMOD_API explicit modder(const std::filesystem::path& cfg_dir,
-                              const std::filesystem::path& db_path);
+  FILEMOD_API explicit modder(const std::string& cfg_dir,
+                              const std::string& db_file);
 
   /**
    * @brief Add target to managed config.
@@ -67,8 +69,7 @@ class modder {
    * @return result.success == false if @c tar_dir_raw does not exist.
    * @exception std::exception if unknown runtime error occurs.
    */
-  FILEMOD_API result<int64_t> add_target(
-      const std::filesystem::path& tar_dir_raw);
+  FILEMOD_API result<int64_t> add_target(std::string_view tar_dir_raw);
 
   /**
    * @brief add mod to managed config.
@@ -86,38 +87,38 @@ class modder {
    * @exception std::exception if unknown runtime error occurs.
    */
   FILEMOD_API result<int64_t> add_mod(int64_t tar_id,
-                                      const std::filesystem::path& mod_dir_raw);
+                                      std::string_view mod_dir_raw);
   /**
    * Reference:\n
-   * @copydoc add_mod(int64_t,const std::filesystem::path&)
+   * @copydoc add_mod(int64_t,const std::string_view)
    * @param tar_id
    * @param mod_name require UTF-8 encoded
    * @param mod_dir_raw
    */
-  FILEMOD_API result<int64_t> add_mod(int64_t tar_id,
-                                      const std::string& mod_name,
-                                      const std::filesystem::path& mod_dir_raw);
+  FILEMOD_API result<int64_t> add_mod(int64_t tar_id, std::string_view mod_name,
+                                      std::string_view mod_dir_raw);
 
   /**
-   * Reference:\n
-   * @copydoc add_mod(int64_t,const std::filesystem::path&)
+   * @brief Add mod from archive.
    * @param tar_id
    * @param mod_name require UTF-8 encoded
-   * @param path
+   * @param path archive path
    * @attention Require setting LC_CTYPE to UTF-8, e.g. `setlocale(LC_CTYPE,
+   * ".UTF-8")`.
    */
-  FILEMOD_API result<int64_t> add_mod_a(int64_t tar_id,
-                                        const std::string& mod_name,
-                                        const std::filesystem::path& path);
+  FILEMOD_API result<int64_t> add_mod_archive(int64_t tar_id,
+                                              std::string_view mod_name,
+                                              std::string_view path);
 
   /**
-   * @brief Add mod fro archive.
-   * Reference:\n
-   * @copydoc add_mod(int64_t,const std::filesystem::path&)
+   * @brief Add mod from archive.
+   * @param tar_id
+   * @param path archive path
    * @attention Require setting LC_CTYPE to UTF-8, e.g. `setlocale(LC_CTYPE,
+   * ".UTF-8")`.
    */
-  FILEMOD_API result<int64_t> add_mod_a(int64_t tar_id,
-                                        const std::filesystem::path& path);
+  FILEMOD_API result<int64_t> add_mod_archive(int64_t tar_id,
+                                              std::string_view path);
 
   /**
    * @brief Install mods.
@@ -170,41 +171,39 @@ class modder {
    * 2. mods are in conflict.
    * @exception std::exception if unknown runtime error occurs.
    */
-  FILEMOD_API result<int64_t> install_path(
-      int64_t tar_id, const std::filesystem::path& mod_dir_raw);
+  FILEMOD_API result<int64_t> install_mod_path(int64_t tar_id,
+                                               std::string_view mod_dir_raw);
 
   /**
    * Reference:\n
-   * @copydoc install_path(int64_t,const std::filesystem::path&)
+   * @copydoc install_path(int64_t,std::string_view)
    * @param tar_id
    * @param mod_name require UTF-8 encoded
    * @param mod_dir_raw
    */
-  FILEMOD_API result<int64_t> install_path(
-      int64_t tar_id, const std::string& mod_name,
-      const std::filesystem::path& mod_dir_raw);
+  FILEMOD_API result<int64_t> install_mod_path(int64_t tar_id,
+                                               std::string_view mod_name,
+                                               std::string_view mod_dir_raw);
 
   /**
-   * Reference:\n
-   * @copydoc install_path(int64_t,const std::filesystem::path&)
+   * @breif Install mod from archive.
    * @attention Require setting LC_CTYPE to UTF-8, e.g. `setlocale(LC_CTYPE,
-   * "en_US.UTF-8")`.
+   * ".UTF-8")`.
    * @param tar_id
    * @param mod_name require UTF-8 encoded
    * @param path
    */
-  FILEMOD_API result<int64_t> install_path_a(int64_t tar_id,
-                                             const std::string& mod_name,
-                                             const std::filesystem::path& path);
+  FILEMOD_API result<int64_t> install_mod_archive(int64_t tar_id,
+                                                  std::string_view mod_name,
+                                                  std::string_view path);
 
   /**
-   * @brief Install from archive.
-   * Reference:\n
-   * @copydoc install_path(int64_t,const std::filesystem::path&)
+   * @brief Install mod from archive.
    * @attention Require setting LC_CTYPE to UTF-8, e.g. `setlocale(LC_CTYPE,
+   * ".UTF-8")`.
    */
-  FILEMOD_API result<int64_t> install_path_a(int64_t tar_id,
-                                             const std::filesystem::path& path);
+  FILEMOD_API result<int64_t> install_mod_archive(int64_t tar_id,
+                                                  std::string_view path);
 
   /**
    * @brief Uninstall mods.
@@ -285,7 +284,7 @@ class modder {
    * @param newname require UTF-8 encoded. DO NOT pass a directory!
    * @return result_base
    */
-  FILEMOD_API result_base rename_mod(int64_t mid, const std::string& newname);
+  FILEMOD_API result_base rename_mod(int64_t mid, std::string_view newname);
 
  private:
   FS m_fs;  // ORDER DEPENDENCY
@@ -293,16 +292,16 @@ class modder {
 
   void tx_wrapper_(const auto& ret, const auto& func);
 
-  result<int64_t> add_mod_(int64_t tar_id, const std::string& mod_name,
-                           const std::filesystem::path& mod_src_raw,
-                           copy_mod_t cp_mod_fn);
+  result<int64_t> add_mod_(int64_t tar_id, std::string_view mod_name,
+                           std::string_view mod_src_raw, copy_mod_t cp_mod_fn);
 
-  using add_mod_t = result<int64_t> (modder::*)(int64_t, const std::string&,
-                                                const std::filesystem::path&);
+  using add_mod_t = result<int64_t> (modder::*)(int64_t,
+                                                std::string_view modname,
+                                                std::string_view path);
 
-  result<int64_t> install_path_(int64_t tar_id, const std::string& mod_name,
-                                const std::filesystem::path& path,
-                                add_mod_t add_mod_fn);
+  result<int64_t> install_mod_path_(int64_t tar_id, std::string_view mod_name,
+                                    std::string_view path,
+                                    add_mod_t add_mod_fn);
 
   result_base install_mod_(int64_t mod_id);
 

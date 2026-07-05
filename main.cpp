@@ -9,21 +9,12 @@
 #include <limits>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
-
-#include "boost/program_options/options_description.hpp"
-#include "boost/program_options/parsers.hpp"
 
 #ifdef _WIN32
 #include <Windows.h>
-
-#define MAIN wmain
-typedef wchar_t mychar;
-
-#else
-#define MAIN main
-typedef char mychar;
-
+#include <shellapi.h>
 #endif
 
 namespace po = boost::program_options;
@@ -32,11 +23,11 @@ static bool is_set(int64_t id) {
   return id != (std::numeric_limits<int64_t>::min)();
 }
 
-static bool is_set(const std::vector<int64_t> &ids) { return !ids.empty(); }
+static bool is_set(const std::vector<int64_t>& ids) { return !ids.empty(); }
 
-static bool is_set(const std::string &dir) { return !dir.empty(); }
+static bool is_set(const std::string& dir) { return !dir.empty(); }
 
-static void append_ok(filemod::result_base &ret) {
+static void append_ok(filemod::result_base& ret) {
   if (ret.success) {
     if (!ret.msg.empty()) {
       ret.msg += '\n';
@@ -45,14 +36,14 @@ static void append_ok(filemod::result_base &ret) {
   }
 }
 
-static void move_to_retbase(filemod::result_base &&from,
-                            filemod::result_base &to) {
+static void move_to_retbase(filemod::result_base&& from,
+                            filemod::result_base& to) {
   to = std::move(from);
   append_ok(to);
 }
 
-static void move_to_retbase(filemod::result<int64_t> &&from,
-                            filemod::result_base &to) {
+static void move_to_retbase(filemod::result<int64_t>&& from,
+                            filemod::result_base& to) {
   to.success = from.success;
   if (from.success) {
     to.msg = std::to_string(from.data) + '\n' + "ok";
@@ -63,9 +54,9 @@ static void move_to_retbase(filemod::result<int64_t> &&from,
 
 constexpr char FILEMOD_MARGIN[] = "    ";
 
-static void mod_files_to_string(const std::vector<std::string> &file_strs,
-                                std::string_view &margin, std::string &ret) {
-  for (auto &file_str : file_strs) {
+static void mod_files_to_string(const std::vector<std::string>& file_strs,
+                                std::string_view& margin, std::string& ret) {
+  for (auto& file_str : file_strs) {
     ret += margin;
     ret += '\'';
     ret += file_str;
@@ -89,7 +80,7 @@ static void mod_files_to_string(const std::vector<std::string> &file_strs,
 //         ...
 //     BACKUP_FILES
 //         ...
-static std::string mods_to_string(const std::vector<filemod::ModDto> &mods,
+static std::string mods_to_string(const std::vector<filemod::ModDto>& mods,
                                   bool verbose = false, uint8_t indent = 0) {
   std::string ret;
 
@@ -104,7 +95,7 @@ static std::string mods_to_string(const std::vector<filemod::ModDto> &mods,
   std::string_view margin3{full_margin.c_str(),
                            (indent + 2) * filemod::length_s(FILEMOD_MARGIN)};
 
-  for (auto &mod : mods) {
+  for (auto& mod : mods) {
     ret += margin1;
     ret += "MOD_ID ";
     ret += std::to_string(mod.id);
@@ -133,10 +124,10 @@ static std::string mods_to_string(const std::vector<filemod::ModDto> &mods,
 //     MOD_ID 222 DIR 'e/f/g' STATUS installed
 //     MOD_ID 333 DIR 'x/y/z' STATUS not_installed
 static std::string targets_to_string(
-    const std::vector<filemod::TargetDto> &tars) {
+    const std::vector<filemod::TargetDto>& tars) {
   std::string ret;
 
-  for (auto &tar : tars) {
+  for (auto& tar : tars) {
     ret += "TARGET_ID ";
     ret += std::to_string(tar.id);
     ret += " DIR '";
@@ -149,9 +140,9 @@ static std::string targets_to_string(
   return ret;
 }
 
-static void parse_subcmd(const po::options_description &desc,
-                         const po::basic_parsed_options<char> &parsed,
-                         po::variables_map &vm) {
+static void parse_subcmd(const po::options_description& desc,
+                         const po::basic_parsed_options<char>& parsed,
+                         po::variables_map& vm) {
   auto opts = po::collect_unrecognized(parsed.options, po::include_positional);
   opts.erase(opts.begin());
 
@@ -160,16 +151,16 @@ static void parse_subcmd(const po::options_description &desc,
   po::notify(vm);
 }
 
-static void parse_error(const po::options_description &desc,
-                        std::ostream &ostream, filemod::result_base &ret) {
+static void parse_error(const po::options_description& desc,
+                        std::ostream& ostream, filemod::result_base& ret) {
   ostream << desc;
   ret.success = false;
 }
 
-static void parse_add(filemod::result_base &ret, std::ostringstream &oss,
-                      po::basic_parsed_options<char> &parsed,
-                      po::variables_map &vm, int64_t &id, std::string &name,
-                      std::string &dir) {
+static void parse_add(filemod::result_base& ret, std::ostringstream& oss,
+                      po::basic_parsed_options<char>& parsed,
+                      po::variables_map& vm, int64_t& id, std::string& name,
+                      std::string& dir) {
   po::options_description desc(
       "add target or mod\n"
       "Usage: filemod add --tdir <target_dir>\n"
@@ -190,30 +181,29 @@ static void parse_add(filemod::result_base &ret, std::ostringstream &oss,
   if (vm.count("help")) {
     oss << desc;
   } else if (vm.count("tdir")) {  // add target
-    move_to_retbase(md.add_target(filemod::utf8str_to_path(dir)), ret);
+    move_to_retbase(md.add_target(dir), ret);
   } else if (vm.count("tid") &&
              vm.count("mdir")) {  // add mod from mod source directory
     if (vm.count("name")) {
-      move_to_retbase(md.add_mod(id, name, filemod::utf8str_to_path(dir)), ret);
+      move_to_retbase(md.add_mod(id, name, dir), ret);
     } else {
       move_to_retbase(md.add_mod(id, dir), ret);
     }
   } else if (vm.count("tid") && vm.count("archive")) {  // add mod from archive
     if (vm.count("name")) {
-      move_to_retbase(md.add_mod_a(id, name, filemod::utf8str_to_path(dir)),
-                      ret);
+      move_to_retbase(md.add_mod_archive(id, name, dir), ret);
     } else {
-      move_to_retbase(md.add_mod_a(id, filemod::utf8str_to_path(dir)), ret);
+      move_to_retbase(md.add_mod_archive(id, dir), ret);
     }
   } else {
     parse_error(desc, oss, ret);
   }
 }
 
-static void parse_install(filemod::result_base &ret, std::ostringstream &oss,
-                          po::basic_parsed_options<char> &parsed,
-                          po::variables_map &vm, int64_t &id, std::string &name,
-                          std::string &dir, std::vector<int64_t> &ids) {
+static void parse_install(filemod::result_base& ret, std::ostringstream& oss,
+                          po::basic_parsed_options<char>& parsed,
+                          po::variables_map& vm, int64_t& id, std::string& name,
+                          std::string& dir, std::vector<int64_t>& ids) {
   po::options_description desc(
       "install mod(s)\n"
       "Usage: filemod install -t <target_id>\n"
@@ -238,19 +228,15 @@ static void parse_install(filemod::result_base &ret, std::ostringstream &oss,
   } else if (vm.count("tid")) {
     if (vm.count("mdir")) {
       if (vm.count("name")) {
-        move_to_retbase(
-            md.install_path(id, name, filemod::utf8str_to_path(dir)), ret);
+        move_to_retbase(md.install_mod_path(id, name, dir), ret);
       } else {
-        move_to_retbase(md.install_path(id, filemod::utf8str_to_path(dir)),
-                        ret);
+        move_to_retbase(md.install_mod_path(id, dir), ret);
       }
     } else if (vm.count("archive")) {
       if (vm.count("name")) {
-        move_to_retbase(
-            md.install_path_a(id, name, filemod::utf8str_to_path(dir)), ret);
+        move_to_retbase(md.install_mod_archive(id, name, dir), ret);
       } else {
-        move_to_retbase(md.install_path_a(id, filemod::utf8str_to_path(dir)),
-                        ret);
+        move_to_retbase(md.install_mod_archive(id, dir), ret);
       }
     } else {
       ret = md.install_target(id);
@@ -260,10 +246,10 @@ static void parse_install(filemod::result_base &ret, std::ostringstream &oss,
   }
 }
 
-static void parse_uninstall(filemod::result_base &ret, std::ostringstream &oss,
-                            po::basic_parsed_options<char> &parsed,
-                            po::variables_map &vm, int64_t &id,
-                            std::vector<int64_t> &ids) {
+static void parse_uninstall(filemod::result_base& ret, std::ostringstream& oss,
+                            po::basic_parsed_options<char>& parsed,
+                            po::variables_map& vm, int64_t& id,
+                            std::vector<int64_t>& ids) {
   po::options_description desc(
       "uninstall mod(s)\n"
       "Usage: filemod uninstall -t <target_id>\n"
@@ -286,10 +272,10 @@ static void parse_uninstall(filemod::result_base &ret, std::ostringstream &oss,
   }
 }
 
-static void parse_remove(filemod::result_base &ret, std::ostringstream &oss,
-                         po::basic_parsed_options<char> &parsed,
-                         po::variables_map &vm, int64_t &id,
-                         std::vector<int64_t> &ids) {
+static void parse_remove(filemod::result_base& ret, std::ostringstream& oss,
+                         po::basic_parsed_options<char>& parsed,
+                         po::variables_map& vm, int64_t& id,
+                         std::vector<int64_t>& ids) {
   po::options_description desc(
       "remove target or mod(s)\n"
       "Usage: filemod remove -t <target_id>\n"
@@ -312,9 +298,9 @@ static void parse_remove(filemod::result_base &ret, std::ostringstream &oss,
   }
 }
 
-static void parse_list(filemod::result_base &ret, std::ostringstream &oss,
-                       po::basic_parsed_options<char> &parsed,
-                       po::variables_map &vm, std::vector<int64_t> &ids) {
+static void parse_list(filemod::result_base& ret, std::ostringstream& oss,
+                       po::basic_parsed_options<char>& parsed,
+                       po::variables_map& vm, std::vector<int64_t>& ids) {
   po::options_description desc(
       "display target(s) and mod(s) in database\n"
       "Usage: filemod list [-t <target_id1> [target_id2] ...]\n"
@@ -337,9 +323,9 @@ static void parse_list(filemod::result_base &ret, std::ostringstream &oss,
   }
 }
 
-static void parse_rename(filemod::result_base &ret, std::ostringstream &oss,
-                         po::parsed_options &parsed, po::variables_map &vm,
-                         int64_t &mid, std::string &newname) {
+static void parse_rename(filemod::result_base& ret, std::ostringstream& oss,
+                         po::parsed_options& parsed, po::variables_map& vm,
+                         int64_t& mid, std::string& newname) {
   po::options_description desc(
       "rename mod\n"
       "Usage: filemod rename -m <mod_id> -n <newname>\n"
@@ -358,7 +344,7 @@ static void parse_rename(filemod::result_base &ret, std::ostringstream &oss,
   }
 }
 
-static int parse(int argc, char *argv[]) {
+static int parse(int argc, char* argv[]) {
   filemod::result_base ret{.success = true};
   std::ostringstream oss;
 
@@ -428,30 +414,51 @@ static int parse(int argc, char *argv[]) {
   return 1;
 }
 
-int MAIN(int argc, mychar **argv) {
-  setlocale(LC_CTYPE, "en_US.UTF-8");
-
+int main(int argc, char** argv) {
 #ifdef _WIN32
+  // Must inject UTF-8 manifest on Windows. See
+  // https://learn.microsoft.com/en-us/windows/apps/design/globalizing/use-utf8-code-page
+
+  // For legacy CMD which does not support auto converting input to UTF-8.
+
+  setlocale(LC_ALL, ".UTF-8");
   SetConsoleOutputCP(CP_UTF8);
-  // convert wchar** to utf8 char** on Windows
-  std::unique_ptr<char *[], void (*)(char **p)> ptr {
-    new char *[argc], [](char **p) { delete p; }
-  };
-  std::vector<std::string> str;
-  str.reserve(argc);
-  for (int i = 0; i < argc; ++i) {
-    str.push_back(filemod::wstr_to_cp(argv[i], CP_UTF8));
-    ptr[i] = str[i].data();
+  SetConsoleCP(CP_UTF8);
+
+  LPWSTR* szArgList = CommandLineToArgvW(GetCommandLineW(), &argc);
+  if (szArgList == nullptr) {
+    std::cerr << "Error: fail to parse arguments\n";
+    return 1;
   }
-  char **args = ptr.get();
+
+  struct scope_guard {
+    LPWSTR* ptr;
+    explicit scope_guard(LPWSTR* p) : ptr{p} {}
+    ~scope_guard() { LocalFree(ptr); }
+  } scope_guard{szArgList};
+
+  constexpr std::size_t MAX_ARGC = 64;
+  if (argc > MAX_ARGC) {
+    std::cerr << "Error: too many arguments, max is " << MAX_ARGC << '\n';
+    return 1;
+  }
+  char* arr_pchar[MAX_ARGC];
+
+  std::vector<std::string> utf8_argv;
+  utf8_argv.reserve(argc);
+  for (int i = 0; i < argc; ++i) {
+    utf8_argv.push_back(filemod::wstr_to_cp(szArgList[i], CP_UTF8));
+    arr_pchar[i] = utf8_argv[i].data();
+  }
+  argv = arr_pchar;
 #else
-  char **args = argv;
+  setlocale(LC_ALL, "");  // trust the env on *nix system.
 #endif
 
   try {
-    // args are all utf-8 encoded
-    return parse(argc, args);
-  } catch (std::exception &e) {
+    // assume argv are all utf-8 encoded
+    return parse(argc, argv);
+  } catch (std::exception& e) {
     std::cerr << e.what() << '\n';
     return 1;
   }

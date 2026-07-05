@@ -1,11 +1,11 @@
 #pragma once
 
-#include <filesystem>
+#include <string>
 
 namespace filemod {
 
-std::filesystem::path getexepath();
+std::string getexepath();
 
-std::filesystem::path get_home();
+std::string get_home();
 
 }  // namespace filemod

@@ -12,7 +12,8 @@ TEST_F(FSTest, create_target) {
   auto fs = create_fs();
   fs.create_target(m_tar_id);
 
-  EXPECT_TRUE(std::filesystem::exists(fs.cfg_dir() / std::to_string(m_tar_id)));
+  EXPECT_TRUE(
+      std::filesystem::exists(fs.cfg_dir_path() / std::to_string(m_tar_id)));
 }
 
 TEST_F(FSTest, create_target_rollback) {
@@ -21,18 +22,20 @@ TEST_F(FSTest, create_target_rollback) {
     filemod::fs_tx tx{fs};
     fs.create_target(m_tar_id);
   }
-  EXPECT_FALSE(std::filesystem::exists(m_cfg_dir / std::to_string(m_tar_id)));
+  EXPECT_FALSE(
+      std::filesystem::exists(m_cfg_dir_path / std::to_string(m_tar_id)));
 }
 
 TEST_F(FSTest, add_mod) {
   auto fs = create_fs();
   fs.create_target(m_tar_id);
-  auto mod_file_rels = fs.add_mod(m_tar_id, m_mod1_obj.mod_name, m_mod1_dir);
+  auto mod_file_rel_paths =
+      fs.add_mod(m_tar_id, m_mod1_obj.mod_name, m_mod1_dir_path);
 
   auto it = std::filesystem::recursive_directory_iterator(
-      fs.get_cfg_mod(m_tar_id, m_mod1_obj.mod_name));
-  EXPECT_EQ(m_mod1_obj.file_rel_strs.size(), mod_file_rels.size());
-  EXPECT_EQ(m_mod1_obj.file_rel_strs.size(), std::distance(begin(it), end(it)));
+      fs.get_cfg_mod_path(m_tar_id, m_mod1_obj.mod_name));
+  EXPECT_EQ(m_mod1_obj.file_rels.size(), mod_file_rel_paths.size());
+  EXPECT_EQ(m_mod1_obj.file_rels.size(), std::distance(begin(it), end(it)));
 }
 
 TEST_F(FSTest, add_mod_rollback) {
@@ -40,51 +43,51 @@ TEST_F(FSTest, add_mod_rollback) {
     auto fs = create_fs();
     fs.create_target(m_tar_id);
     filemod::fs_tx tx{fs};
-    auto files = fs.add_mod(m_tar_id, m_mod1_obj.mod_name, m_mod1_dir);
+    auto file_paths =
+        fs.add_mod(m_tar_id, m_mod1_obj.mod_name, m_mod1_dir_path);
   }
-  EXPECT_FALSE(std::filesystem::exists((m_cfg_dir / std::to_string(m_tar_id)) /=
-                                       m_mod1_obj.mod_name));
+  EXPECT_FALSE(std::filesystem::exists(
+      (m_cfg_dir_path / std::to_string(m_tar_id)) /= m_mod1_obj.mod_name));
 }
 
 TEST_F(FSTest, install_mod) {
   auto fs = create_fs();
   fs.create_target(m_tar_id);
-  auto cfg_mod = fs.get_cfg_mod(m_tar_id, m_mod1_obj.mod_name);
-  create_mod_files(cfg_mod, m_mod1_obj);
-  fs.install_mod(cfg_mod, m_game1_dir);
+  auto cfg_mod_path = fs.get_cfg_mod_path(m_tar_id, m_mod1_obj.mod_name);
+  create_mod_files(cfg_mod_path, m_mod1_obj);
+  fs.install_mod(cfg_mod_path, m_game1_dir_path);
 
-  auto it = std::filesystem::recursive_directory_iterator(m_game1_dir);
-  EXPECT_EQ(m_mod1_obj.file_rel_strs.size(), std::distance(begin(it), end(it)));
+  auto it = std::filesystem::recursive_directory_iterator(m_game1_dir_path);
+  EXPECT_EQ(m_mod1_obj.file_rels.size(), std::distance(begin(it), end(it)));
 }
 
 TEST_F(FSTest, install_mod_rollback) {
   {
     auto fs = create_fs();
     fs.create_target(m_tar_id);
-    auto cfg_mod = fs.get_cfg_mod(m_tar_id, m_mod1_obj.mod_name);
-    create_mod_files(cfg_mod, m_mod1_obj);
+    auto cfg_mod_path = fs.get_cfg_mod_path(m_tar_id, m_mod1_obj.mod_name);
+    create_mod_files(cfg_mod_path, m_mod1_obj);
     filemod::fs_tx tx{fs};
-    fs.install_mod(cfg_mod, m_game1_dir);
+    fs.install_mod(cfg_mod_path, m_game1_dir_path);
   }
 
-  EXPECT_TRUE(std::filesystem::is_empty(m_game1_dir));
+  EXPECT_TRUE(std::filesystem::is_empty(m_game1_dir_path));
 }
 
 TEST_F(FSTest, install_mod_w_backup) {
   auto fs = create_fs();
   fs.create_target(m_tar_id);
-  auto cfg_mod = fs.get_cfg_mod(m_tar_id, m_mod1_obj.mod_name);
-  create_mod_files(cfg_mod, m_mod1_obj);
-  create_mod_files(m_game1_dir, m_mod1_obj);
-  auto bak_file_rels = fs.install_mod(cfg_mod, m_game1_dir);
+  auto cfg_mod_path = fs.get_cfg_mod_path(m_tar_id, m_mod1_obj.mod_name);
+  create_mod_files(cfg_mod_path, m_mod1_obj);
+  create_mod_files(m_game1_dir_path, m_mod1_obj);
+  auto bak_file_rels = fs.install_mod(cfg_mod_path, m_game1_dir_path);
   EXPECT_EQ(m_mod1_obj.num_regular_files(), bak_file_rels.size());
 
-  auto gdi = std::filesystem::recursive_directory_iterator(m_game1_dir);
+  auto gdi = std::filesystem::recursive_directory_iterator(m_game1_dir_path);
   auto bdi = std::filesystem::recursive_directory_iterator(
-      filemod::FS::get_bak_dir(fs.get_cfg_tar(m_tar_id)));
+      filemod::FS::get_bak_dir_path(fs.get_cfg_tar_path(m_tar_id)));
 
-  EXPECT_EQ(m_mod1_obj.file_rel_strs.size(),
-            std::distance(begin(gdi), end(gdi)));
+  EXPECT_EQ(m_mod1_obj.file_rels.size(), std::distance(begin(gdi), end(gdi)));
 
   int n = 0;
   for (const auto& e : bdi) {
@@ -99,33 +102,33 @@ TEST_F(FSTest, install_mod_w_backup_rollback) {
   {
     auto fs = create_fs();
     fs.create_target(m_tar_id);
-    auto cfg_mod = fs.get_cfg_mod(m_tar_id, m_mod1_obj.mod_name);
-    create_mod_files(cfg_mod, m_mod1_obj);
-    create_mod_files(m_game1_dir, m_mod1_obj);
+    auto cfg_mod_path = fs.get_cfg_mod_path(m_tar_id, m_mod1_obj.mod_name);
+    create_mod_files(cfg_mod_path, m_mod1_obj);
+    create_mod_files(m_game1_dir_path, m_mod1_obj);
     filemod::fs_tx tx{fs};
-    auto bak_file_rels = fs.install_mod(cfg_mod, m_game1_dir);
+    auto bak_file_rels = fs.install_mod(cfg_mod_path, m_game1_dir_path);
   }
 
-  auto gdi = std::filesystem::recursive_directory_iterator(m_game1_dir);
-  auto bak_dir = filemod::FS::get_bak_dir(m_cfg_dir / std::to_string(m_tar_id));
+  auto gdi = std::filesystem::recursive_directory_iterator(m_game1_dir_path);
+  auto bak_dir_path =
+      filemod::FS::get_bak_dir_path(m_cfg_dir_path / std::to_string(m_tar_id));
 
-  EXPECT_EQ(m_mod1_obj.file_rel_strs.size(),
-            std::distance(begin(gdi), end(gdi)));
-  EXPECT_TRUE(!std::filesystem::exists(bak_dir) || bak_dir.empty());
+  EXPECT_EQ(m_mod1_obj.file_rels.size(), std::distance(begin(gdi), end(gdi)));
+  EXPECT_TRUE(!std::filesystem::exists(bak_dir_path) || bak_dir_path.empty());
 }
 
 TEST_F(FSTest, uninstall_mod) {
   auto fs = create_fs();
   fs.create_target(m_tar_id);
-  auto cfg_mod = fs.get_cfg_mod(m_tar_id, m_mod1_obj.mod_name);
-  create_mod_files(cfg_mod, m_mod1_obj);
-  fs.install_mod(cfg_mod, m_game1_dir);
-  auto gdi = std::filesystem::recursive_directory_iterator(m_game1_dir);
-  EXPECT_EQ(m_mod1_obj.file_rel_strs.size(),
-            std::distance(begin(gdi), end(gdi)));
-  fs.uninstall_mod(cfg_mod, m_game1_dir, m_mod1_obj.file_rels(), {});
+  auto cfg_mod_path = fs.get_cfg_mod_path(m_tar_id, m_mod1_obj.mod_name);
+  create_mod_files(cfg_mod_path, m_mod1_obj);
+  fs.install_mod(cfg_mod_path, m_game1_dir_path);
+  auto gdi = std::filesystem::recursive_directory_iterator(m_game1_dir_path);
+  EXPECT_EQ(m_mod1_obj.file_rels.size(), std::distance(begin(gdi), end(gdi)));
+  fs.uninstall_mod(cfg_mod_path, m_game1_dir_path,
+                   m_mod1_obj.get_file_rel_paths(), {});
 
-  gdi = std::filesystem::recursive_directory_iterator(m_game1_dir);
+  gdi = std::filesystem::recursive_directory_iterator(m_game1_dir_path);
 
   EXPECT_EQ(0, std::distance(begin(gdi), end(gdi)));
 }
@@ -134,29 +137,30 @@ TEST_F(FSTest, uninstall_mod_rollback) {
   {
     auto fs = create_fs();
     fs.create_target(m_tar_id);
-    auto cfg_mod = fs.get_cfg_mod(m_tar_id, m_mod1_obj.mod_name);
-    create_mod_files(cfg_mod, m_mod1_obj);
-    fs.install_mod(cfg_mod, m_game1_dir);
+    auto cfg_mod_path = fs.get_cfg_mod_path(m_tar_id, m_mod1_obj.mod_name);
+    create_mod_files(cfg_mod_path, m_mod1_obj);
+    fs.install_mod(cfg_mod_path, m_game1_dir_path);
     filemod::fs_tx tx{fs};
-    fs.uninstall_mod(cfg_mod, m_game1_dir, m_mod1_obj.file_rels(), {});
+    fs.uninstall_mod(cfg_mod_path, m_game1_dir_path,
+                     m_mod1_obj.get_file_rel_paths(), {});
   }
 
-  auto gdi = std::filesystem::recursive_directory_iterator(m_game1_dir);
+  auto gdi = std::filesystem::recursive_directory_iterator(m_game1_dir_path);
 
-  EXPECT_EQ(m_mod1_obj.file_rel_strs.size(),
-            std::distance(begin(gdi), end(gdi)));
+  EXPECT_EQ(m_mod1_obj.file_rels.size(), std::distance(begin(gdi), end(gdi)));
 }
 
 TEST_F(FSTest, uninstall_mod_restore_backup) {
   auto fs = create_fs();
   fs.create_target(m_tar_id);
-  auto cfg_mod = fs.get_cfg_mod(m_tar_id, m_mod1_obj.mod_name);
-  create_mod_files(cfg_mod, m_mod1_obj);
-  create_mod_files(m_game1_dir, m_mod1_obj);
-  auto bak_file_rels = fs.install_mod(cfg_mod, m_game1_dir);
-  fs.uninstall_mod(cfg_mod, m_game1_dir, m_mod1_obj.file_rels(), bak_file_rels);
+  auto cfg_mod_path = fs.get_cfg_mod_path(m_tar_id, m_mod1_obj.mod_name);
+  create_mod_files(cfg_mod_path, m_mod1_obj);
+  create_mod_files(m_game1_dir_path, m_mod1_obj);
+  auto bak_file_rels = fs.install_mod(cfg_mod_path, m_game1_dir_path);
+  fs.uninstall_mod(cfg_mod_path, m_game1_dir_path,
+                   m_mod1_obj.get_file_rel_paths(), bak_file_rels);
 
-  auto rdi = std::filesystem::recursive_directory_iterator(m_game1_dir);
+  auto rdi = std::filesystem::recursive_directory_iterator(m_game1_dir_path);
   int n = 0;
   for (const auto& e : rdi) {
     if (e.is_regular_file()) {
@@ -170,46 +174,44 @@ TEST_F(FSTest, uninstall_mod_restore_backup_rollback) {
   {
     auto fs = create_fs();
     fs.create_target(m_tar_id);
-    auto cfg_mod = fs.get_cfg_mod(m_tar_id, m_mod1_obj.mod_name);
-    create_mod_files(cfg_mod, m_mod1_obj);
-    create_mod_files(m_game1_dir, m_mod1_obj);
-    auto bak_file_rels = fs.install_mod(cfg_mod, m_game1_dir);
+    auto cfg_mod_path = fs.get_cfg_mod_path(m_tar_id, m_mod1_obj.mod_name);
+    create_mod_files(cfg_mod_path, m_mod1_obj);
+    create_mod_files(m_game1_dir_path, m_mod1_obj);
+    auto bak_file_rels = fs.install_mod(cfg_mod_path, m_game1_dir_path);
     filemod::fs_tx tx{fs};
-    fs.uninstall_mod(cfg_mod, m_game1_dir, m_mod1_obj.file_rels(),
-                     bak_file_rels);
+    fs.uninstall_mod(cfg_mod_path, m_game1_dir_path,
+                     m_mod1_obj.get_file_rel_paths(), bak_file_rels);
   }
 
-  auto rdi = std::filesystem::recursive_directory_iterator(m_game1_dir);
+  auto rdi = std::filesystem::recursive_directory_iterator(m_game1_dir_path);
 
-  EXPECT_EQ(m_mod1_obj.file_rel_strs.size(),
-            std::distance(begin(rdi), end(rdi)));
+  EXPECT_EQ(m_mod1_obj.file_rels.size(), std::distance(begin(rdi), end(rdi)));
 }
 
 TEST_F(FSTest, remove_mod) {
   auto fs = create_fs();
   fs.create_target(m_tar_id);
-  auto cfg_mod = fs.get_cfg_mod(m_tar_id, m_mod1_obj.mod_name);
-  create_mod_files(cfg_mod, m_mod1_obj);
-  fs.remove_mod(cfg_mod);
+  auto cfg_mod_path = fs.get_cfg_mod_path(m_tar_id, m_mod1_obj.mod_name);
+  create_mod_files(cfg_mod_path, m_mod1_obj);
+  fs.remove_mod(cfg_mod_path);
 
-  EXPECT_FALSE(std::filesystem::exists(cfg_mod));
+  EXPECT_FALSE(std::filesystem::exists(cfg_mod_path));
 }
 
 TEST_F(FSTest, remove_mod_rollback) {
-  std::filesystem::path cfg_mod;
+  std::filesystem::path cfg_mod_path;
   {
     auto fs = create_fs();
     fs.create_target(m_tar_id);
-    cfg_mod = fs.get_cfg_mod(m_tar_id, m_mod1_obj.mod_name);
-    create_mod_files(cfg_mod, m_mod1_obj);
+    cfg_mod_path = fs.get_cfg_mod_path(m_tar_id, m_mod1_obj.mod_name);
+    create_mod_files(cfg_mod_path, m_mod1_obj);
     filemod::fs_tx tx{fs};
-    fs.remove_mod(cfg_mod);
+    fs.remove_mod(cfg_mod_path);
   }
 
-  ASSERT_TRUE(std::filesystem::exists(cfg_mod));
-  auto mri = std::filesystem::recursive_directory_iterator(cfg_mod);
-  EXPECT_EQ(m_mod1_obj.file_rel_strs.size(),
-            std::distance(begin(mri), end(mri)));
+  ASSERT_TRUE(std::filesystem::exists(cfg_mod_path));
+  auto mri = std::filesystem::recursive_directory_iterator(cfg_mod_path);
+  EXPECT_EQ(m_mod1_obj.file_rels.size(), std::distance(begin(mri), end(mri)));
 }
 
 TEST_F(FSTest, remove_target) {
@@ -217,20 +219,20 @@ TEST_F(FSTest, remove_target) {
   fs.create_target(m_tar_id);
   fs.remove_target(m_tar_id);
 
-  EXPECT_FALSE(std::filesystem::exists(fs.get_cfg_tar(m_tar_id)));
+  EXPECT_FALSE(std::filesystem::exists(fs.get_cfg_tar_path(m_tar_id)));
 }
 
 TEST_F(FSTest, remove_target_rollback) {
-  std::filesystem::path cfg_tar;
+  std::filesystem::path cfg_tar_path;
   {
     auto fs = create_fs();
     fs.create_target(m_tar_id);
     filemod::fs_tx tx{fs};
     fs.remove_target(m_tar_id);
-    cfg_tar = fs.get_cfg_tar(m_tar_id);
+    cfg_tar_path = fs.get_cfg_tar_path(m_tar_id);
   }
 
-  EXPECT_TRUE(std::filesystem::exists(cfg_tar));
+  EXPECT_TRUE(std::filesystem::exists(cfg_tar_path));
 }
 
 // test nested transaction
@@ -241,19 +243,20 @@ TEST_F(FSTest, remove_target_rollback) {
 // case 4: at least 3 levels, all rollbacked.
 
 TEST_F(FSTest, nested_tx_all_committed) {
-  std::vector<std::filesystem::path> mod_file_rels;
-  std::filesystem::path cfg_mod;
+  std::vector<std::filesystem::path> mod_file_rel_paths;
+  std::filesystem::path cfg_mod_path;
   {
     auto fs = create_fs();
     filemod::fs_tx tx{fs};
     fs.create_target(m_tar_id);
     {
       filemod::fs_tx tx2{fs};
-      cfg_mod = fs.get_cfg_mod(m_tar_id, m_mod1_obj.mod_name);
-      mod_file_rels = fs.add_mod(m_tar_id, m_mod1_obj.mod_name, m_mod1_dir);
+      cfg_mod_path = fs.get_cfg_mod_path(m_tar_id, m_mod1_obj.mod_name);
+      mod_file_rel_paths =
+          fs.add_mod(m_tar_id, m_mod1_obj.mod_name, m_mod1_dir_path);
       {
         filemod::fs_tx tx3{fs};
-        fs.install_mod(cfg_mod, m_game1_dir);
+        fs.install_mod(cfg_mod_path, m_game1_dir_path);
         tx3.commit();
       }
       tx2.commit();
@@ -262,27 +265,29 @@ TEST_F(FSTest, nested_tx_all_committed) {
   }
 
   // target created
-  EXPECT_TRUE(std::filesystem::exists(m_cfg_dir / std::to_string(m_tar_id)));
+  EXPECT_TRUE(
+      std::filesystem::exists(m_cfg_dir_path / std::to_string(m_tar_id)));
   // mod added
-  EXPECT_FALSE(std::filesystem::is_empty(cfg_mod));
+  EXPECT_FALSE(std::filesystem::is_empty(cfg_mod_path));
   // mod installed
-  EXPECT_FALSE(std::filesystem::is_empty(m_game1_dir));
+  EXPECT_FALSE(std::filesystem::is_empty(m_game1_dir_path));
 }
 
 TEST_F(FSTest, nested_tx_only_last_level_rollback) {
-  std::vector<std::filesystem::path> mod_file_rels;
-  std::filesystem::path cfg_mod;
+  std::vector<std::filesystem::path> mod_file_rel_paths;
+  std::filesystem::path cfg_mod_path;
   {
     auto fs = create_fs();
     filemod::fs_tx tx{fs};
     fs.create_target(m_tar_id);
     {
       filemod::fs_tx tx2{fs};
-      cfg_mod = fs.get_cfg_mod(m_tar_id, m_mod1_obj.mod_name);
-      mod_file_rels = fs.add_mod(m_tar_id, m_mod1_obj.mod_name, m_mod1_dir);
+      cfg_mod_path = fs.get_cfg_mod_path(m_tar_id, m_mod1_obj.mod_name);
+      mod_file_rel_paths =
+          fs.add_mod(m_tar_id, m_mod1_obj.mod_name, m_mod1_dir_path);
       {
         filemod::fs_tx tx3{fs};
-        fs.install_mod(cfg_mod, m_game1_dir);
+        fs.install_mod(cfg_mod_path, m_game1_dir_path);
         tx3.rollback();
       }
       tx2.commit();
@@ -291,18 +296,19 @@ TEST_F(FSTest, nested_tx_only_last_level_rollback) {
   }
 
   // target created
-  EXPECT_TRUE(std::filesystem::exists(m_cfg_dir / std::to_string(m_tar_id)));
+  EXPECT_TRUE(
+      std::filesystem::exists(m_cfg_dir_path / std::to_string(m_tar_id)));
   // mod added
-  EXPECT_FALSE(std::filesystem::is_empty(cfg_mod));
+  EXPECT_FALSE(std::filesystem::is_empty(cfg_mod_path));
   // mod installed rollback
-  EXPECT_TRUE(std::filesystem::is_empty(m_game1_dir));
+  EXPECT_TRUE(std::filesystem::is_empty(m_game1_dir_path));
 }
 
 TEST_F(FSTest, nested_tx_only_one_sibling_rollback) {
-  std::vector<std::filesystem::path> mod_file_rels;
-  std::vector<std::filesystem::path> mod_file_rels2;
-  std::filesystem::path cfg_mod;
-  std::filesystem::path cfg_mod2;
+  std::vector<std::filesystem::path> mod_file_rel_paths;
+  std::vector<std::filesystem::path> mod_file_rel_paths2;
+  std::filesystem::path cfg_mod_path;
+  std::filesystem::path cfg_mod_path2;
   {
     auto fs = create_fs();
 
@@ -310,19 +316,21 @@ TEST_F(FSTest, nested_tx_only_one_sibling_rollback) {
     fs.create_target(m_tar_id);
     {
       filemod::fs_tx tx2{fs};
-      cfg_mod = fs.get_cfg_mod(m_tar_id, m_mod1_obj.mod_name);
-      mod_file_rels = fs.add_mod(m_tar_id, m_mod1_obj.mod_name, m_mod1_dir);
+      cfg_mod_path = fs.get_cfg_mod_path(m_tar_id, m_mod1_obj.mod_name);
+      mod_file_rel_paths =
+          fs.add_mod(m_tar_id, m_mod1_obj.mod_name, m_mod1_dir_path);
 
-      cfg_mod2 = fs.get_cfg_mod(m_tar_id, m_mod2_obj.mod_name);
-      mod_file_rels2 = fs.add_mod(m_tar_id, m_mod2_obj.mod_name, m_mod2_dir);
+      cfg_mod_path2 = fs.get_cfg_mod_path(m_tar_id, m_mod2_obj.mod_name);
+      mod_file_rel_paths2 =
+          fs.add_mod(m_tar_id, m_mod2_obj.mod_name, m_mod2_dir_path);
       {
         filemod::fs_tx tx3{fs};
-        fs.install_mod(cfg_mod, m_game1_dir);
+        fs.install_mod(cfg_mod_path, m_game1_dir_path);
         tx3.rollback();
       }
       {
         filemod::fs_tx tx3_2{fs};
-        fs.install_mod(cfg_mod2, m_game2_dir);
+        fs.install_mod(cfg_mod_path2, m_game2_dir_path);
         tx3_2.commit();
       }
       tx2.commit();
@@ -331,19 +339,20 @@ TEST_F(FSTest, nested_tx_only_one_sibling_rollback) {
   }
 
   // target created
-  EXPECT_TRUE(std::filesystem::exists(m_cfg_dir / std::to_string(m_tar_id)));
+  EXPECT_TRUE(
+      std::filesystem::exists(m_cfg_dir_path / std::to_string(m_tar_id)));
   // mod added
-  EXPECT_FALSE(std::filesystem::is_empty(cfg_mod));
-  EXPECT_FALSE(std::filesystem::is_empty(cfg_mod2));
+  EXPECT_FALSE(std::filesystem::is_empty(cfg_mod_path));
+  EXPECT_FALSE(std::filesystem::is_empty(cfg_mod_path2));
   // mod installed rollback
-  EXPECT_TRUE(std::filesystem::is_empty(m_game1_dir));
+  EXPECT_TRUE(std::filesystem::is_empty(m_game1_dir_path));
   // mod installed
-  EXPECT_FALSE(std::filesystem::is_empty(m_game2_dir));
+  EXPECT_FALSE(std::filesystem::is_empty(m_game2_dir_path));
 }
 
 TEST_F(FSTest, nested_tx_all_rollbacked) {
-  std::vector<std::filesystem::path> mod_file_rels;
-  std::filesystem::path cfg_mod;
+  std::vector<std::filesystem::path> mod_file_rel_paths;
+  std::filesystem::path cfg_mod_path;
   {
     auto fs = create_fs();
 
@@ -351,11 +360,12 @@ TEST_F(FSTest, nested_tx_all_rollbacked) {
     fs.create_target(m_tar_id);
     {
       filemod::fs_tx tx2{fs};
-      cfg_mod = fs.get_cfg_mod(m_tar_id, m_mod1_obj.mod_name);
-      mod_file_rels = fs.add_mod(m_tar_id, m_mod1_obj.mod_name, m_mod1_dir);
+      cfg_mod_path = fs.get_cfg_mod_path(m_tar_id, m_mod1_obj.mod_name);
+      mod_file_rel_paths =
+          fs.add_mod(m_tar_id, m_mod1_obj.mod_name, m_mod1_dir_path);
       {
         filemod::fs_tx tx3{fs};
-        fs.install_mod(cfg_mod, m_game1_dir);
+        fs.install_mod(cfg_mod_path, m_game1_dir_path);
         tx3.commit();
       }
       tx2.commit();
@@ -363,5 +373,6 @@ TEST_F(FSTest, nested_tx_all_rollbacked) {
   }
 
   // target created
-  EXPECT_FALSE(std::filesystem::exists(m_cfg_dir / std::to_string(m_tar_id)));
+  EXPECT_FALSE(
+      std::filesystem::exists(m_cfg_dir_path / std::to_string(m_tar_id)));
 }

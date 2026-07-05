@@ -25,6 +25,18 @@ if cppc.has_argument('-Wnrvo')
     add_project_arguments('-Wnrvo', language: 'cpp')
 endif
 
+filemod_exe_src = ['main.cpp']
+
+# put it before subdir(...) so it can be reused
+if host_machine.system() == 'windows'
+    windows = import('windows')
+    utf8_manifest_res = windows.compile_resources(
+        'windows.utf8.rc',
+        depend_files: 'windows.utf8.manifest',
+    )
+    filemod_exe_src += utf8_manifest_res
+endif
+
 subdir('libfilemod')
 
 cmake = import('cmake')
@@ -38,7 +50,7 @@ boost_op_dep = sub_proj.dependency('boost_program_options')
 
 executable(
     'filemod',
-    'main.cpp',
+    filemod_exe_src,
     dependencies: [libfilemod_dep, boost_op_dep],
     install: true,
     install_tag: 'strip',

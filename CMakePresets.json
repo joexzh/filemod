@@ -1,118 +1,118 @@
 {
-    "version": 6,
-    "configurePresets": [
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "default",
+      "hidden": true,
+      "displayName": "Default Config",
+      "description": "Default build using Ninja generator",
+      "generator": "Ninja",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "binaryDir": "${sourceDir}/build",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": {
+          "value": true,
+          "type": "BOOL"
+        }
+      }
+    },
+    {
+      "name": "ninja-multi",
+      "inherits": "default",
+      "displayName": "Ninja Multi-Config",
+      "description": "Default build using Ninja Multi-Config generator",
+      "generator": "Ninja Multi-Config"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug-build",
+      "configurePreset": "ninja-multi",
+      "configuration": "Debug"
+    },
+    {
+      "name": "release-build",
+      "configurePreset": "ninja-multi",
+      "configuration": "Release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "debug-test",
+      "configurePreset": "ninja-multi",
+      "configuration": "Debug"
+    },
+    {
+      "name": "release-test",
+      "configurePreset": "ninja-multi",
+      "configuration": "Release"
+    }
+  ],
+  "packagePresets": [
+    {
+      "name": "exe",
+      "configurePreset": "ninja-multi"
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "debug-test-wf",
+      "steps": [
         {
-            "name": "default",
-            "hidden": true,
-            "displayName": "Default Config",
-            "description": "Default build using Ninja generator",
-            "generator": "Ninja",
-            "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-            "binaryDir": "${sourceDir}/build",
-            "architecture": {
-                "value": "x64",
-                "strategy": "external"
-            },
-            "cacheVariables": {
-                "CMAKE_EXPORT_COMPILE_COMMANDS": {
-                    "value": true,
-                    "type": "BOOL"
-                }
-            }
+          "type": "configure",
+          "name": "ninja-multi"
         },
         {
-            "name": "ninja-multi",
-            "inherits": "default",
-            "displayName": "Ninja Multi-Config",
-            "description": "Default build using Ninja Multi-Config generator",
-            "generator": "Ninja Multi-Config"
-        }
-    ],
-    "buildPresets": [
-        {
-            "name": "debug-build",
-            "configurePreset": "ninja-multi",
-            "configuration": "Debug"
+          "type": "build",
+          "name": "debug-build"
         },
         {
-            "name": "release-build",
-            "configurePreset": "ninja-multi",
-            "configuration": "Release"
+          "type": "test",
+          "name": "debug-test"
         }
-    ],
-    "testPresets": [
+      ]
+    },
+    {
+      "name": "release-test-wf",
+      "steps": [
         {
-            "name": "debug-test",
-            "configurePreset": "ninja-multi",
-            "configuration": "Debug"
+          "type": "configure",
+          "name": "ninja-multi"
         },
         {
-            "name": "release-test",
-            "configurePreset": "ninja-multi",
-            "configuration": "Release"
-        }
-    ],
-    "packagePresets": [
-        {
-            "name": "exe",
-            "configurePreset": "ninja-multi"
-        }
-    ],
-    "workflowPresets": [
-        {
-            "name": "debug-test-wf",
-            "steps": [
-                {
-                    "type": "configure",
-                    "name": "ninja-multi"
-                },
-                {
-                    "type": "build",
-                    "name": "debug-build"
-                },
-                {
-                    "type": "test",
-                    "name": "debug-test"
-                }
-            ]
+          "type": "build",
+          "name": "release-build"
         },
         {
-            "name": "release-test-wf",
-            "steps": [
-                {
-                    "type": "configure",
-                    "name": "ninja-multi"
-                },
-                {
-                    "type": "build",
-                    "name": "release-build"
-                },
-                {
-                    "type": "test",
-                    "name": "release-test"
-                }
-            ]
+          "type": "test",
+          "name": "release-test"
+        }
+      ]
+    },
+    {
+      "name": "release-pack-wf",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "ninja-multi"
         },
         {
-            "name": "release-pack-wf",
-            "steps": [
-                {
-                    "type": "configure",
-                    "name": "ninja-multi"
-                },
-                {
-                    "type": "build",
-                    "name": "release-build"
-                },
-                {
-                    "type": "test",
-                    "name": "release-test"
-                },
-                {
-                    "type": "package",
-                    "name": "exe"
-                }
-            ]
+          "type": "build",
+          "name": "release-build"
+        },
+        {
+          "type": "test",
+          "name": "release-test"
+        },
+        {
+          "type": "package",
+          "name": "exe"
         }
-    ]
+      ]
+    }
+  ]
 }

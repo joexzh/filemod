@@ -327,9 +327,9 @@ result<TargetDto> DB::query_target(int64_t id) {
   return ret;
 }
 
-result<TargetDto> DB::query_target_by_dir(const std::string &dir) {
+result<TargetDto> DB::query_target_by_dir(std::string_view dir) {
   SQLite::Statement stmt{m_dr->db, QUERY_TARGET_BY_DIR};
-  stmt.bind(1, dir);
+  stmt.bindNoCopy(1, dir.data(), dir.size());
   result<TargetDto> ret{{.success = false}};
   if (stmt.executeStep()) {
     ret.success = true;
@@ -350,10 +350,10 @@ std::vector<ModDto> DB::query_mods_by_target(int64_t tar_id) {
 }
 
 result<ModDto> DB::query_mod_by_targetid_dir(int64_t tar_id,
-                                             const std::string &dir) {
+                                             std::string_view dir) {
   SQLite::Statement stmt{m_dr->db, QUERY_MOD_BY_TARGEDID_DIR};
   stmt.bind(1, tar_id);
-  stmt.bindNoCopy(2, dir);
+  stmt.bindNoCopy(2, dir.data(), dir.size());
   result<ModDto> ret{{.success = false}};
   if (stmt.executeStep()) {
     ret.success = true;
@@ -362,9 +362,9 @@ result<ModDto> DB::query_mod_by_targetid_dir(int64_t tar_id,
   return ret;
 }
 
-int64_t DB::insert_target(const std::string &dir) {
+int64_t DB::insert_target(std::string_view dir) {
   SQLite::Statement stmt{m_dr->db, INSERT_TARGET};
-  stmt.bindNoCopy(1, dir);
+  stmt.bindNoCopy(1, dir.data(), dir.size());
   if (stmt.exec()) {
     return m_dr->db.getLastInsertRowid();
   }
@@ -407,10 +407,10 @@ result<ModDto> DB::query_mod(int64_t id) {
   return ret;
 }
 
-int64_t DB::insert_mod_(int64_t tar_id, const std::string &dir, int status) {
+int64_t DB::insert_mod_(int64_t tar_id, std::string_view dir, int status) {
   SQLite::Statement stmt{m_dr->db, INSERT_MOD};
   stmt.bind(1, tar_id);
-  stmt.bindNoCopy(2, dir);
+  stmt.bindNoCopy(2, dir.data(), dir.size());
   stmt.bind(3, status);
   if (stmt.exec()) {
     return m_dr->db.getLastInsertRowid();
@@ -418,8 +418,7 @@ int64_t DB::insert_mod_(int64_t tar_id, const std::string &dir, int status) {
   return 0;
 }
 
-int64_t DB::insert_mod_w_files(int64_t tar_id, const std::string &dir,
-                               int status,
+int64_t DB::insert_mod_w_files(int64_t tar_id, std::string_view dir, int status,
                                const std::vector<std::string> &files) {
   SQLite::Savepoint tx{m_dr->db, FILEMOD};
   int64_t mod_id = insert_mod_(tar_id, dir, status);
@@ -530,9 +529,9 @@ void DB::uninstall_mod(int64_t id) {
   tx.release();
 }
 
-int DB::rename_mod(int64_t mid, const std::string &newname) {
+int DB::rename_mod(int64_t mid, std::string_view newname) {
   SQLite::Statement stmt{m_dr->db, RENAME_MOD};
-  stmt.bindNoCopy(1, newname);
+  stmt.bindNoCopy(1, newname.data(), newname.size());
   stmt.bind(2, mid);
   return stmt.exec();
 }

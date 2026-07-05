@@ -1,2 +1,5 @@
 CompileFlags:
-  Remove: [-fext-numeric-literals]
+  Remove:
+    - /fsanitize=*  # on Windows use msvc only, so ignore clang-cl warning
+Documentation:
+  CommentFormat: Doxygen

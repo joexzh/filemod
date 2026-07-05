@@ -54,10 +54,10 @@ using copy_mod_t = std::vector<std::filesystem::path> (*)(
     const std::filesystem::path &, const std::filesystem::path &, fsman &);
 
 // Default copy function used by `add_mod`.
-// Copy files from `mod_dir` to `cfg_mod`.
+// Copy files from `mod_dir_path` to `cfg_mod_path`.
 std::vector<std::filesystem::path> copy_mod(
-    const std::filesystem::path &mod_dir, const std::filesystem::path &cfg_mod,
-    fsman &fsman);
+    const std::filesystem::path &mod_dir_path,
+    const std::filesystem::path &cfg_mod_path, fsman &fsman);
 
 class fs_tx;
 
@@ -69,83 +69,87 @@ class FS {
   FS &operator=(FS &&fs) = delete;
   ~FS() noexcept;
 
-  // Side effect: creates %cfg_dir directory
-  explicit FS(const std::filesystem::path &cfg_dir);
+  // Side effect: creates %cfg_dir_path directory
+  explicit FS(const std::filesystem::path &cfg_dir_path);
 
-  static std::filesystem::path get_bak_dir(
-      const std::filesystem::path &cfg_tar) {
-    return cfg_tar / BACKUP_DIR;
+  static std::filesystem::path get_bak_dir_path(
+      const std::filesystem::path &cfg_tar_path) {
+    return cfg_tar_path / BACKUP_DIR;
   }
 
-  static std::filesystem::path get_tmp_dir() {
+  static std::filesystem::path get_tmp_dir_path() {
     return std::filesystem::temp_directory_path() /= FILEMOD_TEMP_DIR;
   }
 
-  static std::filesystem::path get_uninst_dir(
-      const std::filesystem::path &tar_id) {
-    return (get_tmp_dir() /= tar_id) /= TMP_UNINSTALLED;
+  static std::filesystem::path get_uninst_dir_path(
+      const std::filesystem::path &tar_id_path) {
+    return (get_tmp_dir_path() /= tar_id_path) /= TMP_UNINSTALLED;
   }
 
   // The directory that stores the managed target and mod files.
-  const std::filesystem::path &cfg_dir() const noexcept { return m_cfg_dir; }
+  const std::filesystem::path &cfg_dir_path() const noexcept {
+    return m_cfg_dir_path;
+  }
 
-  // Create a directory which path is %cfg_dir/<target_id>
+  // Create a directory which path is %cfg_dir_path/<target_id>
   void create_target(int64_t tar_id);
 
   // Copy files from mod_dir to `cfg_dir/target_id/mod_name`.
   //
   // Return relative mod file paths.
   //
-  // Throws exception if `cfg_dir/target_id` not exists, or mod_dir not exists
+  // Throws exception if `cfg_dir/target_id` not exists, or mod_dir_path not
+  // exists
   std::vector<std::filesystem::path> add_mod(
       int64_t tar_id, const std::string &mod_name,
-      const std::filesystem::path &mod_dir);
+      const std::filesystem::path &mod_dir_path);
 
   // Create files in `cfg_dir/target_id/mod_name` from `mod_src`, using
   // `copy_mod_t` function.
   // Return relative mod file paths.
   // Throws exception if `cfg_dir/target_id` not exists, or mod_dir not exists
   std::vector<std::filesystem::path> add_mod_base(
-      int64_t tar_id, const std::filesystem::path &mod_name,
-      const std::filesystem::path &mod_src, copy_mod_t copy_mod);
+      int64_t tar_id, const std::filesystem::path &mod_name_path,
+      const std::filesystem::path &mod_src_path, copy_mod_t copy_mod);
 
-  // Create symlinks from cfg_mod to tar_dir.
+  // Create symlinks from cfg_mod_path to tar_dir_path.
   //
   // May fail deal to no privileged permission on Windows.
   //
   // Returns relative backup files.
   std::vector<std::filesystem::path> install_mod(
-      const std::filesystem::path &cfg_mod,
-      const std::filesystem::path &tar_dir);
+      const std::filesystem::path &cfg_mod_path,
+      const std::filesystem::path &tar_dir_path);
 
-  // Remove mod files (symlinks) from tar_dir.
-  // And restore backup files to tar_dir.
+  // Remove mod files (symlinks) from tar_dir_path.
+  // And restore backup files to tar_dir_path.
   void uninstall_mod(
-      const std::filesystem::path &cfg_mod,
-      const std::filesystem::path &tar_dir,
-      const std::vector<std::filesystem::path> &sorted_mod_file_rels,
-      const std::vector<std::filesystem::path> &sorted_bak_file_rels);
+      const std::filesystem::path &cfg_mod_path,
+      const std::filesystem::path &tar_dir_path,
+      const std::vector<std::filesystem::path> &sorted_mod_file_rel_paths,
+      const std::vector<std::filesystem::path> &sorted_bak_file_rel_paths);
 
-  // Delete cfg_mod and log all changes
-  void remove_mod(const std::filesystem::path &cfg_mod);
+  // Delete cfg_mod_path and log all changes
+  void remove_mod(const std::filesystem::path &cfg_mod_path);
 
-  // Delete cfg_dir/<tar_id> and log all changes
+  // Delete cfg_dir_path/<tar_id> and log all changes
   void remove_target(int64_t tar_id);
 
-  void rename_mod(int64_t tar_id, const std::filesystem::path &oldname,
-                  const std::filesystem::path &newname);
+  // Equivalent to `mv oldname_path newname_path`.
+  void rename_mod(int64_t tar_id, const std::filesystem::path &oldname_path,
+                  const std::filesystem::path &newname_path);
 
-  std::filesystem::path get_cfg_tar(int64_t tar_id) {
-    return m_cfg_dir / std::to_string(tar_id);
+  std::filesystem::path get_cfg_tar_path(int64_t tar_id) {
+    return m_cfg_dir_path / std::to_string(tar_id);
   }
 
-  std::filesystem::path get_cfg_mod(int64_t tar_id,
-                                    const std::filesystem::path &mod_rel_dir) {
-    return get_cfg_tar(tar_id) /= mod_rel_dir;
+  std::filesystem::path get_cfg_mod_path(
+      int64_t tar_id, const std::filesystem::path &mod_dir_rel_path) {
+    return get_cfg_tar_path(tar_id) /= mod_dir_rel_path;
   }
 
  private:
-  const std::filesystem::path m_cfg_dir;
+  const std::filesystem::path m_cfg_dir_path;
   tx_scope m_root_scope{nullptr, false};
   // m_curr_scope is never null.
   //
@@ -156,22 +160,23 @@ class FS {
   // When transaction ended, it goes back to parent of m_curr_scope.
   tx_scope *m_curr_scope = &m_root_scope;
 
-  void move_file_(const std::filesystem::path &src_file,
-                  const std::filesystem::path &dest_file,
-                  const std::filesystem::path &dest_dir);
+  void move_file_(const std::filesystem::path &src_file_path,
+                  const std::filesystem::path &dest_file_path,
+                  const std::filesystem::path &dest_dir_path);
 
   // Returns relative backup files
   std::vector<std::filesystem::path> backup_files_(
-      const std::filesystem::path &cfg_mod,
-      const std::filesystem::path &tar_dir,
-      const std::vector<std::filesystem::path> &tar_files);
+      const std::filesystem::path &cfg_mod_path,
+      const std::filesystem::path &tar_dir_path,
+      const std::vector<std::filesystem::path> &tar_file_paths);
 
-  void delete_empty_dirs_(std::vector<std::filesystem::path> &&sorted_dirs);
+  void delete_empty_dirs_(
+      std::vector<std::filesystem::path> &&sorted_dir_paths);
 
   void move_mod_files_(
-      const std::filesystem::path &src_dir,
-      const std::filesystem::path &dest_dir,
-      const std::vector<std::filesystem::path> &sorted_file_rels);
+      const std::filesystem::path &src_dir_path,
+      const std::filesystem::path &dest_dir_path,
+      const std::vector<std::filesystem::path> &sorted_file_rel_paths);
 
   // the actual external interface to start a transaction
   friend fs_tx;

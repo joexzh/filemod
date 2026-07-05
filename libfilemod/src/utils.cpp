@@ -4,37 +4,49 @@
 
 #include "filemod/utils.hpp"
 
-#include <filesystem>
+#include <string>
+#include <utility>
 
 #include "filemod/private/utils.hpp"
 
 namespace filemod {
 
-std::filesystem::path get_exe_dir() {
-  return (getexepath().parent_path() /= CONFIGDIR);
+std::string get_exe_dir() {
+  std::string exepath = getexepath();
+#ifdef _WIN32
+  auto pos = exepath.find_last_of('\\');
+#else
+  auto pos = exepath.find_last_of('/');
+#endif
+  std::string dir;
+  if (pos == std::string::npos) {
+    dir = std::move(exepath);
+  } else {
+    dir = exepath.substr(0, pos);
+  }
+  return dir;
 }
 
-std::filesystem::path get_home_cfg_dir() {
-  std::filesystem::path dir = get_home();
+std::string get_home_cfg_dir() {
+  std::string dir = get_home();
   if (dir.empty()) {
     return dir;
   }
 
-  dir /= ".config";
-  dir /= CONFIGDIR;
-
+  dir += '/';
+  dir += ".config";
+  dir += '/';
+  dir += CONFIGDIR;
   return dir;
 }
 
-std::filesystem::path get_config_dir() {
-  if (auto home_dir = get_home_cfg_dir(); !home_dir.empty()) {
-    return home_dir;
+std::string get_cfg_dir() {
+  if (auto home_cfg_dir = get_home_cfg_dir(); !home_cfg_dir.empty()) {
+    return home_cfg_dir;
   }
-  return get_exe_dir();
+  return (get_exe_dir() += '/') += CONFIGDIR;
 }
 
-std::filesystem::path get_db_path() {
-  return (get_config_dir() += '/') += DBFILE;
-}
+std::string get_db_path() { return (get_cfg_dir() += '/') += DBFILE; }
 
 }  // namespace filemod

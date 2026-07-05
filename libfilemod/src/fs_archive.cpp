@@ -37,7 +37,7 @@ static int copy_data(archive *ar, archive *aw) {
 // Extract absolute path `filepath` to `destdir`, both already exist in disk.
 // Outputs all absolute path of files and directories created on disk to
 // `outpaths`.
-// Require setting LC_CTYPE to utf8, e.g. `setlocale(LC_CTYPE, "en_US.UTF-8")`.
+// Require setting LC_CTYPE to utf8, e.g. `setlocale(LC_CTYPE, ".UTF-8")`.
 static int extract(const std::filesystem::path &filepath,
                    const std::filesystem::path &destdir, char *err,
                    size_t errsize,
@@ -112,7 +112,9 @@ static int extract(const std::filesystem::path &filepath,
       break;
     }
 
-    // maybe half write, so log regular file no matter what
+    // after archive_write_header, the file is created on disk waiting
+    // for write
+
     outpaths.push_back(std::move(newpath));
 
     if (archive_entry_size(entry) > 0) {
@@ -132,7 +134,7 @@ static int extract(const std::filesystem::path &filepath,
   return r;
 }
 
-std::vector<std::filesystem::path> copy_mod_a(
+std::vector<std::filesystem::path> copy_mod_archive(
     const std::filesystem::path &filepath, const std::filesystem::path &destdir,
     fsman &fsman) {
   std::vector<std::filesystem::path> outpaths;

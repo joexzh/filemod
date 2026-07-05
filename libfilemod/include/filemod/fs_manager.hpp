@@ -1,7 +1,6 @@
 #pragma once
 
 #include <filesystem>
-#include <memory>
 #include <vector>
 
 #include "filemod/fs_utils.hpp"
@@ -16,9 +15,9 @@ class fs_rec {
  public:
   template <typename S, typename D>
   explicit fs_rec(S &&src, D &&dest, revert_fn custom_revert)
-      : m_src{std::forward<S>(src)},
-        m_dest{std::forward<D>(dest)},
-        m_custom_revert{custom_revert} {}
+      : m_custom_revert{custom_revert},
+        m_src{std::forward<S>(src)},
+        m_dest{std::forward<D>(dest)} {}
 
   void revert() const { m_custom_revert(m_src, m_dest); }
 

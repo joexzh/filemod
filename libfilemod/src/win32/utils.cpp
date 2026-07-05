@@ -1,41 +1,64 @@
+// Require the executable to inject UTF-8 manifest.
+
 #include "filemod/utils.hpp"
 
 #include <Windows.h>
 
 #include <cstdlib>
-#include <filesystem>
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <string_view>
+#include <vector>
 
 #include "filemod/private/utils.hpp"
 
 namespace filemod {
 
 namespace {
-// mimic a std::wstring but just adopt the ptr
-struct win_errmsg {
-  using deleter_t = decltype([](LPWSTR ptr) noexcept { LocalFree(ptr); });
-
-  win_errmsg(LPWSTR ptr, size_t size) noexcept
-      : buf{ptr, deleter_t{}}, size{size} {}
-
-  std::unique_ptr<WCHAR, deleter_t> buf;
-  size_t size;
-};
 
 // Create a string with last error message
-win_errmsg WinErrToStr(DWORD ec) noexcept {
-  LPWSTR lpMsgBuf = nullptr;
-  DWORD bufLen = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+std::unique_ptr<char[], void (*)(LPSTR)> WinErrToStr(DWORD ec) noexcept {
+  LPSTR lpMsgBuf = nullptr;
+  DWORD bufLen = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER |
                                     FORMAT_MESSAGE_FROM_SYSTEM |
                                     FORMAT_MESSAGE_IGNORE_INSERTS,
-                                NULL, ec, 0, (LPWSTR)&lpMsgBuf, 0, NULL);
+                                nullptr, ec, 0, (LPSTR)&lpMsgBuf, 0, nullptr);
   // bufLen exclude null terminator, but the buffer will receive it
-  return {lpMsgBuf, bufLen};
+  return {lpMsgBuf, [](LPSTR ptr) { LocalFree(ptr); }};
 }
+
 }  // namespace
 
-std::filesystem::path get_home() { return _wgetenv(L"USERPROFILE"); }
+std::string get_home() { return std::getenv("USERPROFILE"); }
+
+std::string getexepath() {
+  std::vector<char> buf(MAX_PATH);
+
+  while (true) {
+    // GetModuleFileName returns the number of chars copied to buf, but if buf
+    // is too small, returns MAX_PATH; return 0 if error.
+    DWORD length = GetModuleFileName(nullptr, buf.data(), buf.size());
+    if (length == 0) {
+      auto ec = GetLastError();
+      throw std::runtime_error{WinErrToStr(ec).get()};
+    }
+    if (length == buf.size()) {
+      buf.resize(buf.size() * 2);
+      continue;
+    }
+    break;
+  }
+  return {buf.data()};
+}
+
+std::string get_abs_path(const char* relpath) {
+  char abs_path[MAX_PATH];
+  if (_fullpath(abs_path, relpath, MAX_PATH) != nullptr) {
+    return {abs_path};
+  }
+  return "";
+}
 
 std::string wstr_to_cp(std::wstring_view wsv, UINT cp) {
   if (wsv.empty()) return {};
@@ -50,25 +73,12 @@ std::string wstr_to_cp(std::wstring_view wsv, UINT cp) {
 
   // written NOT include null terminator
   int written = WideCharToMultiByte(cp, 0, wsv.data(), wsv.size(), &mbstr[0],
-                                    numbytes, NULL, NULL);
+                                    numbytes, nullptr, nullptr);
   if (0 == written) {
     throw std::runtime_error("wstr_to_cp: WideCharToMultiByte error");
   }
   mbstr.resize(written);
   return mbstr;
-}
-
-std::filesystem::path getexepath() {
-  WCHAR buf[MAX_PATH];
-  DWORD length = GetModuleFileNameW(NULL, buf, MAX_PATH);
-  // length include null terminator
-  auto ec = GetLastError();
-  if (length != 0 && ec == ERROR_SUCCESS) {
-    return std::filesystem::path{buf};
-  }
-  auto errmsg = WinErrToStr(ec);
-  throw std::runtime_error{
-      wstr_to_cp({errmsg.buf.get(), errmsg.size}, CP_UTF8)};
 }
 
 std::wstring cp_to_wstr(std::string_view sv, UINT cp) {
@@ -84,48 +94,6 @@ std::wstring cp_to_wstr(std::string_view sv, UINT cp) {
   }
   wstr.resize(written);
   return wstr;
-}
-
-std::string utf8str_to_current_cp(std::string_view sv) {
-#ifdef UNICODE
-  return std::string{sv};
-#else
-  std::wstring wstr = cp_to_wstr(sv, CP_UTF8);
-  return wstr_to_cp(wstr, CP_ACP);
-#endif
-}
-
-std::string current_cp_to_utf8str(std::string_view sv) {
-#ifdef UNICODE
-  return std::string{sv};
-#else
-  std::wstring wstr = cp_to_wstr(sv, CP_ACP);
-  return wstr_to_cp(wstr, CP_UTF8);
-#endif
-}
-
-std::filesystem::path utf8str_to_path(std::string_view sv) {
-#ifdef UNICODE
-  return {sv};
-#else
-  return std::filesystem::path(cp_to_wstr(sv, CP_UTF8));
-#endif
-}
-
-std::filesystem::path utf8str_to_path(std::string &&str) {
-#ifdef UNICODE
-  return {std::move(str)};
-#else
-  return utf8str_to_path(str);
-#endif
-}
-
-std::string path_to_utf8str(const std::filesystem::path &path) {
-#ifdef UNICODE
-  return path.string();
-#else
-  return wstr_to_cp(path.wstring(), CP_UTF8);
-#endif
 }
 
 }  // namespace filemod

@@ -107,6 +107,9 @@ add_executable(${PROJECT_NAME}_test
 )
 target_link_libraries(${PROJECT_NAME}_test
     PRIVATE GTest::gtest_main ${libfilemod_static} LibArchive::LibArchive)
+if (WIN32)
+    target_link_libraries(${PROJECT_NAME}_test PRIVATE utf8_manifest)
+endif()
 
 include(GoogleTest)
 gtest_discover_tests(${PROJECT_NAME}_test)

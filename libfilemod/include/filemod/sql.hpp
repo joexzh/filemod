@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "filemod/utils.hpp"
@@ -58,14 +59,14 @@ class DB {
   std::vector<ModDto> query_mods_by_target(int64_t tar_id);
 
   result<ModDto> query_mod_by_targetid_dir(int64_t tar_id,
-                                           const std::string &dir);
+                                           std::string_view dir);
 
   result<TargetDto> query_target(int64_t id);
 
-  result<TargetDto> query_target_by_dir(const std::string &dir);
+  result<TargetDto> query_target_by_dir(std::string_view dir);
 
   // Return target id if succeeded, otherwise 0.
-  int64_t insert_target(const std::string &dir);
+  int64_t insert_target(std::string_view dir);
 
   int delete_target(int64_t id);
 
@@ -73,7 +74,7 @@ class DB {
 
   result<ModDto> query_mod(int64_t id);
 
-  int64_t insert_mod_w_files(int64_t tar_id, const std::string &dir, int status,
+  int64_t insert_mod_w_files(int64_t tar_id, std::string_view dir, int status,
                              const std::vector<std::string> &files);
 
   int delete_mod(int64_t id);
@@ -85,13 +86,13 @@ class DB {
 
   void uninstall_mod(int64_t id);
 
-  int rename_mod(int64_t mid, const std::string &newname);
+  int rename_mod(int64_t mid, std::string_view newname);
 
  private:
   // db wrapper
   std::unique_ptr<db_wrap> m_dr;
 
-  int64_t insert_mod_(int64_t tar_id, const std::string &dir, int status);
+  int64_t insert_mod_(int64_t tar_id, std::string_view dir, int status);
 
   int update_mod_status_(int64_t id, int status);
 

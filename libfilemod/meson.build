@@ -66,6 +66,11 @@ libfilemod_test_src = [
     'test/testmodder.cpp',
     'test/testsql.cpp',
 ]
+
+if host_machine.system() == 'windows'
+    libfilemod_test_src += utf8_manifest_res
+endif
+
 libfilemod_test = executable(
     'filemod_test',
     libfilemod_test_src,

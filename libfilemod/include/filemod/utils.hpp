@@ -1,11 +1,11 @@
 //
 // Created by Joe Tse on 4/11/24.
 //
+// On Windows, require the executable to inject UTF-8 manifest.
 
 #pragma once
 
 #include <cstring>
-#include <filesystem>
 #include <string>
 #include <string_view>
 #ifdef _WIN32
@@ -55,7 +55,7 @@
 namespace filemod {
 
 struct result_base {
-  bool success;
+  bool success{};
   std::string msg{};
 };
 
@@ -69,15 +69,15 @@ const char DBFILE[] = "filemod.db";
 const char FILEMOD[] = "filemod";
 const char CONFIGDIR[] = "filemod_cfg";
 
-std::filesystem::path get_exe_dir();
+std::string get_exe_dir();
 
-std::filesystem::path get_home_cfg_dir();
+std::string get_home_cfg_dir();
 
-std::filesystem::path get_config_dir();
+std::string get_cfg_dir();
 
-std::filesystem::path get_db_path();
+std::string get_db_path();
 
-constexpr size_t length_s(const char *str) noexcept {
+inline constexpr size_t length_s(const char* str) noexcept {
   if (nullptr == str || 0 == *str) {
     return 0;
   }
@@ -90,46 +90,67 @@ constexpr size_t length_s(const char *str) noexcept {
   return strlen(str);
 }
 
+// Get absolute path from relpath.
+std::string get_abs_path(const char* relpath);
+
+/**
+ * @brief Strip trailing slashes (`/` or `\`) of the path.
+ *
+ * Undefined behavior if `/` or `\` is part of the filename.
+ * @param path
+ */
+inline constexpr std::string_view strip_trailing_slash(std::string_view path) {
+  if (path.empty()) return path;
+
+  long i;
+  for (i = static_cast<long>(path.size()) - 1; i >= 0; --i) {
+    if (path[i] != '/' && path[i] != '\\') {
+      break;
+    }
+  }
+  return path.substr(0, i + 1);
+}
+
+/**
+ * @brief Get filename of path.
+ *
+ * `path` must not contain trailing slashes. Undefined behavior if `/` or `\`
+ * is part of the filename.
+ * @param path
+ */
+inline constexpr std::string_view get_filename(std::string_view path) {
+  if (path.empty()) return path;
+
+  long i;
+  for (i = static_cast<long>(path.size()) - 1; i >= 0; --i) {
+    if (path[i] == '/' || path[i] == '\\') {
+      break;
+    }
+  }
+  return path.substr(i + 1);
+}
+
+/**
+ * @brief Get the file name stem, without extensions, i.e. the filename
+ * before any dots.
+ *
+ * Require `filename` as the leaf filename without any slashes.
+ * @param filename
+ */
+inline constexpr std::string_view get_filename_stem(std::string_view filename) {
+  auto pos = filename.find_first_of('.');
+  if (pos == std::string_view::npos) {
+    return filename;
+  }
+  return filename.substr(0, pos);
+}
+
 #ifdef _WIN32
-FILEMOD_API std::filesystem::path utf8str_to_path(std::string_view sv);
-
-FILEMOD_API std::filesystem::path utf8str_to_path(std::string &&str);
-
-FILEMOD_API std::string path_to_utf8str(const std::filesystem::path &path);
-
-// convert utf-8 string to current system (Windows) code page
-FILEMOD_API std::string utf8str_to_current_cp(std::string_view sv);
-
-// convert current system (Windows) code page to utf-8 string.
-FILEMOD_API std::string current_cp_to_utf8str(std::string_view sv);
-
 // convert mbs of code page `cp` to wcs.
 FILEMOD_API std::wstring cp_to_wstr(std::string_view sv, UINT cp);
 
 // convert wcs to mbs of code page `cp`.
 FILEMOD_API std::string wstr_to_cp(std::wstring_view wsv, UINT cp);
-
-#else
-inline std::filesystem::path utf8str_to_path(std::string_view sv) {
-  return {sv};
-}
-
-inline std::filesystem::path utf8str_to_path(std::string &&str) {
-  return {std::move(str)};
-}
-
-inline const std::string &path_to_utf8str(const std::filesystem::path &path) {
-  return path.native();
-}
-
-#ifndef utf8str_to_current_cp
-#define utf8str_to_current_cp(str) str
-#endif
-
-#ifndef current_cp_to_utf8str
-#define current_cp_to_utf8str(str) str
-#endif
-
 #endif
 
 }  // namespace filemod

@@ -10,9 +10,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 add_compile_definitions(FILEMOD_VERSION=${FILEMOD_VERSION})
 
 if (MSVC)
-    add_compile_options(/W4)
-    add_compile_options($<$<CONFIG:Debug>:/fsanitize=address>)
-    add_link_options($<$<CONFIG:Debug>:/fsanitize=address>)
+    add_compile_options(/utf-8 /W4 $<$<CONFIG:Debug>:/fsanitize=address>)
+    add_link_options(/MANIFEST:NO)
 else()
     add_compile_options(-fstrict-aliasing -Wstrict-aliasing -Wall -Wextra -Wpedantic)
     include(CheckCompilerFlag)
@@ -26,6 +25,15 @@ endif()
 
 find_package(Boost REQUIRED COMPONENTS program_options)
 
+# put it before add_subdirectory so it can be reused
+if (WIN32)
+    enable_language(RC)
+    add_library(utf8_manifest OBJECT windows.utf8.rc)
+    set_source_files_properties(windows.utf8.rc PROPERTIES
+        OBJECT_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/windows.utf8.manifest
+    )
+endif()
+
 enable_testing()
 add_subdirectory(libfilemod)
 
@@ -36,10 +44,13 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 target_link_libraries(${PROJECT_NAME}
     PRIVATE libfilemod Boost::program_options)
+if (WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE utf8_manifest)
+endif()
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND $<$<CONFIG:Release>:${CMAKE_STRIP}>
-    ARGS "$<TARGET_FILE:${PROJECT_NAME}>"
+    COMMAND $<$<CONFIG:Release>:${CMAKE_STRIP}> $<$<CONFIG:Release>:$<TARGET_FILE:${PROJECT_NAME}>>
+    VERBATIM
 )
 
 include(GNUInstallDirs)
