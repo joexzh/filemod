@@ -25,16 +25,15 @@ if cppc.has_argument('-Wnrvo')
     add_project_arguments('-Wnrvo', language: 'cpp')
 endif
 
-filemod_exe_src = ['main.cpp']
-
 # put it before subdir(...) so it can be reused
+filemod_link_args = []
 if host_machine.system() == 'windows'
-    windows = import('windows')
-    utf8_manifest_res = windows.compile_resources(
-        'windows.utf8.rc',
-        depend_files: 'windows.utf8.manifest',
-    )
-    filemod_exe_src += utf8_manifest_res
+    src_root = meson.project_source_root()
+    filemod_link_args += [
+        '/MANIFEST:EMBED',
+        '/MANIFESTINPUT:' + (src_root / 'windows.utf8.manifest'),
+        '/INCREMENTAL:NO'
+    ]
 endif
 
 subdir('libfilemod')
@@ -50,7 +49,8 @@ boost_op_dep = sub_proj.dependency('boost_program_options')
 
 executable(
     'filemod',
-    filemod_exe_src,
+    'main.cpp',
+    link_args: filemod_link_args,
     dependencies: [libfilemod_dep, boost_op_dep],
     install: true,
     install_tag: 'strip',

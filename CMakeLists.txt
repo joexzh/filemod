@@ -11,7 +11,6 @@ add_compile_definitions(FILEMOD_VERSION=${FILEMOD_VERSION})
 
 if (MSVC)
     add_compile_options(/utf-8 /W4 $<$<CONFIG:Debug>:/fsanitize=address>)
-    add_link_options(/MANIFEST:NO)
 else()
     add_compile_options(-fstrict-aliasing -Wstrict-aliasing -Wall -Wextra -Wpedantic)
     include(CheckCompilerFlag)
@@ -25,12 +24,13 @@ endif()
 
 find_package(Boost REQUIRED COMPONENTS program_options)
 
-# put it before add_subdirectory so it can be reused
+# put it before subdir(...) so it can be reused
 if (WIN32)
-    enable_language(RC)
-    add_library(utf8_manifest OBJECT windows.utf8.rc)
-    set_source_files_properties(windows.utf8.rc PROPERTIES
-        OBJECT_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/windows.utf8.manifest
+    add_library(utf8_manifest INTERFACE)
+    target_link_options(utf8_manifest INTERFACE
+        "/MANIFEST:EMBED"
+        "/MANIFESTINPUT:${CMAKE_CURRENT_SOURCE_DIR}/windows.utf8.manifest"
+        "/INCREMENTAL:NO"
     )
 endif()
 

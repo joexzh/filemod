@@ -67,13 +67,10 @@ libfilemod_test_src = [
     'test/testsql.cpp',
 ]
 
-if host_machine.system() == 'windows'
-    libfilemod_test_src += utf8_manifest_res
-endif
-
 libfilemod_test = executable(
     'filemod_test',
     libfilemod_test_src,
+    link_args: filemod_link_args,
     dependencies: [gtest_main_dep, libfilemod_static_dep, libarchive_dep],
 )
 test('test libfilemod', libfilemod_test)
