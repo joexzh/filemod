@@ -1,8 +1,8 @@
-#include <filesystem>
 #include <string_view>
 
 #include "filemod/fs_archive.hpp"
 #include "filemod/modder.hpp"
+#include "filemod/private/modder.hpp"
 #include "filemod/utils.hpp"
 
 namespace filemod {
@@ -10,7 +10,7 @@ namespace filemod {
 result<int64_t> modder::add_mod_archive(int64_t tar_id,
                                         std::string_view mod_name,
                                         std::string_view path) {
-  return add_mod_(tar_id, mod_name, path, copy_mod_archive);
+  return private_add_mod(fs_, db_, tar_id, mod_name, path, copy_mod_archive);
 }
 
 result<int64_t> modder::add_mod_archive(int64_t tar_id, std::string_view path) {
@@ -21,7 +21,8 @@ result<int64_t> modder::add_mod_archive(int64_t tar_id, std::string_view path) {
 result<int64_t> modder::install_mod_archive(int64_t tar_id,
                                             std::string_view mod_name,
                                             std::string_view path) {
-  return install_mod_path_(tar_id, mod_name, path, &modder::add_mod_archive);
+  return private_install_mod_path(fs_, db_, tar_id, mod_name, path, *this,
+                           &modder::add_mod_archive);
 }
 
 result<int64_t> modder::install_mod_archive(int64_t tar_id,

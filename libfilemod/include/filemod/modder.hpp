@@ -287,27 +287,8 @@ class modder {
   FILEMOD_API result_base rename_mod(int64_t mid, std::string_view newname);
 
  private:
-  FS m_fs;  // ORDER DEPENDENCY
-  DB m_db;  // ORDER DEPENDENCY
-
-  void tx_wrapper_(const auto& ret, const auto& func);
-
-  result<int64_t> add_mod_(int64_t tar_id, std::string_view mod_name,
-                           std::string_view mod_src_raw, copy_mod_t cp_mod_fn);
-
-  using add_mod_t = result<int64_t> (modder::*)(int64_t,
-                                                std::string_view modname,
-                                                std::string_view path);
-
-  result<int64_t> install_mod_path_(int64_t tar_id, std::string_view mod_name,
-                                    std::string_view path,
-                                    add_mod_t add_mod_fn);
-
-  result_base install_mod_(int64_t mod_id);
-
-  result<ModDto> uninstall_mod_(int64_t mod_id);
-
-  result_base remove_mod_(int64_t mod_id);
+  FS fs_;  // ORDER DEPENDENCY
+  DB db_;  // ORDER DEPENDENCY
 };  // class modder
 
 }  // namespace filemod
