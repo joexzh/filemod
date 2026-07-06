@@ -45,7 +45,7 @@ libfilemod_dep = declare_dependency(
 )
 
 # test
-gtest_main_dep = dependency('gtest_main', fallback: ['gtest', 'gtest_main_dep'], static: false)
+gtest_dep = dependency('gtest', fallback: ['gtest', 'gtest_dep'], static: false)
 # static link to test unexported functions
 if libfilemod_shared
     libfilemod_static = static_library(
@@ -61,6 +61,7 @@ else
 endif
 
 libfilemod_test_src = [
+    'test/main.cpp',
     'test/testfs.cpp',
     'test/testhelper.cpp',
     'test/testmodder.cpp',
@@ -71,6 +72,6 @@ libfilemod_test = executable(
     'filemod_test',
     libfilemod_test_src,
     link_args: filemod_link_args,
-    dependencies: [gtest_main_dep, libfilemod_static_dep, libarchive_dep],
+    dependencies: [gtest_dep, libfilemod_static_dep, libarchive_dep],
 )
 test('test libfilemod', libfilemod_test)

@@ -53,17 +53,6 @@ struct mod_obj {
 };
 
 class PathHelper : public testing::Test {
- public:
-  PathHelper() {
-#ifdef _WIN32
-    setlocale(LC_ALL, ".UTF-8");
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
-#else
-    setlocale(LC_ALL, "");  // trust the env on *nix system.
-#endif
-  }
-
  protected:
   const std::string m_db_file{":memory:"};
   const std::filesystem::path m_tmp_dir_path{
@@ -88,7 +77,7 @@ class PathHelper : public testing::Test {
 };
 
 class FSTest : public PathHelper {
- public:
+ protected:
   FSTest() {
     std::filesystem::create_directories(m_cfg_dir_path);
     std::filesystem::create_directories(m_game1_dir_path);
@@ -102,7 +91,6 @@ class FSTest : public PathHelper {
     std::filesystem::remove_all(m_tmp_dir_path);
   }
 
- protected:
   const std::filesystem::path m_cfg_dir_path{
       std::filesystem::temp_directory_path() / filemod::CONFIGDIR};
   const std::filesystem::path m_mod1_dir_path{m_tmp_dir_path /

@@ -100,13 +100,14 @@ find_package(GTest REQUIRED)
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 add_executable(${PROJECT_NAME}_test
+    test/main.cpp
     test/testfs.cpp
     test/testhelper.cpp
     test/testmodder.cpp
     test/testsql.cpp
 )
 target_link_libraries(${PROJECT_NAME}_test
-    PRIVATE GTest::gtest_main ${libfilemod_static} LibArchive::LibArchive)
+    PRIVATE GTest::gtest ${libfilemod_static} LibArchive::LibArchive)
 if (WIN32)
     target_link_libraries(${PROJECT_NAME}_test PRIVATE utf8_manifest)
 endif()

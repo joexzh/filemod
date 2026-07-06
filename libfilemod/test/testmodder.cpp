@@ -7,7 +7,6 @@
 #include "testhelper.hpp"
 
 class FilemodTest : public FSTest {
- public:
  protected:
   filemod::modder m_modder{m_cfg_dir_path.string(), m_db_file};
 };
