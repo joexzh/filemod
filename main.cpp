@@ -415,13 +415,13 @@ static int parse(int argc, char* argv[]) {
 }
 
 int main(int argc, char** argv) {
+  setlocale(LC_ALL, "C.UTF-8");
 #ifdef _WIN32
   // Must inject UTF-8 manifest on Windows. See
   // https://learn.microsoft.com/en-us/windows/apps/design/globalizing/use-utf8-code-page
 
   // For legacy CMD which does not support auto converting input to UTF-8.
 
-  setlocale(LC_ALL, ".UTF-8");
   SetConsoleOutputCP(CP_UTF8);
   SetConsoleCP(CP_UTF8);
 
@@ -451,8 +451,6 @@ int main(int argc, char** argv) {
     arr_pchar[i] = utf8_argv[i].data();
   }
   argv = arr_pchar;
-#else
-  setlocale(LC_ALL, "");  // trust the env on *nix system.
 #endif
 
   try {
