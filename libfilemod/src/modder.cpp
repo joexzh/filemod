@@ -24,6 +24,10 @@ constexpr char ERR_MOD_NOT_EXIST[] = "Error: mod not exists";
 constexpr char ERR_NOT_DIR[] = "Error: directory not exists";
 constexpr char ERR_NOT_EXISTS[] = "Error: file not exists";
 
+//===------------------------------------------------------------------------===
+// Private functions for class modder
+//===------------------------------------------------------------------------===
+
 void set_fail(result_base& ret, std::initializer_list<std::string_view> vs) {
   ret.success = false;
   for (auto v : vs) {
@@ -227,7 +231,9 @@ result_base remove_mod_(FS& fs, DB& db, int64_t mod_id) {
 }  // namespace
 
 //===----------------------------------------------------------------------===//
-// Private helper functions. Provided by include/filemod/private/modder.hpp
+// Private shared functions for class modder. Provided by
+// include/filemod/private/modder.hpp, used by modder.cpp and
+// modder_archive.cpp.
 //===----------------------------------------------------------------------===//
 
 result<int64_t> private_add_mod(FS& fs, DB& db, int64_t tar_id,
@@ -299,7 +305,7 @@ result<int64_t> private_install_mod_path(FS& fs, DB& db, int64_t tar_id,
 }
 
 //===----------------------------------------------------------------------===//
-// class modder implementations
+// Class modder implementations
 //===----------------------------------------------------------------------===//
 
 modder::modder() : modder(get_cfg_dir(), get_db_path()) {}

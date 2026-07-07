@@ -8,32 +8,32 @@
 namespace filemod {
 
 class fsman;
-using revert_fn = void (*)(const std::filesystem::path &src,
-                           const std::filesystem::path &dest);
+using revert_fn_t = void (*)(const std::filesystem::path &src,
+                             const std::filesystem::path &dest);
 
 class fs_rec {
  public:
   template <typename S, typename D>
-  explicit fs_rec(S &&src, D &&dest, revert_fn custom_revert)
-      : m_custom_revert{custom_revert},
-        m_src{std::forward<S>(src)},
-        m_dest{std::forward<D>(dest)} {}
+  explicit fs_rec(S &&src, D &&dest, revert_fn_t custom_revert)
+      : revert_fn_{custom_revert},
+        src_{std::forward<S>(src)},
+        dest_{std::forward<D>(dest)} {}
 
-  void revert() const { m_custom_revert(m_src, m_dest); }
+  void revert() const { revert_fn_(src_, dest_); }
 
  private:
-  const revert_fn m_custom_revert;
-  const std::filesystem::path m_src;
-  const std::filesystem::path m_dest;
+  const revert_fn_t revert_fn_;
+  const std::filesystem::path src_;
+  const std::filesystem::path dest_;
 };
 
 class fsman {
  public:
-  explicit fsman(bool log = true) : m_log{log} {}
+  explicit fsman(bool log = true) : log_{log} {}
 
-  [[nodiscard]] bool log() const { return m_log; }
+  [[nodiscard]] bool log() const { return log_; }
 
-  [[nodiscard]] const std::vector<fs_rec> &records() const { return m_recs; }
+  [[nodiscard]] const std::vector<fs_rec> &records() const { return recs_; }
 
   void revert();
 
@@ -52,8 +52,8 @@ class fsman {
 
   template <typename D>
   void log_create(D &&dest) {
-    if (m_log) {
-      m_recs.emplace_back(
+    if (log_) {
+      recs_.emplace_back(
           std::filesystem::path{}, std::forward<D>(dest),
           [](const std::filesystem::path &, const std::filesystem::path &dest) {
             std::filesystem::remove(dest);
@@ -69,8 +69,8 @@ class fsman {
 
   template <typename S, typename D>
   void log_mv_f(S &&src, D &&dest) {
-    if (m_log) {
-      m_recs.emplace_back(
+    if (log_) {
+      recs_.emplace_back(
           std::forward<S>(src), std::forward<D>(dest),
           [](const std::filesystem::path &src,
              const std::filesystem::path &dest) {
@@ -88,8 +88,8 @@ class fsman {
 
   template <typename D>
   void log_cp_f(D &&dest) {
-    if (m_log) {
-      m_recs.emplace_back(
+    if (log_) {
+      recs_.emplace_back(
           std::filesystem::path{}, std::forward<D>(dest),
           [](const std::filesystem::path &, const std::filesystem::path &dest) {
             std::filesystem::remove(dest);
@@ -107,8 +107,8 @@ class fsman {
 
   template <typename D>
   void log_rm_d(D &&dest) {
-    if (m_log) {
-      m_recs.emplace_back(
+    if (log_) {
+      recs_.emplace_back(
           std::filesystem::path{}, std::forward<D>(dest),
           [](const std::filesystem::path &, const std::filesystem::path &dest) {
             std::filesystem::create_directories(dest);
@@ -124,20 +124,20 @@ class fsman {
 
   template <typename S, typename D>
   void log_rename_d(S &&src, D &&dest) {
-    if (m_log) {
-      m_recs.emplace_back(std::forward<S>(src), std::forward<D>(dest),
-                          [](const std::filesystem::path &src,
-                             const std::filesystem::path &dest) {
-                            std::filesystem::rename(dest, src);
-                          });
+    if (log_) {
+      recs_.emplace_back(std::forward<S>(src), std::forward<D>(dest),
+                         [](const std::filesystem::path &src,
+                            const std::filesystem::path &dest) {
+                           std::filesystem::rename(dest, src);
+                         });
     }
   }
 
-  void reset() { m_recs.clear(); }
+  void reset() { recs_.clear(); }
 
  private:
-  std::vector<fs_rec> m_recs;
-  bool m_log = true;
+  std::vector<fs_rec> recs_;
+  bool log_ = true;
 };
 
 }  // namespace filemod

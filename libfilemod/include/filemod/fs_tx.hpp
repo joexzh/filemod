@@ -18,18 +18,18 @@ class fs_tx {
  public:
   explicit fs_tx(FS &fs);
 
+  ~fs_tx();
+
   // If commit() is not called, the transaction will be rolled back when
   // destructing fs_tx.
-  void commit() { m_committed = true; }
+  void commit() { committed_ = true; }
 
   // Rollback this and all nested transactions.
   void rollback();
 
-  ~fs_tx();
-
  private:
-  FS &m_fs;
-  int m_committed = false;
+  FS &fs_;
+  int committed_ = false;
 };
 
 }  // namespace filemod

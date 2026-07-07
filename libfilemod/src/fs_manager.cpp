@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <filesystem>
 
-#include "filemod/fs_utils.hpp"
 #include "ranges"
 
 namespace filemod {
@@ -12,7 +11,7 @@ namespace filemod {
 
 // Do not throw
 void fsman::revert() {
-  for (const auto &rec : std::ranges::reverse_view(m_recs)) {
+  for (const auto &rec : std::ranges::reverse_view(recs_)) {
     try {
       rec.revert();
     } catch (std::filesystem::filesystem_error &ex) {

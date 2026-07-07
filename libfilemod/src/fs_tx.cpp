@@ -4,25 +4,25 @@
 
 namespace filemod {
 
-fs_tx::fs_tx(FS &fs) : m_fs{fs} {
-  m_fs.m_curr_scope = &m_fs.m_curr_scope->new_child();
+fs_tx::fs_tx(FS &fs) : fs_{fs} {
+  fs_.curr_scope_ = &fs_.curr_scope_->new_child();
 }
 
-void fs_tx::rollback() { m_fs.m_curr_scope->rollback(); }
+void fs_tx::rollback() { fs_.curr_scope_->rollback(); }
 
 fs_tx::~fs_tx() {
-  if (!m_committed) {
+  if (!committed_) {
     try {
-      m_fs.m_curr_scope->rollback();
+      fs_.curr_scope_->rollback();
     } catch (...) {
     }
   }
 
-  m_fs.m_curr_scope = m_fs.m_curr_scope->parent();
-  if (m_fs.m_curr_scope == &m_fs.m_root_scope) {
+  fs_.curr_scope_ = fs_.curr_scope_->parent();
+  if (fs_.curr_scope_ == &fs_.root_scope_) {
     // when goes back to root scope, all the child scopes are done, never need
     // to touch them again, so clear all children
-    m_fs.m_root_scope.reset();
+    fs_.root_scope_.reset();
   }
 }
 

@@ -11,24 +11,28 @@
 
 namespace filemod {
 
+namespace {
+
 const char BACKUP_DIR[] = "___filemod_backup";
 const char FILEMOD_TEMP_DIR[] = "joexie.filemod";
 const char TMP_UNINSTALLED[] = "___filemod_uninstalled";
 const char TMP_EXTRACTED[] = "___extracted";
+
+}  // namespace
 
 // internal transaction scope.
 // All actual file system operations are done through `fsman`.
 class tx_scope {
  public:
   explicit tx_scope(tx_scope *parent, bool log = true)
-      : m_fsman{log}, m_parent{parent} {}
+      : fsman_{log}, parent_{parent} {}
 
   // create a new log-ready child scope and return reference to it.
-  tx_scope &new_child() { return m_children.emplace_back(this); }
+  tx_scope &new_child() { return children_.emplace_back(this); }
 
-  tx_scope *parent() { return m_parent; }
+  tx_scope *parent() { return parent_; }
 
-  fsman &get_fsman() { return m_fsman; }
+  fsman &get_fsman() { return fsman_; }
 
   // unused
   void commit();
@@ -39,11 +43,11 @@ class tx_scope {
   void reset();
 
  private:
-  std::vector<tx_scope> m_children;
-  fsman m_fsman;
+  std::vector<tx_scope> children_;
+  fsman fsman_;
   // m_parent is not null, except for root scope
-  tx_scope *const m_parent = nullptr;
-  bool m_rollbacked = false;
+  tx_scope *const parent_ = nullptr;
+  bool rollbacked_ = false;
 };
 
 // param 1: mod source.
@@ -88,7 +92,7 @@ class FS {
 
   // The directory that stores the managed target and mod files.
   const std::filesystem::path &cfg_dir_path() const noexcept {
-    return m_cfg_dir_path;
+    return cfg_dir_path_;
   }
 
   // Create a directory which path is %cfg_dir_path/<target_id>
@@ -140,7 +144,7 @@ class FS {
                   const std::filesystem::path &newname_path);
 
   std::filesystem::path get_cfg_tar_path(int64_t tar_id) {
-    return m_cfg_dir_path / std::to_string(tar_id);
+    return cfg_dir_path_ / std::to_string(tar_id);
   }
 
   std::filesystem::path get_cfg_mod_path(
@@ -149,8 +153,8 @@ class FS {
   }
 
  private:
-  const std::filesystem::path m_cfg_dir_path;
-  tx_scope m_root_scope{nullptr, false};
+  const std::filesystem::path cfg_dir_path_;
+  tx_scope root_scope_{nullptr, false};
   // m_curr_scope is never null.
   //
   // When no transaction started, it is m_root_scope.
@@ -158,25 +162,7 @@ class FS {
   // When new transaction started, it is the child of m_curr_scope.
   //
   // When transaction ended, it goes back to parent of m_curr_scope.
-  tx_scope *m_curr_scope = &m_root_scope;
-
-  void move_file_(const std::filesystem::path &src_file_path,
-                  const std::filesystem::path &dest_file_path,
-                  const std::filesystem::path &dest_dir_path);
-
-  // Returns relative backup files
-  std::vector<std::filesystem::path> backup_files_(
-      const std::filesystem::path &cfg_mod_path,
-      const std::filesystem::path &tar_dir_path,
-      const std::vector<std::filesystem::path> &tar_file_paths);
-
-  void delete_empty_dirs_(
-      std::vector<std::filesystem::path> &&sorted_dir_paths);
-
-  void move_mod_files_(
-      const std::filesystem::path &src_dir_path,
-      const std::filesystem::path &dest_dir_path,
-      const std::vector<std::filesystem::path> &sorted_file_rel_paths);
+  tx_scope *curr_scope_ = &root_scope_;
 
   // the actual external interface to start a transaction
   friend fs_tx;
