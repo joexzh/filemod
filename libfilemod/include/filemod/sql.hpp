@@ -35,9 +35,9 @@ struct [[nodiscard]] TargetDto {
 class DB {
  private:
   // SQLite::Database wrapper, for hiding SQLiteCpp/Database.hpp header
-  struct db_wrap;
+  struct db_wrapper;
   // SQLite::Savepoint wrapper, for hiding SQLiteCpp/Savepoint.hpp header
-  class sp_wrap;
+  class sp_wrapper;
 
  public:
   explicit DB(const std::string &path);
@@ -50,7 +50,7 @@ class DB {
 
   ~DB();
 
-  sp_wrap begin();
+  sp_wrapper begin();
 
   std::vector<TargetDto> query_targets_mods(const std::vector<int64_t> &ids);
 
@@ -90,33 +90,21 @@ class DB {
 
  private:
   // db wrapper
-  std::unique_ptr<db_wrap> m_dr;
-
-  int64_t insert_mod_(int64_t tar_id, std::string_view dir, int status);
-
-  int update_mod_status_(int64_t id, int status);
-
-  int insert_mod_files_(int64_t mod_id, const std::vector<std::string> &files);
-
-  int delete_mod_files_(int64_t mod_id);
-
-  int insert_backup_files_(int64_t mod_id,
-                           const std::vector<std::string> &bak_files);
-
-  int delete_backup_files_(int64_t mod_id);
+  std::unique_ptr<db_wrapper> db_wrapper_;
 };
 
-class DB::sp_wrap {
+// Savepoint wrapper, use pimpl to prevent exposing sqlite headers
+class DB::sp_wrapper {
  public:
-  ~sp_wrap();
+  ~sp_wrapper();
   void release();
   void rollback();
 
  private:
   struct impl;
-  std::unique_ptr<impl> m_impl;
+  std::unique_ptr<impl> impl_;
 
-  explicit sp_wrap(std::unique_ptr<impl> &&impl);
+  explicit sp_wrapper(std::unique_ptr<impl> &&impl);
 
   friend DB;
 };

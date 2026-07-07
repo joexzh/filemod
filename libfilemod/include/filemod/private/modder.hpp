@@ -8,6 +8,11 @@
 
 namespace filemod {
 
+//===----------------------------------------------------------------------===//
+// Private shared functions for class modder. Used by modder.cpp and
+// modder_archive.cpp.
+//===----------------------------------------------------------------------===//
+
 // Type of `modder::add_mod` or `modder::add_mod_archive`
 using add_mod_t = result<int64_t> (modder::*)(int64_t, std::string_view modname,
                                               std::string_view path);
