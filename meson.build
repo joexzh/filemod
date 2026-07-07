@@ -10,6 +10,7 @@ project(
         'cpp_std=c++20',
         'b_ndebug=if-release',
         'warning_level=3',
+        'b_lto=true',
 
         'boost:default_library=static',
         'sqlitecpp:default_library=static',

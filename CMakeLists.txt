@@ -9,6 +9,15 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 add_compile_definitions(FILEMOD_VERSION=${FILEMOD_VERSION})
 
+# Enable link time optimization (lto) if possible for all targets
+include(CheckIPOSupported)
+check_ipo_supported(RESULT lto_supported OUTPUT error_message)
+if(lto_supported)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+else()
+    message(STATUS "LTO not supported: ${error_message}")
+endif()
+
 if (MSVC)
     add_compile_options(/utf-8 /W4 $<$<CONFIG:Debug>:/fsanitize=address>)
 else()
