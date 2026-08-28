@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -40,21 +41,21 @@ class DB {
   class sp_wrapper;
 
  public:
-  explicit DB(const std::string &path);
+  explicit DB(const std::string& path);
 
-  DB(const DB &db) = delete;
-  DB &operator=(const DB &db) = delete;
+  DB(const DB& db) = delete;
+  DB& operator=(const DB& db) = delete;
 
-  DB(DB &&db) = default;
-  DB &operator=(DB &&db) = default;
+  DB(DB&& db) = default;
+  DB& operator=(DB&& db) = default;
 
   ~DB();
 
   sp_wrapper begin();
 
-  std::vector<TargetDto> query_targets_mods(const std::vector<int64_t> &ids);
+  std::vector<TargetDto> query_targets_mods(const std::vector<int64_t>& ids);
 
-  std::vector<ModDto> query_mods_w_files(const std::vector<int64_t> &ids);
+  std::vector<ModDto> query_mods_w_files(const std::vector<int64_t>& ids);
 
   std::vector<ModDto> query_mods_by_target(int64_t tar_id);
 
@@ -75,14 +76,14 @@ class DB {
   result<ModDto> query_mod(int64_t id);
 
   int64_t insert_mod_w_files(int64_t tar_id, std::string_view dir, int status,
-                             const std::vector<std::string> &files);
+                             const std::vector<std::string>& files);
 
   int delete_mod(int64_t id);
 
   std::vector<ModDto> query_mods_contain_files(
-      const std::vector<std::string> &files);
+      const std::vector<std::string>& files);
 
-  void install_mod(int64_t id, const std::vector<std::string> &backup_files);
+  void install_mod(int64_t id, const std::vector<std::string>& backup_files);
 
   void uninstall_mod(int64_t id);
 
@@ -104,7 +105,7 @@ class DB::sp_wrapper {
   struct impl;
   std::unique_ptr<impl> impl_;
 
-  explicit sp_wrapper(std::unique_ptr<impl> &&impl);
+  explicit sp_wrapper(std::unique_ptr<impl>&& impl);
 
   friend DB;
 };

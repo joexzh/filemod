@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <cstdint>
 #include <vector>
 
 #include "filemod/sql.hpp"
@@ -92,7 +93,7 @@ TEST_F(DBTest, query_mods_w_files) {
   auto mods = m_db.query_mods_w_files({mod_id});
 
   ASSERT_EQ(1, mods.size());
-  auto &mod = mods[0];
+  auto& mod = mods[0];
   EXPECT_NE(0, mod.id);
   EXPECT_EQ(mod_id, mod.id);
   EXPECT_EQ(tar_id, mod.tar_id);
@@ -107,13 +108,13 @@ TEST_F(DBTest, query_targets_mods) {
   auto tars = m_db.query_targets_mods({tar_id});
 
   ASSERT_EQ(1, tars.size());
-  auto &tar = tars[0];
+  auto& tar = tars[0];
   EXPECT_LT(0, tar.id);
   EXPECT_EQ(tar_id, tar.id);
   EXPECT_EQ(m_game1_dir_path, tar.dir);
 
   ASSERT_EQ(1, tar.ModDtos.size());
-  auto &mod = tar.ModDtos[0];
+  auto& mod = tar.ModDtos[0];
   EXPECT_LT(0, mod.id);
   EXPECT_EQ(mod_id, mod.id);
   EXPECT_EQ(m_mod1_obj.mod_name, mod.dir);
@@ -126,7 +127,7 @@ TEST_F(DBTest, query_mods_by_target) {
   auto mods = m_db.query_mods_by_target(tar_id);
 
   ASSERT_EQ(1, mods.size());
-  auto &mod = mods[0];
+  auto& mod = mods[0];
   EXPECT_LT(0, mod.id);
   EXPECT_EQ(mod_id, mod.id);
   EXPECT_EQ(m_mod1_obj.mod_name, mod.dir);
@@ -152,7 +153,7 @@ TEST_F(DBTest, query_mods_contain_files) {
   auto mods = m_db.query_mods_contain_files(m_mod1_obj.file_rels);
 
   ASSERT_EQ(1, mods.size());
-  auto &mod = mods[0];
+  auto& mod = mods[0];
   EXPECT_EQ(mod1_id, mod.id);
 }
 
@@ -163,7 +164,7 @@ TEST_F(DBTest, install_mod) {
   auto mods = m_db.query_mods_w_files({mod_id});
 
   ASSERT_EQ(1, mods.size());
-  auto &mod = mods[0];
+  auto& mod = mods[0];
   EXPECT_EQ(filemod::ModStatus::Installed, mod.status);
   EXPECT_EQ(m_bak_file_rels.size(), mod.bak_files.size());
 }
@@ -176,7 +177,7 @@ TEST_F(DBTest, uninstall_mod) {
   auto mods = m_db.query_mods_w_files({mod_id});
 
   ASSERT_EQ(1, mods.size());
-  auto &mod = mods[0];
+  auto& mod = mods[0];
   EXPECT_EQ(filemod::ModStatus::Uninstalled, mod.status);
   EXPECT_TRUE(mod.bak_files.empty());
 }

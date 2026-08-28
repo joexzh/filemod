@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <string_view>
 
 #include "filemod/fs_archive.hpp"
@@ -22,7 +23,7 @@ result<int64_t> modder::install_mod_archive(int64_t tar_id,
                                             std::string_view mod_name,
                                             std::string_view path) {
   return private_install_mod_path(fs_, db_, tar_id, mod_name, path, *this,
-                           &modder::add_mod_archive);
+                                  &modder::add_mod_archive);
 }
 
 result<int64_t> modder::install_mod_archive(int64_t tar_id,

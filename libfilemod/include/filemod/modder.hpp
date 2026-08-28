@@ -4,6 +4,7 @@
 // On Windows, Require the executable to inject UTF-8 manifest.
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <vector>

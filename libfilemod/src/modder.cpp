@@ -4,6 +4,7 @@
 
 #include "filemod/modder.hpp"
 
+#include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <string>
