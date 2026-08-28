@@ -61,7 +61,8 @@ std::string get_abs_path(const char* relpath) {
 }
 
 std::string wstr_to_cp(std::wstring_view wsv, UINT cp) {
-  if (wsv.empty()) return {};
+  std::string mbstr;
+  if (wsv.empty()) return mbstr;
 
   CPINFO cpInfo;
   if (!GetCPInfo(cp, &cpInfo)) {
@@ -69,7 +70,7 @@ std::string wstr_to_cp(std::wstring_view wsv, UINT cp) {
   }
   unsigned int char_size = cpInfo.MaxCharSize;
   size_t numbytes = wsv.size() * char_size;  // upper bound size
-  std::string mbstr(numbytes, '\0');
+  mbstr = std::string(numbytes, '\0');
 
   // written NOT include null terminator
   int written = WideCharToMultiByte(cp, 0, wsv.data(), wsv.size(), &mbstr[0],
@@ -82,9 +83,10 @@ std::string wstr_to_cp(std::wstring_view wsv, UINT cp) {
 }
 
 std::wstring cp_to_wstr(std::string_view sv, UINT cp) {
-  if (sv.empty()) return {};
+  std::wstring wstr;
+  if (sv.empty()) return wstr;
 
-  std::wstring wstr(sv.size(), L'0');  // alloc to upper bound size
+  wstr = std::wstring(sv.size(), L'0');  // alloc to upper bound size
 
   // written Not include null terminator
   int written =
