@@ -1,8 +1,27 @@
 {
+  "builtin-baseline": "24ffdbce8f154ef80409ab287d46b48b6bdfca2a",
   "dependencies": [
     "boost-program-options",
     "gtest",
     "libarchive",
     "sqlitecpp"
+  ],
+  "overrides": [
+    {
+      "name": "boost-program-options",
+      "version": "1.88.0"
+    },
+    {
+      "name": "gtest",
+      "version": "1.17.0"
+    },
+    {
+      "name": "libarchive",
+      "version": "3.7.4"
+    },
+    {
+      "name": "sqlitecpp",
+      "version": "3.3.3"
+    }
   ]
 }
