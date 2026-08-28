@@ -2,6 +2,7 @@
 // Created by Joe Tse on 11/26/23.
 //
 #include <boost/program_options.hpp>
+#include <cstdint>
 #include <exception>
 #include <filemod/modder.hpp>
 #include <filemod/utils.hpp>
@@ -169,12 +170,13 @@ static void parse_add(filemod::result_base& ret, std::ostringstream& oss,
       "       filemod add -t <target_id> [--name <mod_name>] --archive "
       "<archive_path>\n"
       "Options");
-  desc.add_options()("tdir", po::value<std::string>(&dir), "target directory")(
-      "tid,t", po::value<int64_t>(&id), "target id")(
-      "name,n", po::value<std::string>(&name), "mod name")(
-      "mdir,d", po::value<std::string>(&dir), "mod source files directory")(
-      "archive,a", po::value<std::string>(&dir), "mod archie path")("help,h",
-                                                                    "");
+  auto opt = desc.add_options();
+  opt("tdir", po::value<std::string>(&dir), "target directory");
+  opt("tid,t", po::value<int64_t>(&id), "target id");
+  opt("name,n", po::value<std::string>(&name), "mod name");
+  opt("mdir,d", po::value<std::string>(&dir), "mod source files directory");
+  opt("archive,a", po::value<std::string>(&dir), "mod archie path");
+  opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
 
@@ -212,12 +214,13 @@ static void parse_install(filemod::result_base& ret, std::ostringstream& oss,
       "<mod_dir>\n"
       "       filemod install -t <target_id> [--name <mod_name>] -a <archive>\n"
       "Options");
-  desc.add_options()("tid,t", po::value<int64_t>(&id), "target id")(
-      "name,n", po::value<std::string>(&name), "mod name")(
-      "mdir,d", po::value<std::string>(&dir), "mod source directory")(
-      "archive,a", po::value<std::string>(&dir), "mod archie path")(
-      "mid,m", po::value<std::vector<int64_t>>(&ids)->multitoken(), "mod ids")(
-      "help,h", "");
+  auto opt = desc.add_options();
+  opt("tid,t", po::value<int64_t>(&id), "target id");
+  opt("name,n", po::value<std::string>(&name), "mod name");
+  opt("mdir,d", po::value<std::string>(&dir), "mod source directory");
+  opt("archive,a", po::value<std::string>(&dir), "mod archie path");
+  opt("mid,m", po::value<std::vector<int64_t>>(&ids)->multitoken(), "mod ids");
+  opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
 
@@ -255,9 +258,10 @@ static void parse_uninstall(filemod::result_base& ret, std::ostringstream& oss,
       "Usage: filemod uninstall -t <target_id>\n"
       "       filemod uninstall -m <mod_id1> [mod_id2] ...\n"
       "Options");
-  desc.add_options()("tid,t", po::value<int64_t>(&id), "target id")(
-      "mid,m", po::value<std::vector<int64_t>>(&ids)->multitoken(), "mod ids")(
-      "help,h", "");
+  auto opt = desc.add_options();
+  opt("tid,t", po::value<int64_t>(&id), "target id");
+  opt("mid,m", po::value<std::vector<int64_t>>(&ids)->multitoken(), "mod ids");
+  opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
 
@@ -281,9 +285,10 @@ static void parse_remove(filemod::result_base& ret, std::ostringstream& oss,
       "Usage: filemod remove -t <target_id>\n"
       "       filemod remove -m <mod_id1> [mod_id2] ...\n"
       "Options");
-  desc.add_options()("tid,t", po::value<int64_t>(&id), "target id")(
-      "mid,m", po::value<std::vector<int64_t>>(&ids)->multitoken(), "mod ids")(
-      "help,h", "");
+  auto opt = desc.add_options();
+  opt("tid,t", po::value<int64_t>(&id), "target id");
+  opt("mid,m", po::value<std::vector<int64_t>>(&ids)->multitoken(), "mod ids");
+  opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
 
@@ -306,18 +311,19 @@ static void parse_list(filemod::result_base& ret, std::ostringstream& oss,
       "Usage: filemod list [-t <target_id1> [target_id2] ...]\n"
       "       filemod list -m <mod_id1> [mod_id2] ...\n"
       "Options");
-  desc.add_options()(
-      "tid,t", po::value<std::vector<int64_t>>(&ids)->multitoken(),
-      "target ids")("mid,m", po::value<std::vector<int64_t>>()->multitoken(),
-                    "mod ids")("help,h", "");
+  auto opt = desc.add_options();
+  opt("tid,t", po::value<std::vector<int64_t>>(&ids)->multitoken(),
+      "target ids");
+  opt("mid,m", po::value<std::vector<int64_t>>()->multitoken(), "mod ids");
+  opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
 
   if (vm.count("help")) {
     oss << desc;
   } else if (vm.count("mid")) {  // list mods
-    ret.msg =
-        mods_to_string(md.query_mods(vm["mid"].as<std::vector<int64_t>>()));
+    ret.msg = mods_to_string(
+        md.query_mods(vm["mid"].as<std::vector<int64_t>>()), true);
   } else {  // list targets
     ret.msg = targets_to_string(md.query_targets(ids));
   }
@@ -354,11 +360,14 @@ static int parse(int argc, char* argv[]) {
       " Commands: add | install | uninstall | remove | list | rename\n"
       " filemod <command> --help to show command help.\n"
       "Common Options");
-  visible.add_options()("help,h", "")("version,v", "");
+  auto vopt = visible.add_options();
+  vopt("help,h", "");
+  vopt("version,v", "");
 
   po::options_description hidden("command");
-  hidden.add_options()("command", po::value<std::string>(), "")(
-      "subargs", po::value<std::vector<std::string>>(), "");
+  auto hopt = hidden.add_options();
+  hopt("command", po::value<std::string>(), "");
+  hopt("subargs", po::value<std::vector<std::string>>(), "");
 
   po::options_description all;
   all.add(visible).add(hidden);
@@ -415,8 +424,9 @@ static int parse(int argc, char* argv[]) {
 }
 
 int main(int argc, char** argv) {
-  setlocale(LC_ALL, "C.UTF-8");
 #ifdef _WIN32
+  setlocale(LC_ALL, ".UTF-8");
+
   // Must inject UTF-8 manifest on Windows. See
   // https://learn.microsoft.com/en-us/windows/apps/design/globalizing/use-utf8-code-page
 
@@ -451,6 +461,8 @@ int main(int argc, char** argv) {
     arr_pchar[i] = utf8_argv[i].data();
   }
   argv = arr_pchar;
+#else
+  setlocale(LC_ALL, "C.UTF-8");
 #endif
 
   try {
