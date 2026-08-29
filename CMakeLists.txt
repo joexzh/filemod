@@ -43,6 +43,15 @@ endif()
 # dependencies and targets
 # ==============================================================================
 
+# utf8 manifest on Windows
+# put it before subdir(...) so it can be reused
+set(manifest_srcs)
+if(MSVC)
+  list(APPEND manifest_srcs ${CMAKE_SOURCE_DIR}/windows.utf8.manifest)
+elseif(MINGW)
+  list(APPEND manifest_srcs ${CMAKE_SOURCE_DIR}/windows.utf8.rc)
+endif()
+
 find_package(Boost REQUIRED COMPONENTS program_options)
 
 enable_testing()
@@ -51,11 +60,7 @@ add_subdirectory(libfilemod)
 
 add_executable(${PROJECT_NAME} main.cpp)
 
-if(MSVC)
-  target_sources(${PROJECT_NAME} PRIVATE windows.utf8.manifest)
-elseif(MINGW)
-  target_sources(${PROJECT_NAME} PRIVATE windiws.utf8.rc)
-endif()
+target_sources(${PROJECT_NAME} PRIVATE ${manifest_srcs})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
   VERSION ${FILEMOD_VERSION}

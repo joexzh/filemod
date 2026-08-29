@@ -21,8 +21,8 @@ project(
 
 add_project_arguments('-DFILEMOD_VERSION=' + meson.project_version(), language: 'cpp')
 
-cc = meson.get_compiler('cpp')
-if cc.has_argument('-Wnrvo')
+cxx = meson.get_compiler('cpp')
+if cxx.has_argument('-Wnrvo')
   add_project_arguments('-Wnrvo', language: 'cpp')
 endif
 
@@ -31,9 +31,11 @@ manifest_srcs = []
 
 # embed utf8 manifest on Windows
 if host_machine.system() == 'windows'
-  if cc.get_id() in ['msvc', 'clang-cl']
-    manifest_srcs += 'windows.utf8.manifest'
-  elif cc.get_id() in ['gcc', 'clang']
+  proj_root = meson.project_source_root()
+
+  if cxx.get_id() in ['msvc', 'clang-cl']
+    manifest_srcs += (proj_root / 'windows.utf8.manifest')
+  elif cxx.get_id() in ['gcc', 'clang']
     # MinGW: manifest must be compiled as an RC resource and linked in
     windows = import('windows')
     manifest_rc = windows.compile_resources(

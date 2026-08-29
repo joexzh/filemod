@@ -38,6 +38,11 @@ jobs:
         with:
           submodules: true
 
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '4.3.x'
+
       - uses: ilammy/msvc-dev-cmd@v1
 
       - uses: lukka/run-vcpkg@v11

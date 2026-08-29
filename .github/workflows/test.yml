@@ -5,7 +5,7 @@ on:
     - master
     - dev
   pull_request:
-    branches: 
+    branches:
     - master
     - dev
 
@@ -30,6 +30,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '4.3.x'
 
       - uses: ilammy/msvc-dev-cmd@v1
 

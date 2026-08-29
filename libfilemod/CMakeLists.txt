@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 4.3)
 project(libfilemod C CXX)
 option(${PROJECT_NAME}_INSTALL_DEV "install bin, lib, headers and cmake config files" OFF)
 set(FILEMOD_NAME filemod)
@@ -107,11 +107,7 @@ add_executable(${PROJECT_NAME}_test
   test/testsql.cpp
 )
 
-if(MSVC)
-  target_sources(${PROJECT_NAME}_test PRIVATE ${CMAKE_SOURCE_DIR}/windows.utf8.manifest)
-elseif(MINGW)
-  target_sources(${PROJECT_NAME}_test PRIVATE ${CMAKE_SOURCE_DIR}/windiws.utf8.rc)
-endif()
+target_sources(${PROJECT_NAME}_test PRIVATE ${manifest_srcs})
 
 target_link_libraries(${PROJECT_NAME}_test
   PRIVATE GTest::gtest ${libfilemod_for_test} LibArchive::LibArchive)
