@@ -1,3 +1,9 @@
+## 0.0.4
+
+- Embed UTF-8 manifest on Windows build, improves performance
+- Add checking and downloading vc_redist v14 as dependency in Windows installer
+- Remove libarchive executables in Linux package
+
 ## 0.0.3
 
 - Use wide string for command line arguments and filenames on Windows which bypasses all code page. Other than those, use UTF-8 internally.

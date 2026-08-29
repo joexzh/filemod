@@ -50,7 +50,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/vcpkg/binary-cache
-          key: vcpkg-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          key: vcpkg-${{ matrix.os }}-${{ matrix.buildtype }}-${{ matrix.default_library }}-${{ hashFiles('vcpkg.json') }}
 
       - name: CMake preset workflow (config, build, test and pack)
         run: |
