@@ -163,19 +163,22 @@ static void parse_add(filemod::result_base& ret, std::ostringstream& oss,
                       po::variables_map& vm, int64_t& id, std::string& name,
                       std::string& dir) {
   po::options_description desc(
-      "add target or mod\n"
-      "Usage: filemod add --tdir <target_dir>\n"
-      "       filemod add -t <target_id> [--name <mod_name>] --mdir "
-      "<mod_dir>\n"
-      "       filemod add -t <target_id> [--name <mod_name>] --archive "
-      "<archive_path>\n"
+      "add target or mod\n\n"
+      "Usage:\n"
+      "  filemod add --tdir <target_dir>\n"
+      "  filemod add -t <target_id> [--name <mod_name>] --mdir <mod_dir>\n"
+      "  filemod add -t <target_id> [--name <mod_name>] --archive "
+      "<archive_path>\n\n"
       "Options");
   auto opt = desc.add_options();
-  opt("tdir", po::value<std::string>(&dir), "target directory");
-  opt("tid,t", po::value<int64_t>(&id), "target id");
-  opt("name,n", po::value<std::string>(&name), "mod name");
-  opt("mdir,d", po::value<std::string>(&dir), "mod source files directory");
-  opt("archive,a", po::value<std::string>(&dir), "mod archie path");
+  opt("tdir", po::value<std::string>(&dir)->value_name(" "),
+      "target directory");
+  opt("tid,t", po::value<int64_t>(&id)->value_name(" "), "target id");
+  opt("name,n", po::value<std::string>(&name)->value_name(" "), "mod name");
+  opt("mdir,d", po::value<std::string>(&dir)->value_name(" "),
+      "mod source files directory");
+  opt("archive,a", po::value<std::string>(&dir)->value_name(" "),
+      "mod archive path");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
@@ -207,19 +210,23 @@ static void parse_install(filemod::result_base& ret, std::ostringstream& oss,
                           po::variables_map& vm, int64_t& id, std::string& name,
                           std::string& dir, std::vector<int64_t>& ids) {
   po::options_description desc(
-      "install mod(s)\n"
-      "Usage: filemod install -t <target_id>\n"
-      "       filemod install -m <mod_id1> [mod_id2] ...\n"
-      "       filemod install -t <target_id> [--name <mod_name>] --mdir "
-      "<mod_dir>\n"
-      "       filemod install -t <target_id> [--name <mod_name>] -a <archive>\n"
+      "install mod(s)\n\n"
+      "Usage:\n"
+      "  filemod install -t <target_id>\n"
+      "  filemod install -m <mod_id1> [mod_id2] ...\n"
+      "  filemod install -t <target_id> [--name <mod_name>] --mdir <mod_dir>\n"
+      "  filemod install -t <target_id> [--name <mod_name>] -a <archive>\n\n"
       "Options");
   auto opt = desc.add_options();
-  opt("tid,t", po::value<int64_t>(&id), "target id");
-  opt("name,n", po::value<std::string>(&name), "mod name");
-  opt("mdir,d", po::value<std::string>(&dir), "mod source directory");
-  opt("archive,a", po::value<std::string>(&dir), "mod archie path");
-  opt("mid,m", po::value<std::vector<int64_t>>(&ids)->multitoken(), "mod ids");
+  opt("tid,t", po::value<int64_t>(&id)->value_name(" "), "target id");
+  opt("name,n", po::value<std::string>(&name)->value_name(" "), "mod name");
+  opt("mdir,d", po::value<std::string>(&dir)->value_name(" "),
+      "mod source directory");
+  opt("archive,a", po::value<std::string>(&dir)->value_name(" "),
+      "mod archive path");
+  opt("mid,m",
+      po::value<std::vector<int64_t>>(&ids)->multitoken()->value_name(" "),
+      "mod ids");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
@@ -254,13 +261,16 @@ static void parse_uninstall(filemod::result_base& ret, std::ostringstream& oss,
                             po::variables_map& vm, int64_t& id,
                             std::vector<int64_t>& ids) {
   po::options_description desc(
-      "uninstall mod(s)\n"
-      "Usage: filemod uninstall -t <target_id>\n"
-      "       filemod uninstall -m <mod_id1> [mod_id2] ...\n"
+      "uninstall mod(s)\n\n"
+      "Usage:\n"
+      "  filemod uninstall -t <target_id>\n"
+      "  filemod uninstall -m <mod_id1> [mod_id2] ...\n\n"
       "Options");
   auto opt = desc.add_options();
-  opt("tid,t", po::value<int64_t>(&id), "target id");
-  opt("mid,m", po::value<std::vector<int64_t>>(&ids)->multitoken(), "mod ids");
+  opt("tid,t", po::value<int64_t>(&id)->value_name(" "), "target id");
+  opt("mid,m",
+      po::value<std::vector<int64_t>>(&ids)->multitoken()->value_name(" "),
+      "mod ids");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
@@ -281,13 +291,16 @@ static void parse_remove(filemod::result_base& ret, std::ostringstream& oss,
                          po::variables_map& vm, int64_t& id,
                          std::vector<int64_t>& ids) {
   po::options_description desc(
-      "remove target or mod(s)\n"
-      "Usage: filemod remove -t <target_id>\n"
-      "       filemod remove -m <mod_id1> [mod_id2] ...\n"
+      "remove target or mod(s)\n\n"
+      "Usage:\n"
+      "  filemod remove -t <target_id>\n"
+      "  filemod remove -m <mod_id1> [mod_id2] ...\n\n"
       "Options");
   auto opt = desc.add_options();
-  opt("tid,t", po::value<int64_t>(&id), "target id");
-  opt("mid,m", po::value<std::vector<int64_t>>(&ids)->multitoken(), "mod ids");
+  opt("tid,t", po::value<int64_t>(&id)->value_name(" "), "target id");
+  opt("mid,m",
+      po::value<std::vector<int64_t>>(&ids)->multitoken()->value_name(" "),
+      "mod ids");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
@@ -307,14 +320,17 @@ static void parse_list(filemod::result_base& ret, std::ostringstream& oss,
                        po::basic_parsed_options<char>& parsed,
                        po::variables_map& vm, std::vector<int64_t>& ids) {
   po::options_description desc(
-      "display target(s) and mod(s) in database\n"
-      "Usage: filemod list [-t <target_id1> [target_id2] ...]\n"
-      "       filemod list -m <mod_id1> [mod_id2] ...\n"
+      "display target(s) and mod(s) in database\n\n"
+      "Usage:\n"
+      "  filemod list [-t <target_id1> [target_id2] ...]\n"
+      "  filemod list -m <mod_id1> [mod_id2] ...\n\n"
       "Options");
   auto opt = desc.add_options();
-  opt("tid,t", po::value<std::vector<int64_t>>(&ids)->multitoken(),
+  opt("tid,t",
+      po::value<std::vector<int64_t>>(&ids)->multitoken()->value_name(" "),
       "target ids");
-  opt("mid,m", po::value<std::vector<int64_t>>()->multitoken(), "mod ids");
+  opt("mid,m", po::value<std::vector<int64_t>>()->multitoken()->value_name(" "),
+      "mod ids");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
@@ -333,11 +349,15 @@ static void parse_rename(filemod::result_base& ret, std::ostringstream& oss,
                          po::parsed_options& parsed, po::variables_map& vm,
                          int64_t& mid, std::string& newname) {
   po::options_description desc(
-      "rename mod\n"
-      "Usage: filemod rename -m <mod_id> -n <newname>\n"
+      "rename mod\n\n"
+      "Usage:\n"
+      "  filemod rename -m <mod_id> -n <newname>\n\n"
       "Options");
-  desc.add_options()("mid,m", po::value<int64_t>(&mid), "mod id")(
-      "name,n", po::value<std::string>(&newname), "new mod name")("help,h", "");
+  auto opt = desc.add_options();
+  opt("mid,m", po::value<int64_t>(&mid)->value_name(" "), "mod id");
+  opt("name,n", po::value<std::string>(&newname)->value_name(" "),
+      "new mod name");
+  opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
 
@@ -355,10 +375,11 @@ static int parse(int argc, char* argv[]) {
   std::ostringstream oss;
 
   po::options_description visible(
-      "filemod is a file replacement manager.\n"
-      "Usage: filemod <command> <args>\n"
-      " Commands: add | install | uninstall | remove | list | rename\n"
-      " filemod <command> --help to show command help.\n"
+      "filemod is a file replacement manager.\n\n"
+      "Usage:\n"
+      "  filemod <command> <args>\n\n"
+      "Commands: add | install | uninstall | remove | list | rename\n"
+      "Run `filemod <command> --help` to show command help.\n\n"
       "Common Options");
   auto vopt = visible.add_options();
   vopt("help,h", "");
