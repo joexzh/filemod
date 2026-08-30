@@ -38,6 +38,10 @@ jobs:
         with:
           submodules: true
 
+      - uses: repolevedavaj/install-nsis@v1
+        with:
+          nsis-version: '3.12'
+
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
         with:
