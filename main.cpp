@@ -171,13 +171,13 @@ static void parse_add(filemod::result_base& ret, std::ostringstream& oss,
       "<archive_path>\n\n"
       "Options");
   auto opt = desc.add_options();
-  opt("tdir", po::value<std::string>(&dir)->value_name(" "),
+  opt("tdir", po::value<std::string>(&dir),
       "target directory");
-  opt("tid,t", po::value<int64_t>(&id)->value_name(" "), "target id");
-  opt("name,n", po::value<std::string>(&name)->value_name(" "), "mod name");
-  opt("mdir,d", po::value<std::string>(&dir)->value_name(" "),
+  opt("tid,t", po::value<int64_t>(&id), "target id");
+  opt("name,n", po::value<std::string>(&name), "mod name");
+  opt("mdir,d", po::value<std::string>(&dir),
       "mod source files directory");
-  opt("archive,a", po::value<std::string>(&dir)->value_name(" "),
+  opt("archive,a", po::value<std::string>(&dir),
       "mod archive path");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
@@ -218,14 +218,14 @@ static void parse_install(filemod::result_base& ret, std::ostringstream& oss,
       "  filemod install -t <target_id> [--name <mod_name>] -a <archive>\n\n"
       "Options");
   auto opt = desc.add_options();
-  opt("tid,t", po::value<int64_t>(&id)->value_name(" "), "target id");
-  opt("name,n", po::value<std::string>(&name)->value_name(" "), "mod name");
-  opt("mdir,d", po::value<std::string>(&dir)->value_name(" "),
+  opt("tid,t", po::value<int64_t>(&id), "target id");
+  opt("name,n", po::value<std::string>(&name), "mod name");
+  opt("mdir,d", po::value<std::string>(&dir),
       "mod source directory");
-  opt("archive,a", po::value<std::string>(&dir)->value_name(" "),
+  opt("archive,a", po::value<std::string>(&dir),
       "mod archive path");
   opt("mid,m",
-      po::value<std::vector<int64_t>>(&ids)->multitoken()->value_name(" "),
+      po::value<std::vector<int64_t>>(&ids)->multitoken(),
       "mod ids");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
@@ -267,9 +267,9 @@ static void parse_uninstall(filemod::result_base& ret, std::ostringstream& oss,
       "  filemod uninstall -m <mod_id1> [mod_id2] ...\n\n"
       "Options");
   auto opt = desc.add_options();
-  opt("tid,t", po::value<int64_t>(&id)->value_name(" "), "target id");
+  opt("tid,t", po::value<int64_t>(&id), "target id");
   opt("mid,m",
-      po::value<std::vector<int64_t>>(&ids)->multitoken()->value_name(" "),
+      po::value<std::vector<int64_t>>(&ids)->multitoken(),
       "mod ids");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
@@ -297,9 +297,9 @@ static void parse_remove(filemod::result_base& ret, std::ostringstream& oss,
       "  filemod remove -m <mod_id1> [mod_id2] ...\n\n"
       "Options");
   auto opt = desc.add_options();
-  opt("tid,t", po::value<int64_t>(&id)->value_name(" "), "target id");
+  opt("tid,t", po::value<int64_t>(&id), "target id");
   opt("mid,m",
-      po::value<std::vector<int64_t>>(&ids)->multitoken()->value_name(" "),
+      po::value<std::vector<int64_t>>(&ids)->multitoken(),
       "mod ids");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
@@ -327,9 +327,9 @@ static void parse_list(filemod::result_base& ret, std::ostringstream& oss,
       "Options");
   auto opt = desc.add_options();
   opt("tid,t",
-      po::value<std::vector<int64_t>>(&ids)->multitoken()->value_name(" "),
+      po::value<std::vector<int64_t>>(&ids)->multitoken(),
       "target ids");
-  opt("mid,m", po::value<std::vector<int64_t>>()->multitoken()->value_name(" "),
+  opt("mid,m", po::value<std::vector<int64_t>>()->multitoken(),
       "mod ids");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
@@ -354,8 +354,8 @@ static void parse_rename(filemod::result_base& ret, std::ostringstream& oss,
       "  filemod rename -m <mod_id> -n <newname>\n\n"
       "Options");
   auto opt = desc.add_options();
-  opt("mid,m", po::value<int64_t>(&mid)->value_name(" "), "mod id");
-  opt("name,n", po::value<std::string>(&newname)->value_name(" "),
+  opt("mid,m", po::value<int64_t>(&mid), "mod id");
+  opt("name,n", po::value<std::string>(&newname),
       "new mod name");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
@@ -469,7 +469,7 @@ int main(int argc, char** argv) {
   } scope_guard{szArgList};
 
   constexpr std::size_t MAX_ARGC = 64;
-  if (argc > MAX_ARGC) {
+  if (static_cast<std::size_t>(argc) > MAX_ARGC) {
     std::cerr << "Error: too many arguments, max is " << MAX_ARGC << '\n';
     return 1;
   }
