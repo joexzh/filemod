@@ -28,26 +28,19 @@ static bool is_set(const std::vector<int64_t>& ids) { return !ids.empty(); }
 
 static bool is_set(const std::string& dir) { return !dir.empty(); }
 
-static void append_ok(filemod::result_base& ret) {
-  if (ret.success) {
-    if (!ret.msg.empty()) {
-      ret.msg += '\n';
-    }
-    ret.msg += "ok";
-  }
-}
-
 static void move_to_retbase(filemod::result_base&& from,
                             filemod::result_base& to) {
   to = std::move(from);
-  append_ok(to);
+  if (from.success) {
+    from.msg += "ok\n";
+  }
 }
 
 static void move_to_retbase(filemod::result<int64_t>&& from,
                             filemod::result_base& to) {
   to.success = from.success;
   if (from.success) {
-    to.msg = std::to_string(from.data) + '\n' + "ok";
+    to.msg = std::to_string(from.data) + '\n' + "ok" + '\n';
   } else {
     to.msg = std::move(from.msg);
   }
@@ -171,14 +164,11 @@ static void parse_add(filemod::result_base& ret, std::ostringstream& oss,
       "<archive_path>\n\n"
       "Options");
   auto opt = desc.add_options();
-  opt("tdir", po::value<std::string>(&dir),
-      "target directory");
+  opt("tdir", po::value<std::string>(&dir), "target directory");
   opt("tid,t", po::value<int64_t>(&id), "target id");
   opt("name,n", po::value<std::string>(&name), "mod name");
-  opt("mdir,d", po::value<std::string>(&dir),
-      "mod source files directory");
-  opt("archive,a", po::value<std::string>(&dir),
-      "mod archive path");
+  opt("mdir,d", po::value<std::string>(&dir), "mod source files directory");
+  opt("archive,a", po::value<std::string>(&dir), "mod archive path");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
@@ -220,13 +210,9 @@ static void parse_install(filemod::result_base& ret, std::ostringstream& oss,
   auto opt = desc.add_options();
   opt("tid,t", po::value<int64_t>(&id), "target id");
   opt("name,n", po::value<std::string>(&name), "mod name");
-  opt("mdir,d", po::value<std::string>(&dir),
-      "mod source directory");
-  opt("archive,a", po::value<std::string>(&dir),
-      "mod archive path");
-  opt("mid,m",
-      po::value<std::vector<int64_t>>(&ids)->multitoken(),
-      "mod ids");
+  opt("mdir,d", po::value<std::string>(&dir), "mod source directory");
+  opt("archive,a", po::value<std::string>(&dir), "mod archive path");
+  opt("mid,m", po::value<std::vector<int64_t>>(&ids)->multitoken(), "mod ids");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
@@ -268,9 +254,7 @@ static void parse_uninstall(filemod::result_base& ret, std::ostringstream& oss,
       "Options");
   auto opt = desc.add_options();
   opt("tid,t", po::value<int64_t>(&id), "target id");
-  opt("mid,m",
-      po::value<std::vector<int64_t>>(&ids)->multitoken(),
-      "mod ids");
+  opt("mid,m", po::value<std::vector<int64_t>>(&ids)->multitoken(), "mod ids");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
@@ -298,9 +282,7 @@ static void parse_remove(filemod::result_base& ret, std::ostringstream& oss,
       "Options");
   auto opt = desc.add_options();
   opt("tid,t", po::value<int64_t>(&id), "target id");
-  opt("mid,m",
-      po::value<std::vector<int64_t>>(&ids)->multitoken(),
-      "mod ids");
+  opt("mid,m", po::value<std::vector<int64_t>>(&ids)->multitoken(), "mod ids");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
@@ -326,11 +308,9 @@ static void parse_list(filemod::result_base& ret, std::ostringstream& oss,
       "  filemod list -m <mod_id1> [mod_id2] ...\n\n"
       "Options");
   auto opt = desc.add_options();
-  opt("tid,t",
-      po::value<std::vector<int64_t>>(&ids)->multitoken(),
+  opt("tid,t", po::value<std::vector<int64_t>>(&ids)->multitoken(),
       "target ids");
-  opt("mid,m", po::value<std::vector<int64_t>>()->multitoken(),
-      "mod ids");
+  opt("mid,m", po::value<std::vector<int64_t>>()->multitoken(), "mod ids");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
@@ -355,8 +335,7 @@ static void parse_rename(filemod::result_base& ret, std::ostringstream& oss,
       "Options");
   auto opt = desc.add_options();
   opt("mid,m", po::value<int64_t>(&mid), "mod id");
-  opt("name,n", po::value<std::string>(&newname),
-      "new mod name");
+  opt("name,n", po::value<std::string>(&newname), "new mod name");
   opt("help,h", "");
   parse_subcmd(desc, parsed, vm);
   filemod::modder md;
@@ -437,10 +416,10 @@ static int parse(int argc, char* argv[]) {
   }
 
   if (ret.success) {
-    std::cout << ret.msg << oss.str() << '\n';
+    std::cout << ret.msg << oss.str();
     return 0;
   }
-  std::cerr << ret.msg << oss.str() << '\n';
+  std::cerr << ret.msg << oss.str();
   return 1;
 }
 

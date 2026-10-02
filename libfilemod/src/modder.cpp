@@ -49,7 +49,7 @@ void set_fail(result_base& ret, std::string&& str) {
 bool fail_if_not_directory(result_base& ret, const std::filesystem::path& path,
                            std::string_view pathv) {
   if (!std::filesystem::is_directory(path)) {
-    set_fail(ret, {ERR_NOT_DIR, ": '", pathv, "'"});
+    set_fail(ret, {ERR_NOT_DIR, ": '", pathv, "'", "\n"});
     return false;
   }
   return true;
@@ -58,7 +58,7 @@ bool fail_if_not_directory(result_base& ret, const std::filesystem::path& path,
 bool fail_if_not_exists(result_base& ret, const std::filesystem::path& path,
                         std::string_view pathv) {
   if (!std::filesystem::exists(path)) {
-    set_fail(ret, {ERR_NOT_EXISTS, ": '", pathv, "'"});
+    set_fail(ret, {ERR_NOT_EXISTS, ": '", pathv, "'", "\n"});
     return false;
   }
   return true;
@@ -106,7 +106,7 @@ result_base install_mod_(FS& fs, DB& db, int64_t mod_id) {
   tx_wrapper(fs, db, ret, [&]() {
     auto mods = db.query_mods_w_files(std::vector<int64_t>{mod_id});
     if (mods.empty()) {
-      set_fail(ret, std::string_view{ERR_MOD_NOT_EXIST});
+      set_fail(ret, {std::string_view{ERR_MOD_NOT_EXIST}, "\n"});
       return;
     }
 
@@ -122,7 +122,7 @@ result_base install_mod_(FS& fs, DB& db, int64_t mod_id) {
     for (auto& mod_file : mod.files) {
       if (auto cfg_mod_file_path = cfg_mod_path / mod_file;
           !std::filesystem::exists(cfg_mod_file_path)) {
-        set_fail(ret, {ERR_NOT_EXISTS, ": ", cfg_mod_file_path.string()});
+        set_fail(ret, {ERR_NOT_EXISTS, ": ", cfg_mod_file_path.string(), "\n"});
         return;
       }
     }
@@ -137,12 +137,14 @@ result_base install_mod_(FS& fs, DB& db, int64_t mod_id) {
         ret.msg += std::to_string(conflict_mod.id);
         ret.msg += " ";
       }
+      ret.msg += '\n';
       return;
     }
 
     auto tar_ret = db.query_target(mod.tar_id);
     if (!tar_ret.success) {
-      set_fail(ret, {ERR_TAR_NOT_EXIST, ": ", std::to_string(mod.tar_id)});
+      set_fail(ret,
+               {ERR_TAR_NOT_EXIST, ": ", std::to_string(mod.tar_id), "\n"});
       return;
     }
 
@@ -175,7 +177,7 @@ result<ModDto> uninstall_mod_(FS& fs, DB& db, int64_t mod_id) {
   tx_wrapper(fs, db, ret, [&]() {
     auto mods = db.query_mods_w_files(std::vector<int64_t>{mod_id});
     if (mods.empty()) {
-      set_fail(ret, {ERR_MOD_NOT_EXIST, ": ", std::to_string(mod_id)});
+      set_fail(ret, {ERR_MOD_NOT_EXIST, ": ", std::to_string(mod_id), "\n"});
       return;
     }
 
@@ -253,14 +255,15 @@ result<int64_t> private_add_mod(FS& fs, DB& db, int64_t tar_id,
 
   tx_wrapper(fs, db, ret, [&]() {
     if (!db.query_target(tar_id).success) {
-      set_fail(ret, std::string_view{ERR_TAR_NOT_EXIST});
+      set_fail(ret, {std::string_view{ERR_TAR_NOT_EXIST}, "\n"});
       return;
     }
 
     if (auto mod_ret = db.query_mod_by_targetid_dir(tar_id, mod_name);
         mod_ret.success) {
-      set_fail(ret,
-               {"mod already exists, id: ", std::to_string(mod_ret.data.id)});
+      set_fail(
+          ret,
+          {"mod already exists, id: ", std::to_string(mod_ret.data.id), "\n"});
       return;
     }
 
@@ -375,7 +378,7 @@ result_base modder::install_target(int64_t tar_id) {
   tx_wrapper(fs_, db_, ret, [&]() {
     auto tars = db_.query_targets_mods(std::vector<int64_t>{tar_id});
     if (tars.empty()) {
-      set_fail(ret, std::string_view{ERR_TAR_NOT_EXIST});
+      set_fail(ret, {std::string_view{ERR_TAR_NOT_EXIST}, "\n"});
       return;
     }
 
@@ -427,7 +430,7 @@ result_base modder::uninstall_target(int64_t tar_id) {
   tx_wrapper(fs_, db_, ret, [&]() {
     auto tars = db_.query_targets_mods(std::vector<int64_t>{tar_id});
     if (tars.empty()) {
-      set_fail(ret, std::string_view{ERR_TAR_NOT_EXIST});
+      set_fail(ret, {std::string_view{ERR_TAR_NOT_EXIST}, "\n"});
       return;
     }
 
@@ -466,7 +469,7 @@ result_base modder::remove_target(int64_t tar_id) {
   tx_wrapper(fs_, db_, ret, [&]() {
     auto tars = db_.query_targets_mods({tar_id});
     if (tars.empty()) {
-      set_fail(ret, std::string_view{ERR_TAR_NOT_EXIST});
+      set_fail(ret, {std::string_view{ERR_TAR_NOT_EXIST}, "\n"});
       return;
     }
 
@@ -499,7 +502,7 @@ result_base modder::rename_mod(int64_t mid, std::string_view newname) {
   tx_wrapper(fs_, db_, ret, [&]() {
     auto query_ret = db_.query_mod(mid);
     if (!query_ret.success) {
-      set_fail(ret, {ERR_MOD_NOT_EXIST, ": ", std::to_string(mid)});
+      set_fail(ret, {ERR_MOD_NOT_EXIST, ": ", std::to_string(mid), "\n"});
       return;
     }
     auto& oldmod = query_ret.data;
