@@ -8,6 +8,7 @@
 #include <cstring>
 #include <string>
 #include <string_view>
+#include <utility>
 #ifdef _WIN32
 #include <Windows.h>
 #endif
@@ -68,6 +69,11 @@ const char UnSupportedOS[] = "Unsupported OS!";
 const char DBFILE[] = "filemod.db";
 const char FILEMOD[] = "filemod";
 const char CONFIGDIR[] = "filemod_cfg";
+
+template <typename T>
+constexpr std::string& append_line(std::string& lhs, T&& rhs) {
+  return (lhs += std::forward<T>(rhs)) += '\n';
+}
 
 std::string get_exe_dir();
 

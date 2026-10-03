@@ -32,7 +32,7 @@ static void move_to_retbase(filemod::result_base&& from,
                             filemod::result_base& to) {
   to = std::move(from);
   if (from.success) {
-    from.msg += "ok\n";
+    filemod::append_line(to.msg, "ok");
   }
 }
 
@@ -40,7 +40,7 @@ static void move_to_retbase(filemod::result<int64_t>&& from,
                             filemod::result_base& to) {
   to.success = from.success;
   if (from.success) {
-    to.msg = std::to_string(from.data) + '\n' + "ok" + '\n';
+    filemod::append_line(to.msg, std::to_string(from.data) + '\n' + "ok");
   } else {
     to.msg = std::move(from.msg);
   }
