@@ -1,3 +1,8 @@
+## 0.0.5
+
+- Add back ARGS hint in CLI
+- Clarify message line breaks, utilize new function append_line() for it.
+
 ## 0.0.4
 
 - Embed UTF-8 manifest on Windows build, improves performance
