@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstring>
 #include <string>
 #include <string_view>
@@ -70,8 +71,31 @@ const char DBFILE[] = "filemod.db";
 const char FILEMOD[] = "filemod";
 const char CONFIGDIR[] = "filemod_cfg";
 
+constexpr std::size_t length_s(const char* str) noexcept {
+  std::size_t len = 0;
+  if (nullptr == str) {
+    return len;
+  }
+  while (0 != *str++) {
+    ++len;
+  }
+  return len;
+}
+
+template <typename T>
+constexpr std::size_t str_size(T& string_like) noexcept {
+  return string_like.size();
+}
+
+constexpr std::size_t str_size(char) noexcept { return 1; }
+
+constexpr std::size_t str_size(const char* arr) noexcept {
+  return filemod::length_s(arr);
+}
+
 template <typename T>
 constexpr std::string& append_line(std::string& lhs, T&& rhs) {
+  lhs.reserve(lhs.size() + str_size(rhs) + 1);
   return (lhs += std::forward<T>(rhs)) += '\n';
 }
 
@@ -82,19 +106,6 @@ std::string get_home_cfg_dir();
 std::string get_cfg_dir();
 
 std::string get_db_path();
-
-inline constexpr size_t length_s(const char* str) noexcept {
-  if (nullptr == str || 0 == *str) {
-    return 0;
-  }
-  //        size_t sum = 0;
-  //        while (0 != *str) {
-  //            ++sum;
-  //            ++str;
-  //        }
-  //        return sum;
-  return strlen(str);
-}
 
 // Get absolute path from relpath.
 std::string get_abs_path(const char* relpath);
