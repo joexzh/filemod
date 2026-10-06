@@ -4,13 +4,13 @@
 
 #include "filemod/fs.hpp"
 
-#include <cstdint>
 #include <filesystem>
 #include <ranges>
 #include <stdexcept>
 #include <system_error>
 
 #include "filemod/fs_manager.hpp"
+#include "filemod/utils.hpp"
 
 namespace filemod {
 
@@ -166,7 +166,7 @@ FS::~FS() noexcept {
       std::filesystem::temp_directory_path() / FILEMOD_TEMP_DIR, dummy);
 }
 
-void FS::create_target(int64_t tar_id) {
+void FS::create_target(i64 tar_id) {
   // create new folder named tar_id
   curr_scope_->get_fsman().create_d(get_cfg_tar_path(tar_id));
 }
@@ -194,13 +194,13 @@ std::vector<std::filesystem::path> copy_mod(
 }
 
 std::vector<std::filesystem::path> FS::add_mod(
-    int64_t tar_id, const std::string& mod_name,
+    i64 tar_id, const std::string& mod_name,
     const std::filesystem::path& mod_dir_path) {
   return add_mod_base(tar_id, mod_name, mod_dir_path, copy_mod);
 }
 
 std::vector<std::filesystem::path> FS::add_mod_base(
-    int64_t tar_id, const std::filesystem::path& mod_name,
+    i64 tar_id, const std::filesystem::path& mod_name,
     const std::filesystem::path& mod_src_path, copy_mod_t copy_mod) {
   const auto cfg_mod_path = get_cfg_mod_path(tar_id, mod_name);
 
@@ -286,12 +286,12 @@ void FS::remove_mod(const std::filesystem::path& cfg_mod_path) {
   delete_empty_dirs_(*curr_scope_, std::move(sorted_dir_paths));
 }
 
-void FS::remove_target(int64_t tar_id) {
+void FS::remove_target(i64 tar_id) {
   auto cfg_tar_path = get_cfg_tar_path(tar_id);
   delete_empty_dirs_(*curr_scope_, {cfg_tar_path, cfg_tar_path / BACKUP_DIR});
 }
 
-void FS::rename_mod(int64_t tar_id, const std::filesystem::path& oldname_path,
+void FS::rename_mod(i64 tar_id, const std::filesystem::path& oldname_path,
                     const std::filesystem::path& newname_path) {
   auto cfg_mod_old_path = get_cfg_mod_path(tar_id, oldname_path);
   auto cfg_mod_new_path = get_cfg_mod_path(tar_id, newname_path);

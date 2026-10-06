@@ -38,7 +38,8 @@ std::string getexepath() {
   while (true) {
     // GetModuleFileName returns the number of chars copied to buf, but if buf
     // is too small, returns MAX_PATH; return 0 if error.
-    DWORD length = GetModuleFileName(nullptr, buf.data(), buf.size());
+    DWORD length =
+        GetModuleFileName(nullptr, buf.data(), static_cast<DWORD>(buf.size()));
     if (length == 0) {
       auto ec = GetLastError();
       throw std::runtime_error{WinErrToStr(ec).get()};
@@ -69,12 +70,13 @@ std::string wstr_to_cp(std::wstring_view wsv, UINT cp) {
     throw std::runtime_error("GetCPInfo error");
   }
   unsigned int char_size = cpInfo.MaxCharSize;
-  size_t numbytes = wsv.size() * char_size;  // upper bound size
+  usize numbytes = wsv.size() * char_size;  // upper bound size
   mbstr = std::string(numbytes, '\0');
 
   // written NOT include null terminator
-  int written = WideCharToMultiByte(cp, 0, wsv.data(), wsv.size(), &mbstr[0],
-                                    numbytes, nullptr, nullptr);
+  int written = WideCharToMultiByte(
+      cp, 0, wsv.data(), static_cast<int>(wsv.size()), &mbstr[0],
+      static_cast<int>(numbytes), nullptr, nullptr);
   if (0 == written) {
     throw std::runtime_error("wstr_to_cp: WideCharToMultiByte error");
   }
@@ -90,7 +92,8 @@ std::wstring cp_to_wstr(std::string_view sv, UINT cp) {
 
   // written Not include null terminator
   int written =
-      MultiByteToWideChar(cp, 0, sv.data(), sv.size(), &wstr[0], sv.size());
+      MultiByteToWideChar(cp, 0, sv.data(), static_cast<int>(sv.size()),
+                          &wstr[0], static_cast<int>(sv.size()));
   if (0 == written) {
     throw std::runtime_error("cp_to_wstr: MultiByteToWideChar error");
   }

@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include <cstdint>
 #include <filesystem>
 #include <vector>
 
 #include "filemod/fs_manager.hpp"
+#include "filemod/utils.hpp"
 
 namespace filemod {
 
@@ -97,7 +97,7 @@ class FS {
   }
 
   // Create a directory which path is %cfg_dir_path/<target_id>
-  void create_target(int64_t tar_id);
+  void create_target(i64 tar_id);
 
   // Copy files from mod_dir to `cfg_dir/target_id/mod_name`.
   //
@@ -106,7 +106,7 @@ class FS {
   // Throws exception if `cfg_dir/target_id` not exists, or mod_dir_path not
   // exists
   std::vector<std::filesystem::path> add_mod(
-      int64_t tar_id, const std::string& mod_name,
+      i64 tar_id, const std::string& mod_name,
       const std::filesystem::path& mod_dir_path);
 
   // Create files in `cfg_dir/target_id/mod_name` from `mod_src`, using
@@ -114,7 +114,7 @@ class FS {
   // Return relative mod file paths.
   // Throws exception if `cfg_dir/target_id` not exists, or mod_dir not exists
   std::vector<std::filesystem::path> add_mod_base(
-      int64_t tar_id, const std::filesystem::path& mod_name_path,
+      i64 tar_id, const std::filesystem::path& mod_name_path,
       const std::filesystem::path& mod_src_path, copy_mod_t copy_mod);
 
   // Create symlinks from cfg_mod_path to tar_dir_path.
@@ -138,18 +138,18 @@ class FS {
   void remove_mod(const std::filesystem::path& cfg_mod_path);
 
   // Delete cfg_dir_path/<tar_id> and log all changes
-  void remove_target(int64_t tar_id);
+  void remove_target(i64 tar_id);
 
   // Equivalent to `mv oldname_path newname_path`.
-  void rename_mod(int64_t tar_id, const std::filesystem::path& oldname_path,
+  void rename_mod(i64 tar_id, const std::filesystem::path& oldname_path,
                   const std::filesystem::path& newname_path);
 
-  std::filesystem::path get_cfg_tar_path(int64_t tar_id) {
+  std::filesystem::path get_cfg_tar_path(i64 tar_id) {
     return cfg_dir_path_ / std::to_string(tar_id);
   }
 
   std::filesystem::path get_cfg_mod_path(
-      int64_t tar_id, const std::filesystem::path& mod_dir_rel_path) {
+      i64 tar_id, const std::filesystem::path& mod_dir_rel_path) {
     return get_cfg_tar_path(tar_id) /= mod_dir_rel_path;
   }
 

@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <string>
 #include <string_view>
@@ -55,6 +56,19 @@
 #define STRINGIFY(x) STRINGIFY_HELPER(x)
 
 namespace filemod {
+
+using i8 = std::int8_t;
+using i16 = std::int16_t;
+using i32 = std::int32_t;
+using i64 = std::int64_t;
+
+using u8 = std::uint8_t;
+using u16 = std::uint16_t;
+using u32 = std::uint32_t;
+using u64 = std::uint64_t;
+
+using isize = std::ptrdiff_t;
+using usize = std::size_t;
 
 struct result_base {
   bool success{};
@@ -119,8 +133,9 @@ std::string get_abs_path(const char* relpath);
 inline constexpr std::string_view strip_trailing_slash(std::string_view path) {
   if (path.empty()) return path;
 
-  long i;
-  for (i = static_cast<long>(path.size()) - 1; i >= 0; --i) {
+  std::size_t i;
+  for (i = path.size(); i != 0;) {
+    --i;
     if (path[i] != '/' && path[i] != '\\') {
       break;
     }
@@ -138,8 +153,9 @@ inline constexpr std::string_view strip_trailing_slash(std::string_view path) {
 inline constexpr std::string_view get_filename(std::string_view path) {
   if (path.empty()) return path;
 
-  long i;
-  for (i = static_cast<long>(path.size()) - 1; i >= 0; --i) {
+  std::size_t i;
+  for (i = path.size(); i != 0;) {
+    --i;
     if (path[i] == '/' || path[i] == '\\') {
       break;
     }

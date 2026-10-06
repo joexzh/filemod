@@ -1,21 +1,21 @@
 #include <gtest/gtest.h>
 
-#include <cstdint>
 #include <vector>
 
 #include "filemod/sql.hpp"
+#include "filemod/utils.hpp"
 #include "testhelper.hpp"
 
 class DBTest : public PathHelper {
  protected:
-  int64_t insert_mod1(int64_t tar_id) {
+  filemod::i64 insert_mod1(filemod::i64 tar_id) {
     return m_db.insert_mod_w_files(
         tar_id, m_mod1_obj.mod_name,
         static_cast<int>(filemod::ModStatus::Uninstalled),
         m_mod1_obj.file_rels);
   }
 
-  int64_t insert_mod2(int64_t tar_id) {
+  filemod::i64 insert_mod2(filemod::i64 tar_id) {
     return m_db.insert_mod_w_files(
         tar_id, m_mod2_obj.mod_name,
         static_cast<int>(filemod::ModStatus::Uninstalled),

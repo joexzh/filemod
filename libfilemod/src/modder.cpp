@@ -4,7 +4,6 @@
 
 #include "filemod/modder.hpp"
 
-#include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <string>
@@ -98,11 +97,11 @@ void tx_wrapper(FS& fs, DB& db, const auto& ret, const auto& func) {
   fstx.commit();
 }
 
-result_base install_mod_(FS& fs, DB& db, int64_t mod_id) {
+result_base install_mod_(FS& fs, DB& db, i64 mod_id) {
   result_base ret{.success = true};
 
   tx_wrapper(fs, db, ret, [&]() {
-    auto mods = db.query_mods_w_files(std::vector<int64_t>{mod_id});
+    auto mods = db.query_mods_w_files(std::vector<i64>{mod_id});
     if (mods.empty()) {
       set_fail(ret, {std::string_view{ERR_MOD_NOT_EXIST}});
       return;
@@ -167,12 +166,12 @@ result_base install_mod_(FS& fs, DB& db, int64_t mod_id) {
 }
 
 // if success, return ModDto.
-result<ModDto> uninstall_mod_(FS& fs, DB& db, int64_t mod_id) {
+result<ModDto> uninstall_mod_(FS& fs, DB& db, i64 mod_id) {
   result<ModDto> ret;
   ret.success = true;
 
   tx_wrapper(fs, db, ret, [&]() {
-    auto mods = db.query_mods_w_files(std::vector<int64_t>{mod_id});
+    auto mods = db.query_mods_w_files(std::vector<i64>{mod_id});
     if (mods.empty()) {
       set_fail(ret, {ERR_MOD_NOT_EXIST, ": ", std::to_string(mod_id)});
       return;
@@ -210,7 +209,7 @@ result<ModDto> uninstall_mod_(FS& fs, DB& db, int64_t mod_id) {
   return ret;
 }
 
-result_base remove_mod_(FS& fs, DB& db, int64_t mod_id) {
+result_base remove_mod_(FS& fs, DB& db, i64 mod_id) {
   result_base ret{.success = true};
 
   tx_wrapper(fs, db, ret, [&]() {
@@ -236,11 +235,11 @@ result_base remove_mod_(FS& fs, DB& db, int64_t mod_id) {
 // modder_archive.cpp.
 //===----------------------------------------------------------------------===//
 
-result<int64_t> private_add_mod(FS& fs, DB& db, int64_t tar_id,
-                                std::string_view mod_name,
-                                std::string_view mod_src_raw,
-                                copy_mod_t cp_mod_fn) {
-  result<int64_t> ret;
+result<i64> private_add_mod(FS& fs, DB& db, i64 tar_id,
+                            std::string_view mod_name,
+                            std::string_view mod_src_raw,
+                            copy_mod_t cp_mod_fn) {
+  result<i64> ret;
   ret.success = true;
 
   std::string mod_src = get_abs_path(std::string{mod_src_raw}.c_str());
@@ -272,19 +271,19 @@ result<int64_t> private_add_mod(FS& fs, DB& db, int64_t tar_id,
       mod_file_rels.push_back(mod_file_rel_path.string());
     }
 
-    ret.data = db.insert_mod_w_files(
-        tar_id, mod_name, static_cast<int64_t>(ModStatus::Uninstalled),
-        mod_file_rels);
+    ret.data = db.insert_mod_w_files(tar_id, mod_name,
+                                     static_cast<i64>(ModStatus::Uninstalled),
+                                     mod_file_rels);
   });
 
   return ret;
 }
 
-result<int64_t> private_install_mod_path(FS& fs, DB& db, int64_t tar_id,
-                                         std::string_view mod_name,
-                                         std::string_view path, modder& modder,
-                                         add_mod_t add_mod_fn) {
-  result<int64_t> ret;
+result<i64> private_install_mod_path(FS& fs, DB& db, i64 tar_id,
+                                     std::string_view mod_name,
+                                     std::string_view path, modder& modder,
+                                     add_mod_t add_mod_fn) {
+  result<i64> ret;
   ret.success = true;
 
   tx_wrapper(fs, db, ret, [&]() {
@@ -314,8 +313,8 @@ modder::~modder() = default;
 modder::modder(const std::string& cfg_dir, const std::string& db_file)
     : fs_{cfg_dir}, db_{db_file} {}
 
-result<int64_t> modder::add_target(std::string_view tar_dir_raw) {
-  result<int64_t> ret;
+result<i64> modder::add_target(std::string_view tar_dir_raw) {
+  result<i64> ret;
   ret.success = true;
 
   std::string tar_dir =
@@ -340,20 +339,20 @@ result<int64_t> modder::add_target(std::string_view tar_dir_raw) {
   return ret;
 }
 
-result<int64_t> modder::add_mod(int64_t tar_id, std::string_view mod_name,
-                                std::string_view mod_dir_raw) {
+result<i64> modder::add_mod(i64 tar_id, std::string_view mod_name,
+                            std::string_view mod_dir_raw) {
   auto mod_dir_stripped = strip_trailing_slash(mod_dir_raw);
   return private_add_mod(fs_, db_, tar_id, mod_name, mod_dir_stripped,
                          copy_mod);
 }
 
-result<int64_t> modder::add_mod(int64_t tar_id, std::string_view mod_dir_raw) {
+result<i64> modder::add_mod(i64 tar_id, std::string_view mod_dir_raw) {
   std::string_view mod_dir_stipped = strip_trailing_slash(mod_dir_raw);
   std::string_view mod_name = get_filename(mod_dir_stipped);
   return add_mod(tar_id, mod_name, mod_dir_stipped);
 }
 
-result_base modder::install_mods(const std::vector<int64_t>& mod_ids) {
+result_base modder::install_mods(const std::vector<i64>& mod_ids) {
   result_base ret{.success = true};
 
   tx_wrapper(fs_, db_, ret, [&]() {
@@ -368,11 +367,11 @@ result_base modder::install_mods(const std::vector<int64_t>& mod_ids) {
   return ret;
 }
 
-result_base modder::install_target(int64_t tar_id) {
+result_base modder::install_target(i64 tar_id) {
   result_base ret{.success = true};
 
   tx_wrapper(fs_, db_, ret, [&]() {
-    auto tars = db_.query_targets_mods(std::vector<int64_t>{tar_id});
+    auto tars = db_.query_targets_mods(std::vector<i64>{tar_id});
     if (tars.empty()) {
       set_fail(ret, {std::string_view{ERR_TAR_NOT_EXIST}});
       return;
@@ -392,23 +391,21 @@ result_base modder::install_target(int64_t tar_id) {
   return ret;
 }
 
-result<int64_t> modder::install_mod_path(int64_t tar_id,
-                                         std::string_view mod_dir_raw) {
+result<i64> modder::install_mod_path(i64 tar_id, std::string_view mod_dir_raw) {
   std::string_view mod_dir_stripped = strip_trailing_slash(mod_dir_raw);
   std::string_view mod_name = get_filename(mod_dir_stripped);
   return private_install_mod_path(fs_, db_, tar_id, mod_name, mod_dir_stripped,
                                   *this, &modder::add_mod);
 }
 
-result<int64_t> modder::install_mod_path(int64_t tar_id,
-                                         std::string_view mod_name,
-                                         std::string_view mod_dir_raw) {
+result<i64> modder::install_mod_path(i64 tar_id, std::string_view mod_name,
+                                     std::string_view mod_dir_raw) {
   auto mod_dir_stripped = strip_trailing_slash(mod_dir_raw);
   return private_install_mod_path(fs_, db_, tar_id, mod_name, mod_dir_stripped,
                                   *this, &modder::add_mod);
 }
 
-result_base modder::uninstall_mods(const std::vector<int64_t>& mod_ids) {
+result_base modder::uninstall_mods(const std::vector<i64>& mod_ids) {
   result_base ret{.success = true};
   tx_wrapper(fs_, db_, ret, [&]() {
     for (auto mod_id : mod_ids) {
@@ -421,10 +418,10 @@ result_base modder::uninstall_mods(const std::vector<int64_t>& mod_ids) {
   return ret;
 }
 
-result_base modder::uninstall_target(int64_t tar_id) {
+result_base modder::uninstall_target(i64 tar_id) {
   result_base ret{.success = true};
   tx_wrapper(fs_, db_, ret, [&]() {
-    auto tars = db_.query_targets_mods(std::vector<int64_t>{tar_id});
+    auto tars = db_.query_targets_mods(std::vector<i64>{tar_id});
     if (tars.empty()) {
       set_fail(ret, {std::string_view{ERR_TAR_NOT_EXIST}});
       return;
@@ -444,7 +441,7 @@ result_base modder::uninstall_target(int64_t tar_id) {
   return ret;
 }
 
-result_base modder::remove_mods(const std::vector<int64_t>& mod_ids) {
+result_base modder::remove_mods(const std::vector<i64>& mod_ids) {
   result_base ret{.success = true};
 
   tx_wrapper(fs_, db_, ret, [&]() {
@@ -459,7 +456,7 @@ result_base modder::remove_mods(const std::vector<int64_t>& mod_ids) {
   return ret;
 }
 
-result_base modder::remove_target(int64_t tar_id) {
+result_base modder::remove_target(i64 tar_id) {
   result_base ret{.success = true};
 
   tx_wrapper(fs_, db_, ret, [&]() {
@@ -483,16 +480,15 @@ result_base modder::remove_target(int64_t tar_id) {
   return ret;
 }
 
-std::vector<ModDto> modder::query_mods(const std::vector<int64_t>& mod_ids) {
+std::vector<ModDto> modder::query_mods(const std::vector<i64>& mod_ids) {
   return db_.query_mods_w_files(mod_ids);
 }
 
-std::vector<TargetDto> modder::query_targets(
-    const std::vector<int64_t>& tar_ids) {
+std::vector<TargetDto> modder::query_targets(const std::vector<i64>& tar_ids) {
   return db_.query_targets_mods(tar_ids);
 }
 
-result_base modder::rename_mod(int64_t mid, std::string_view newname) {
+result_base modder::rename_mod(i64 mid, std::string_view newname) {
   result_base ret{.success = true};
 
   tx_wrapper(fs_, db_, ret, [&]() {

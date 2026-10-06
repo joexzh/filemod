@@ -4,7 +4,6 @@
 // On Windows, Require the executable to inject UTF-8 manifest.
 #pragma once
 
-#include <cstdint>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -70,7 +69,7 @@ class modder {
    * @return result.success == false if @c tar_dir_raw does not exist.
    * @exception std::exception if unknown runtime error occurs.
    */
-  FILEMOD_API result<int64_t> add_target(std::string_view tar_dir_raw);
+  FILEMOD_API result<i64> add_target(std::string_view tar_dir_raw);
 
   /**
    * @brief add mod to managed config.
@@ -87,17 +86,16 @@ class modder {
    * or directory @c mod_dir_raw does not exist.
    * @exception std::exception if unknown runtime error occurs.
    */
-  FILEMOD_API result<int64_t> add_mod(int64_t tar_id,
-                                      std::string_view mod_dir_raw);
+  FILEMOD_API result<i64> add_mod(i64 tar_id, std::string_view mod_dir_raw);
   /**
    * Reference:\n
-   * @copydoc add_mod(int64_t,const std::string_view)
+   * @copydoc add_mod(i64,const std::string_view)
    * @param tar_id
    * @param mod_name require UTF-8 encoded
    * @param mod_dir_raw
    */
-  FILEMOD_API result<int64_t> add_mod(int64_t tar_id, std::string_view mod_name,
-                                      std::string_view mod_dir_raw);
+  FILEMOD_API result<i64> add_mod(i64 tar_id, std::string_view mod_name,
+                                  std::string_view mod_dir_raw);
 
   /**
    * @brief Add mod from archive.
@@ -107,9 +105,8 @@ class modder {
    * @attention Require setting LC_CTYPE to UTF-8, e.g. `setlocale(LC_CTYPE,
    * ".UTF-8")`.
    */
-  FILEMOD_API result<int64_t> add_mod_archive(int64_t tar_id,
-                                              std::string_view mod_name,
-                                              std::string_view path);
+  FILEMOD_API result<i64> add_mod_archive(i64 tar_id, std::string_view mod_name,
+                                          std::string_view path);
 
   /**
    * @brief Add mod from archive.
@@ -118,8 +115,7 @@ class modder {
    * @attention Require setting LC_CTYPE to UTF-8, e.g. `setlocale(LC_CTYPE,
    * ".UTF-8")`.
    */
-  FILEMOD_API result<int64_t> add_mod_archive(int64_t tar_id,
-                                              std::string_view path);
+  FILEMOD_API result<i64> add_mod_archive(i64 tar_id, std::string_view path);
 
   /**
    * @brief Install mods.
@@ -139,7 +135,7 @@ class modder {
    * the mod(s) are lack of integrity that user should remove and re-add them.
    * @exception std::exception if unknown runtime error occurs.
    */
-  FILEMOD_API result_base install_mods(const std::vector<int64_t>& mod_ids);
+  FILEMOD_API result_base install_mods(const std::vector<i64>& mod_ids);
 
   /**
    * @brief Install all mods relate to a target.
@@ -155,7 +151,7 @@ class modder {
    * the mod(s) are lack of integrity that user should remove and re-add them.
    * @exception std::exception if unknown runtime error occurs.
    */
-  FILEMOD_API result_base install_target(int64_t tar_id);
+  FILEMOD_API result_base install_target(i64 tar_id);
 
   /**
    * @brief Install a new non-managed mod by its @c mod_dir_raw.
@@ -172,19 +168,19 @@ class modder {
    * 2. mods are in conflict.
    * @exception std::exception if unknown runtime error occurs.
    */
-  FILEMOD_API result<int64_t> install_mod_path(int64_t tar_id,
-                                               std::string_view mod_dir_raw);
+  FILEMOD_API result<i64> install_mod_path(i64 tar_id,
+                                           std::string_view mod_dir_raw);
 
   /**
    * Reference:\n
-   * @copydoc install_path(int64_t,std::string_view)
+   * @copydoc install_path(i64,std::string_view)
    * @param tar_id
    * @param mod_name require UTF-8 encoded
    * @param mod_dir_raw
    */
-  FILEMOD_API result<int64_t> install_mod_path(int64_t tar_id,
-                                               std::string_view mod_name,
-                                               std::string_view mod_dir_raw);
+  FILEMOD_API result<i64> install_mod_path(i64 tar_id,
+                                           std::string_view mod_name,
+                                           std::string_view mod_dir_raw);
 
   /**
    * @breif Install mod from archive.
@@ -194,17 +190,17 @@ class modder {
    * @param mod_name require UTF-8 encoded
    * @param path
    */
-  FILEMOD_API result<int64_t> install_mod_archive(int64_t tar_id,
-                                                  std::string_view mod_name,
-                                                  std::string_view path);
+  FILEMOD_API result<i64> install_mod_archive(i64 tar_id,
+                                              std::string_view mod_name,
+                                              std::string_view path);
 
   /**
    * @brief Install mod from archive.
    * @attention Require setting LC_CTYPE to UTF-8, e.g. `setlocale(LC_CTYPE,
    * ".UTF-8")`.
    */
-  FILEMOD_API result<int64_t> install_mod_archive(int64_t tar_id,
-                                                  std::string_view path);
+  FILEMOD_API result<i64> install_mod_archive(i64 tar_id,
+                                              std::string_view path);
 
   /**
    * @brief Uninstall mods.
@@ -219,7 +215,7 @@ class modder {
    * more mods do not exist.
    * @exception std::exception if unknown runtime error occurs.
    */
-  FILEMOD_API result_base uninstall_mods(const std::vector<int64_t>& mod_ids);
+  FILEMOD_API result_base uninstall_mods(const std::vector<i64>& mod_ids);
 
   /**
    * @brief Uninstall all mods of a target.
@@ -233,7 +229,7 @@ class modder {
    * 2. one or more mods do not exist.
    * @exception std::exception if unknown runtime error occurs.
    */
-  FILEMOD_API result_base uninstall_target(int64_t tar_id);
+  FILEMOD_API result_base uninstall_target(i64 tar_id);
 
   /**
    * @brief Uninstall and delete mods in config directory.
@@ -246,7 +242,7 @@ class modder {
    * more mods do not exist.
    * @exception std::exception if unknown runtime error occurs.
    */
-  FILEMOD_API result_base remove_mods(const std::vector<int64_t>& mod_ids);
+  FILEMOD_API result_base remove_mods(const std::vector<i64>& mod_ids);
 
   /**
    * @brief Uninstall mods relate to the target, and delete these mods and the
@@ -260,7 +256,7 @@ class modder {
    * does not exist.
    * @exception std::exception if unknown runtime error occurs.
    */
-  FILEMOD_API result_base remove_target(int64_t tar_id);
+  FILEMOD_API result_base remove_target(i64 tar_id);
 
   /**
    * @brief Query mods from database with all verbose information.
@@ -268,8 +264,7 @@ class modder {
    * @param mod_ids ids of mods
    * @return mods in database based on @c mod_ids.
    */
-  FILEMOD_API std::vector<ModDto> query_mods(
-      const std::vector<int64_t>& mod_ids);
+  FILEMOD_API std::vector<ModDto> query_mods(const std::vector<i64>& mod_ids);
 
   /**
    * @brief Query targets from database with basic mod information.
@@ -277,7 +272,7 @@ class modder {
    * @return targets in database based on @c tar_ids.
    */
   FILEMOD_API std::vector<TargetDto> query_targets(
-      const std::vector<int64_t>& tar_ids);
+      const std::vector<i64>& tar_ids);
 
   /**
    * @brief Rename mod directory to `newname` and modify database record.
@@ -285,7 +280,7 @@ class modder {
    * @param newname require UTF-8 encoded. DO NOT pass a directory!
    * @return result_base
    */
-  FILEMOD_API result_base rename_mod(int64_t mid, std::string_view newname);
+  FILEMOD_API result_base rename_mod(i64 mid, std::string_view newname);
 
  private:
   FS fs_;  // ORDER DEPENDENCY

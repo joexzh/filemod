@@ -19,8 +19,8 @@ enum class ModStatus {
 };
 
 struct [[nodiscard]] ModDto {
-  int64_t id;
-  int64_t tar_id;
+  i64 id;
+  i64 tar_id;
   std::string dir{};
   ModStatus status;
   std::vector<std::string> files{};
@@ -28,7 +28,7 @@ struct [[nodiscard]] ModDto {
 };
 
 struct [[nodiscard]] TargetDto {
-  int64_t id;
+  i64 id;
   std::string dir{};
   std::vector<ModDto> ModDtos{};
 };
@@ -53,41 +53,40 @@ class DB {
 
   sp_wrapper begin();
 
-  std::vector<TargetDto> query_targets_mods(const std::vector<int64_t>& ids);
+  std::vector<TargetDto> query_targets_mods(const std::vector<i64>& ids);
 
-  std::vector<ModDto> query_mods_w_files(const std::vector<int64_t>& ids);
+  std::vector<ModDto> query_mods_w_files(const std::vector<i64>& ids);
 
-  std::vector<ModDto> query_mods_by_target(int64_t tar_id);
+  std::vector<ModDto> query_mods_by_target(i64 tar_id);
 
-  result<ModDto> query_mod_by_targetid_dir(int64_t tar_id,
-                                           std::string_view dir);
+  result<ModDto> query_mod_by_targetid_dir(i64 tar_id, std::string_view dir);
 
-  result<TargetDto> query_target(int64_t id);
+  result<TargetDto> query_target(i64 id);
 
   result<TargetDto> query_target_by_dir(std::string_view dir);
 
   // Return target id if succeeded, otherwise 0.
-  int64_t insert_target(std::string_view dir);
+  i64 insert_target(std::string_view dir);
 
-  int delete_target(int64_t id);
+  int delete_target(i64 id);
 
-  result_base delete_target_all(int64_t id);
+  result_base delete_target_all(i64 id);
 
-  result<ModDto> query_mod(int64_t id);
+  result<ModDto> query_mod(i64 id);
 
-  int64_t insert_mod_w_files(int64_t tar_id, std::string_view dir, int status,
-                             const std::vector<std::string>& files);
+  i64 insert_mod_w_files(i64 tar_id, std::string_view dir, int status,
+                         const std::vector<std::string>& files);
 
-  int delete_mod(int64_t id);
+  int delete_mod(i64 id);
 
   std::vector<ModDto> query_mods_contain_files(
       const std::vector<std::string>& files);
 
-  void install_mod(int64_t id, const std::vector<std::string>& backup_files);
+  void install_mod(i64 id, const std::vector<std::string>& backup_files);
 
-  void uninstall_mod(int64_t id);
+  void uninstall_mod(i64 id);
 
-  int rename_mod(int64_t mid, std::string_view newname);
+  int rename_mod(i64 mid, std::string_view newname);
 
  private:
   // db wrapper
